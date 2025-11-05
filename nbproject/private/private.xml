@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/ReadNews.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/DelegatingSSLSocketFactory.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/Teletel.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/MList.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/MComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/GraphTel.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/PageMinitel.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/MTitle.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/MText.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/PageManager.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/MFrame.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/components/ModelMComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/MinitelConnection.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/events/KeyPressedListener.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/events/CodeSequenceListener.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/events/KeyPressedEvent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/events/CodeSequenceSentEvent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/client/MinitelPageReader.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/client/LinkNotValidException.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/server/StaticFileServer.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/client/Page.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/MinitelClient.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel/src/org/somanybits/minitel/TeletelCode.java</file>
+        </group>
+    </open-files>
+</project-private>
