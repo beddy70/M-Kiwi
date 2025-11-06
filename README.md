@@ -65,7 +65,7 @@ $ java -jar Minitel.jar localhost 8080
 	</div>
 
 	<menu name="main" left="4" top="10" width="30" height="10" keytype="number">
-		<item link="Acceuil.mod">ActualitÃ©</item>
+		<item link="Acceuil.mod">Actualité</item>
 		<item link="Bar/">Bar</item>	
 		<item link="Concerts/">concerts</item>
 		<item link="Games/">jeux</item>
@@ -74,3 +74,5 @@ $ java -jar Minitel.jar localhost 8080
 
 </minitel>
 ```
+
+<img src="http://kiwinas:8418/eddy/Minitel-Serveur/raw/branch/main/images/mintel_screen.png" width="400">
