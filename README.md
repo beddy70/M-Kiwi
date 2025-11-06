@@ -20,7 +20,7 @@ Minitel est un programme en Java permettant de créer un serveur Minitel via un 
 
 ### Branchement 
 
-
+<img src="http://kiwinas:8418/eddy/Minitel-Serveur/raw/branch/main/images/montage1-din-serial.png" width="400">
 
 ## Utilisation
 
