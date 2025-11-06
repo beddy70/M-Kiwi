@@ -76,3 +76,9 @@ $ java -jar Minitel.jar localhost 8080
 ```
 
 <img src="http://kiwinas:8418/eddy/Minitel-Serveur/raw/branch/main/images/mintel_screen.png" width="400">
+
+## Tag minitel
+## Tag div
+## Tag row
+## Tag menu
+## Tag item
