@@ -49,3 +49,28 @@ Serveur :
 ```
 $ java -jar Minitel.jar localhost 8080
 ```
+# Création d'un page VTML
+
+```
+<minitel title="acceuil">
+
+	<div class="frame" left="6" top="2" width="30" height="10">
+		<row> __  __ _       _ _       _ </row>
+		<row>|  \/  (_)_ __ (_) |_ ___| |</row>
+		<row>| |\/| | | '_ \| | __/ _ \ |</row>
+		<row>| |  | | | | | | | ||  __/ |</row>
+		<row>|_|  |_|_|_| |_|_|\__\___|_|</row>
+		<br>
+		<row>     LE LIEU TRANQUILLE     </row>
+	</div>
+
+	<menu name="main" left="4" top="10" width="30" height="10" keytype="number">
+		<item link="Acceuil.mod">ActualitÃ©</item>
+		<item link="Bar/">Bar</item>	
+		<item link="Concerts/">concerts</item>
+		<item link="Games/">jeux</item>
+		<item link="Wifi/">wifi</item>	
+	</menu> 
+
+</minitel>
+```
