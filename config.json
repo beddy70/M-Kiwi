@@ -1,0 +1,12 @@
+{
+  "server": {
+    "port": 8080,
+    "defaultCharset": "utf-8"
+ 
+  }
+  "path": {
+    "root_path":"./root/",
+    "plugins_path":"./plugins/"
+  }
+
+}
