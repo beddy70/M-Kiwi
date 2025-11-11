@@ -6,10 +6,6 @@
 package org.somanybits.minitel;
 
 import java.io.IOException;
-import static org.somanybits.minitel.TeletelCode.MODE_MIXTE;
-import static org.somanybits.minitel.TeletelCode.MODE_STANDARD;
-import static org.somanybits.minitel.TeletelCode.MODE_VIDEOTEXT;
-
 /**
  *
  * @author eddy
