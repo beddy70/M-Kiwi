@@ -39,12 +39,17 @@ $  java -jar Minitel.jar [Adresse du serveur de fichier] [PORT]
 ```
 ### Exemple : 
 
-Serveur :
+**Serveur :**
 
 ```
-$ java -cp Minitel.jar org.somanybits.minitel.server.StaticFileServer ./root 8080]
+$ java -cp Minitel.jar org.somanybits.minitel.server.StaticFileServer 
 ```
-Serveur :
+
+voir plus loin dans ce document le fichier de configuration : 
+
+    config.json
+
+**Client :**
 
 ```
 $ java -jar Minitel.jar localhost 8080
@@ -90,6 +95,21 @@ Nom du fichier : **index.vtml**
 Comme un serveur web, le Serveur Minitel retourne des pages demandées par le client Minitel sous forme d'URL. 
 
     http://localhost:8080/ ou http://localhost:8080/menu.vtml
+
+## Fichier de configuration 
+
+    {
+      "server": {
+        "port": 8080,
+        "defaultCharset": "utf-8"
+     
+      },
+      "path": {
+        "root_path":"./root/",
+        "plugins_path":"./plugins/"
+      }
+    
+    }
 
 ## Les MModules
 
