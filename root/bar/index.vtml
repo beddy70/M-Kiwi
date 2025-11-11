@@ -1,0 +1,18 @@
+<minitel tile="le bar">
+
+	<div class="frame" left="6" top="2" width="30" height="10">
+		<row> _           _                </row>
+		<row>| |    ___  | |__   __ _ _ __ </row>
+		<row>| |   / _ \ | '_ \ / _` | '__|</row>
+		<row>| |__|  __/ | |_) | (_| | |   </row>
+		<row>|_____\___| |_.__/ \__,_|_| </row>
+		<br>
+		<row>Le bar des Tranquilles</row>
+	</div>
+
+	<menu  ame="main" left="4" top="10" keytype="number">
+		<item link="bar/menu.mtxt">Menu</item>
+		<item link="bar/rules.mtext">reglementation</item>
+	</menu> 
+
+</minitel>

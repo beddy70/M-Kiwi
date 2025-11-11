@@ -1,0 +1,22 @@
+<minitel title="acceuil">
+	Hello
+	<div class="frame" left="6" top="2" width="30" height="10">
+		<row> __  __ _       _ _       _ </row>
+		<row>|  \/  (_)_ __ (_) |_ ___| |</row>
+		<row>| |\/| | | '_ \| | __/ _ \ |</row>
+		<row>| |  | | | | | | | ||  __/ |</row>
+		<row>|_|  |_|_|_| |_|_|\__\___|_|</row>
+		<br>
+		<row>     LE LIEU TRANQUILLE     </row>
+		world
+	</div>
+
+	<menu name="main" left="4" top="10" width="30" height="10" keytype="number">
+		<item link="acceuil.mod">Actualité</item>
+		<item link="bar/">Bar</item>	
+		<item link="concerts/">concerts</item>
+		<item link="ServerStatus.mod?val1=69&val2=hello">Info Serveur</item>
+		<item link="wifi/">wifi</item>	
+	</menu> 
+
+</minitel>
