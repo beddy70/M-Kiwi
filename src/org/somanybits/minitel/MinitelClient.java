@@ -24,6 +24,8 @@ import org.somanybits.minitel.client.Page;
  */
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
+  
+
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
     private static final String VERSION = "0.1";
 
