@@ -6,6 +6,7 @@
 package org.somanybits.minitel;
 
 import java.io.IOException;
+
 /**
  *
  * @author eddy
@@ -33,7 +34,6 @@ public class Teletel {
     private int screenmode = MODE_VIDEOTEXT;
 
     private final MinitelConnection mterm;
-
 
     public Teletel(MinitelConnection mt) {
         mterm = mt;
@@ -116,6 +116,11 @@ public class Teletel {
 
     }
 
+    public void clearLineZero() throws IOException {
+        this.setCursor(0, 0);
+        this.writeString(" ".repeat(40));
+    }
+
     public void clear() throws IOException {
 
         if (screenmode != MODE_VIDEOTEXT) {
@@ -187,4 +192,3 @@ public class Teletel {
         }
     }
 }
-

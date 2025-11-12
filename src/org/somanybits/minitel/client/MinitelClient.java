@@ -37,7 +37,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     MinitelConnection mc;
     MinitelPageReader mtr;
-    
+
     Teletel t;
 
     public static void main(String[] args) throws Exception {
@@ -46,33 +46,33 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         logmgr.setPrefix("> ");
 
         if (args.length == 0) {
-            logmgr.addLog("Usage:  Minitel <DOCUMENT_ROOT> [PORT]",LogManager.MSG_TYPE_ERROR);
+            logmgr.addLog("Usage:  Minitel <DOCUMENT_ROOT> [PORT]", LogManager.MSG_TYPE_ERROR);
             System.exit(1);
         }
         String server = args[0];
         int port = (args.length >= 2) ? Integer.parseInt(args[1]) : 8080;
 
-        logmgr.addLog(LogManager.ANSI_BOLD_GREEN+"Minitel Client  version" + VERSION);
-        logmgr.addLog(LogManager.ANSI_WHITE+"Connection to " + server + ":" + port + "/");
+        logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "Minitel Client  version" + VERSION);
+        logmgr.addLog(LogManager.ANSI_WHITE + "Connection to " + server + ":" + port + "/");
         new MinitelClient(server, port);
     }
     private Page currentpage;
 
     public MinitelClient(String server, int port) throws IOException, InterruptedException {
-        
+
         PageManager pmgr = PageManager.getInstance();
         mc = new MinitelConnection("/dev/serial0", MinitelConnection.BAUD_9600);
 
         mc.open();
 
-       // BufferedImage buffImg = new BufferedImage(240, 240, BufferedImage.TYPE_INT_ARGB);
-
+        // BufferedImage buffImg = new BufferedImage(240, 240, BufferedImage.TYPE_INT_ARGB);
         //inti Events
         mc.addKeyPressedEvent(this);
         mc.addCodeSequenceEvent(this);
 
         t = new Teletel(mc);
         t.clear();
+        t.clearLineZero();
 
         t.setScreenMode(Teletel.MODE_VIDEOTEXT);
 
@@ -80,20 +80,26 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //            gt.setCircle(10, 7, 7);
 //            gt.drawToPage(t, 10, 14);
         t.setTextColor(Teletel.COLOR_RED);
-        t.setCursor(6, 4);
-        t.writeString(" __  __ _       _ _       _ ");
-        t.setCursor(6, 5);
-        t.writeString("|  \\/  (_)_ __ (_) |_ ___| |");
-        t.setCursor(6, 6);
-        t.writeString("| |\\/| | | '_ \\| | __/ _ \\ |");
-        t.setCursor(6, 7);
-        t.writeString("| |  | | | | | | | ||  __/ |");
-        t.setCursor(6, 8);
-        t.writeString("|_|  |_|_|_| |_|_|\\__\\___|_|");
-
-        t.setCursor(6, 10);
+        t.setCursor(0, 1);
+        t.writeString("VTML 1.0");
+        t.setCursor(0, 3);
+        t.writeString("Client version " + VERSION + " (C) 2025");
+        t.setCursor(0, 4);
+        t.writeString("Author : Eddy BRIERE");
+        t.setCursor(0, 5);
+        t.writeString("email  : peassembler@yahoo.fr");
+        t.setCursor(0, 7);
         t.setTextColor(Teletel.COLOR_WHITE);
+        t.setBlink(true);
         t.writeString("Initialisation ! Waiting please... ");
+        t.setBlink(false);
+
+        try {
+            Thread.sleep(1000); // pause de 1000 millisecondes = 1 seconde
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // bonne pratique
+            System.err.println("Pause interrompue");
+        }
 
 //            t.setCursor(6, 12);
 //            t.setTextColor(Teletel.COLOR_CYAN);
