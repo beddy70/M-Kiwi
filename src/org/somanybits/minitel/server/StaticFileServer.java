@@ -20,47 +20,37 @@ import org.somanybits.minitel.VTML;
 import org.somanybits.minitel.kernel.Kernel;
 
 public class StaticFileServer {
-
+    
     public static final String PAGE_INDEX = "index." + VTML.VTML_EXTENSION;
-    public static final String VERSION = "0.2";
-
+    public static final String VERSION = "0.3";
+    
     private static HashMap<String, String> paramlist;
     private static LogManager logmgr;
-
+    
     public static void main(String[] args) throws Exception {
-
-//        if (args.length == 0) {
-//            System.err.println("Usage: java StaticFileServer <DOCUMENT_ROOT> [PORT]");
-//            System.exit(1);
-//        }
-//        Path docRoot = Paths.get(args[0]).toAbsolutePath().normalize();
-//        if (!Files.isDirectory(docRoot)) {
-//            System.err.println("Document root invalide: " + docRoot);
-//            System.exit(2);
-//        }
-        //int port = (args.length >= 2) ? Integer.parseInt(args[1]) : 8080;
-
+        
         Path docRoot = Paths.get(Kernel.getIntance().getConfig().path.root_path).toAbsolutePath().normalize();
         int port = Kernel.getIntance().getConfig().server.port;
-
+        
         logmgr = Kernel.getIntance().getLogManager();
-
+        logmgr.setPrefix("> ");
+        
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/", ex -> handleRequest(ex, docRoot));
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
-
+        
         logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "Minitel Page Server version " + VERSION);
         logmgr.addLog(LogManager.ANSI_WHITE + "Serving " + docRoot + " on http://localhost:" + port + "/");
-
+        
         Kernel.getIntance().getMModulesManager().loadAllMModulePlugins();
-
+        
     }
-
+    
     private static void handleRequest(HttpExchange ex, Path docRoot) throws IOException {
-
+        
         String method = ex.getRequestMethod();
-
+        
         if (!"GET".equals(method) && !"HEAD".equals(method)) {
             respondText(ex, 405, "Method Not Allowed");
             return;
@@ -71,17 +61,17 @@ public class StaticFileServer {
         String pathDec = URLDecoder.decode(rawPath, StandardCharsets.UTF_8);
         // Normaliser les séparateurs (évite backslashes sous Windows)
         pathDec = pathDec.replace('\\', '/');
-
+        
         System.out.println("rawPath " + rawPath);
         System.out.println("pathDec " + pathDec);
-
+        
         String query = ex.getRequestURI().getQuery();
-
+        
         if (query != null) {
             System.out.println("Data:" + query);
             paramlist = new HashMap<>();
             StringTokenizer params = new StringTokenizer(query, "&");
-
+            
             while (params.hasMoreTokens()) {
                 StringTokenizer param = new StringTokenizer(params.nextToken(), "=");
                 String pname = (String) param.nextElement();
@@ -90,32 +80,31 @@ public class StaticFileServer {
                     pvalue = param.nextToken();
                 }
                 paramlist.put(pname, pvalue);
-
+                
             }
 
 //            paramlist.entrySet().forEach(entry -> {
 //                System.out.println("name=" + entry.getKey() + " value=" + entry.getValue());
 //            });
         }
-
+        
         if ("mod".equals(rawPath.substring(rawPath.lastIndexOf(".") + 1))) {
 
-            System.out.println("load mmodule " + rawPath.substring(rawPath.lastIndexOf("/") + 1));
-
+            //System.out.println("load mmodule " + rawPath.substring(rawPath.lastIndexOf("/") + 1));
             MModulesManager mmodmgr = Kernel.getIntance().getMModulesManager();
-
-            String responsebody = mmodmgr.loadMModules(
-                    rawPath.substring(rawPath.lastIndexOf("/") + 1).substring(0, rawPath.lastIndexOf(".") - 1),
-                    ex,
-                    docRoot,
-                    paramlist
-            );
-
-            ex.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
-            ex.sendResponseHeaders(200, responsebody.length());
-
-            byte[] respBytes = responsebody.getBytes(StandardCharsets.UTF_8);
-
+            
+            String mmodname = rawPath.substring(rawPath.lastIndexOf("/") + 1).substring(0, rawPath.lastIndexOf(".") - 1);
+            String response = mmodmgr.loadMModules(mmodname, ex, docRoot, paramlist);
+            
+            if (response == null) {
+                response = "<minitel><div><row>MModule " + mmodname + " not found :(</row></div></minitel>";
+            }
+            
+            ex.getResponseHeaders().set("Content-Type", "text/plain; charset=" + Kernel.getIntance().getConfig().server.defaultCharset);
+            ex.sendResponseHeaders(200, response.length());
+            
+            byte[] respBytes = response.getBytes(StandardCharsets.UTF_8);
+            
             try (OutputStream os = ex.getResponseBody()) {
                 os.write(respBytes);
             } finally {
@@ -191,22 +180,22 @@ public class StaticFileServer {
         }
         return resolved;
     }
-
+    
     private static void respondText(HttpExchange ex, int code, String text) throws IOException {
         byte[] body = text.getBytes(StandardCharsets.UTF_8);
-        ex.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
+        ex.getResponseHeaders().set("Content-Type", "text/plain; charset=" + Kernel.getIntance().getConfig().server.defaultCharset);
         ex.sendResponseHeaders(code, body.length);
         try (OutputStream os = ex.getResponseBody()) {
             os.write(body);
         }
         ex.close();
     }
-
+    
     private static String guessContentTypeByExt(Path p) {
         String name = p.getFileName().toString().toLowerCase();
         int dot = name.lastIndexOf('.');
         String ext = (dot >= 0) ? name.substring(dot + 1) : "";
-
+        
         return switch (ext) {
             case "mod" ->
                 "text/plain; charset=utf-8";
@@ -232,8 +221,8 @@ public class StaticFileServer {
                 "text/plain; charset=utf-8";
             default ->
                 "application/octet-stream";
-
+            
         };
     }
-
+    
 }
