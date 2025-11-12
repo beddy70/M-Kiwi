@@ -16,7 +16,9 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
+import org.somanybits.log.LogManager;
 import org.somanybits.minitel.TeletelCode;
+import org.somanybits.minitel.kernel.Kernel;
 
 /**
  *
@@ -39,8 +41,6 @@ public class MinitelPageReader {
         this.port = port;
         this.domain = domain;
     }
-
-
 
     public Page get(String url) throws IOException {
 
@@ -92,39 +92,45 @@ public class MinitelPageReader {
 
         return page;
     }
-    
-        private void buildTreeTagInfo(String tagname, int depth, Map<String, String> attr, String value) {
 
-        TagInfo ti = new TagInfo(tagname, depth, attr, value);
-        System.err.println("tag=" + tagname + " depth=" + depth);
+    private void buildTreeTagInfo(String tagname, int depth, Map<String, String> attr, String value) {
 
-        if (ti.depth == MINITEL_TAG_DEPTH) {
-            if (roottag == null) {
-                roottag = ti;
+        try {
+            LogManager logmgr = Kernel.getIntance().getLogManager();
+
+            TagInfo ti = new TagInfo(tagname, depth, attr, value);
+            logmgr.addLog(LogManager.ANSI_BOLD_WHITE + depth + ">" + LogManager.ANSI_YELLOW + "\t".repeat(depth - 3) + "<" + tagname+">");
+
+            if (ti.depth == MINITEL_TAG_DEPTH) {
+                if (roottag == null) {
+                    roottag = ti;
+                    currenttag = ti;
+                } else {
+                    System.out.println("can't create no more Minitel page");
+                }
+            } else if (ti.depth == currenttag.depth + 1) {
+                ti.parent = currenttag;
+                currenttag.children.add(ti);
+                currenttag = ti;
+
+            } else if (ti.depth == currenttag.depth) {
+                currenttag = currenttag.parent;
+
+                ti.parent = currenttag;
+                currenttag.children.add(ti);
+                currenttag = ti;
+            } else if (ti.depth == (currenttag.depth - 1)) {
+                currenttag = currenttag.parent;
+                currenttag = currenttag.parent;
+
+                ti.parent = currenttag;
+                currenttag.children.add(ti);
                 currenttag = ti;
             } else {
-                System.out.println("can't create no more Minitel page");
+                System.out.println("Depth Error !!");
             }
-        } else if (ti.depth == currenttag.depth + 1) {
-            ti.parent = currenttag;
-            currenttag.children.add(ti);
-            currenttag = ti;
-
-        } else if (ti.depth == currenttag.depth) {
-            currenttag = currenttag.parent;
-
-            ti.parent = currenttag;
-            currenttag.children.add(ti);
-            currenttag = ti;
-        } else if (ti.depth == (currenttag.depth - 1)) {
-            currenttag = currenttag.parent;
-            currenttag = currenttag.parent;
-
-            ti.parent = currenttag;
-            currenttag.children.add(ti);
-            currenttag = ti;
-        } else {
-            System.out.println("Depth Error !!");
+        } catch (IOException ex) {
+            System.getLogger(MinitelPageReader.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
 
     }
@@ -192,9 +198,7 @@ public class MinitelPageReader {
         int y = ti.attr.get("top") != null ? Integer.parseInt(ti.attr.get("top")) : 0;
 
         System.out.println("x=" + x + " y=" + y);
-        
-        
-        
+
         for (int i = 0; i < ti.children.size(); i++) {
 
             TagInfo child = ti.children.get(i);

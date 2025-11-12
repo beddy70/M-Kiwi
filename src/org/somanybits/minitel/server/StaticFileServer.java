@@ -16,12 +16,12 @@ import java.util.HashMap;
 import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
 import org.somanybits.log.LogManager;
-import org.somanybits.minitel.VTML;
 import org.somanybits.minitel.kernel.Kernel;
+import org.somanybits.minitel.VTMLContants;
 
 public class StaticFileServer {
     
-    public static final String PAGE_INDEX = "index." + VTML.VTML_EXTENSION;
+    public static final String PAGE_INDEX = "index." + VTMLContants.VTML_EXTENSION;
     public static final String VERSION = "0.3";
     
     private static HashMap<String, String> paramlist;
