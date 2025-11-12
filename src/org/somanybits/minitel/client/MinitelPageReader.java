@@ -192,7 +192,9 @@ public class MinitelPageReader {
         int y = ti.attr.get("top") != null ? Integer.parseInt(ti.attr.get("top")) : 0;
 
         System.out.println("x=" + x + " y=" + y);
-
+        
+        
+        
         for (int i = 0; i < ti.children.size(); i++) {
 
             TagInfo child = ti.children.get(i);

@@ -63,9 +63,10 @@ public class MModulesManager {
             return module.getResponse();
 
         } catch (IOException | ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-            System.getLogger(StaticFileServer.class.getName()).log(System.Logger.Level.ERROR, (String) null, e);
+            //System.getLogger(StaticFileServer.class.getName()).log(System.Logger.Level.ERROR, (String) null, e);
+            
         }
-        return "";
+        return null;
     }
 
     public void loadAllMModulePlugins() throws IOException {
@@ -81,7 +82,7 @@ public class MModulesManager {
         for (File jar : jars) {
             logmgr.addLog(LogManager.ANSI_WHITE + "\t" + Arrays.toString(jars));
         }
-        logmgr.addLog(LogManager.ANSI_BOLD_YELLOW + "all mmodules loaded");
+        logmgr.addLog(LogManager.ANSI_BOLD_YELLOW + "All mmodules loaded");
         if (jars == null || jars.length == 0) {
             return;
         }

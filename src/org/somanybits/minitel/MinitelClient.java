@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import org.somanybits.log.LogManager;
 import org.somanybits.minitel.components.PageManager;
 import org.somanybits.minitel.events.CodeSequenceListener;
 import org.somanybits.minitel.events.CodeSequenceSentEvent;
@@ -17,6 +18,7 @@ import org.somanybits.minitel.events.KeyPressedEvent;
 import org.somanybits.minitel.events.KeyPressedListener;
 import org.somanybits.minitel.client.MinitelPageReader;
 import org.somanybits.minitel.client.Page;
+import org.somanybits.minitel.kernel.Kernel;
 
 /**
  *
@@ -24,40 +26,44 @@ import org.somanybits.minitel.client.Page;
  */
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
-  
-
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
     private static final String VERSION = "0.1";
+    private static LogManager logmgr;
 
     private Thread rxThread;
     private volatile boolean running = false;
 
     MinitelConnection mc;
     MinitelPageReader mtr;
+    
     Teletel t;
 
     public static void main(String[] args) throws Exception {
+
+        logmgr = Kernel.getIntance().getLogManager();
+        logmgr.setPrefix("> ");
+
         if (args.length == 0) {
-            System.err.println("Usage:  Minitel <DOCUMENT_ROOT> [PORT]");
+            logmgr.addLog("Usage:  Minitel <DOCUMENT_ROOT> [PORT]",LogManager.MSG_TYPE_ERROR);
             System.exit(1);
         }
         String server = args[0];
         int port = (args.length >= 2) ? Integer.parseInt(args[1]) : 8080;
 
-        System.out.println("Minitel Client  version" + VERSION);
-        System.out.println("Read " + server + ":" + port + "/");
+        logmgr.addLog(LogManager.ANSI_BOLD_GREEN+"Minitel Client  version" + VERSION);
+        logmgr.addLog(LogManager.ANSI_WHITE+"Connection to " + server + ":" + port + "/");
         new MinitelClient(server, port);
     }
     private Page currentpage;
 
     public MinitelClient(String server, int port) throws IOException, InterruptedException {
+        
         PageManager pmgr = PageManager.getInstance();
-
         mc = new MinitelConnection("/dev/serial0", MinitelConnection.BAUD_9600);
 
         mc.open();
 
-        BufferedImage buffImg = new BufferedImage(240, 240, BufferedImage.TYPE_INT_ARGB);
+       // BufferedImage buffImg = new BufferedImage(240, 240, BufferedImage.TYPE_INT_ARGB);
 
         //inti Events
         mc.addKeyPressedEvent(this);
