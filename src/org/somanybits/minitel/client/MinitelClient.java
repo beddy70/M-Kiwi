@@ -20,7 +20,9 @@ import org.somanybits.minitel.events.KeyPressedEvent;
 import org.somanybits.minitel.events.KeyPressedListener;
 import org.somanybits.minitel.client.MinitelPageReader;
 import org.somanybits.minitel.client.Page;
+import org.somanybits.minitel.components.GraphTel;
 import org.somanybits.minitel.kernel.Kernel;
+import tools.ImageTo1bpp;
 
 /**
  *
@@ -76,9 +78,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         t.setScreenMode(Teletel.MODE_VIDEOTEXT);
 
-//            GraphTel gt = new GraphTel(20, 15);
-//            gt.setCircle(10, 7, 7);
-//            gt.drawToPage(t, 10, 14);
+//        t.setBGColor(Teletel.COLOR_GREEN);
+//        t.setTextColor(Teletel.COLOR_WHITE);
+//        t.writeString(" ");
         t.setTextColor(Teletel.COLOR_RED);
         t.setCursor(0, 1);
         t.writeString("VTML 1.0");
@@ -94,19 +96,32 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.writeString("Initialisation ! Waiting please... ");
         t.setBlink(false);
 
+//        byte[] bitmap= {
+//            (byte)0b11111111, (byte)0b11111111,
+//            (byte)0b11000001, (byte)0b10000011,
+//            (byte)0b11111111, (byte)0b11111111,
+//            (byte)0b01111111, (byte)0b11111110,
+//            (byte)0b00100000, (byte)0b10000100,
+//            (byte)0b00010000, (byte)0b11111000
+//            
+//        };
+//        GraphTel gfx = new GraphTel(16, 6);
+//        gfx.writeBitmap(bitmap);
+        ImageTo1bpp img = new ImageTo1bpp("groupe.jpg", 80, 69);
+        
+        GraphTel gfx = new GraphTel(img.getWidth(), img.getHeight());
+        //gfx.setLine(0, 0, img.getWidth(), img.getHeight());
+        gfx.writeBitmap(img.getBitmap());
+        gfx.inverseBitmap();
+        gfx.drawToPage(t, 0, 1);
+
         try {
-            Thread.sleep(1000); // pause de 1000 millisecondes = 1 seconde
+            Thread.sleep(5000); // pause de 1000 millisecondes = 1 seconde
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // bonne pratique
             System.err.println("Pause interrompue");
         }
 
-//            t.setCursor(6, 12);
-//            t.setTextColor(Teletel.COLOR_CYAN);
-//            t.setBlink(true);
-//            t.writeString("Loading news");
-//            t.setBlink(false);
-//            t.setBGColor(Teletel.PAGE_WIDTH);
         mtr = new MinitelPageReader(server, port);
 
         currentpage = mtr.get("");
@@ -124,16 +139,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //            t.writeString("toto\r\n");
 //            t.writeString("titi\r\n");
         t.setEcho(false);
-        //t.setCursor(0, 1);
-//            t.writeString(frame.getString());
-//
-//            
-//            t.setCursor(6, 12);
-//            t.setblink(true);
-//            t.setTextColor(Teletel.COLOR_BLUE);
-//            t.writeString("HTML Loaded!");
+
         // Mode interactif: pipe stdin -> série, RX affiché en continu
-        System.out.println("Mode interactif: tape du texte (Ctrl-D pour quitter).");
+        System.out.println("Mode interactif: tape du texte (Ctrl-C pour quitter).");
         try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII))) {
             String line;
             while ((line = br.readLine()) != null) {

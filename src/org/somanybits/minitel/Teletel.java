@@ -106,6 +106,8 @@ public class Teletel {
             y = 0;
         }
         mterm.writeByte((byte) (0x1f));
+//        mterm.writeByte((byte) (0x1B));
+//        mterm.writeByte((byte) (0x59));
         mterm.writeByte((byte) (y + 0x40));
         mterm.writeByte((byte) (x + 0x40 + 1));
 
@@ -115,6 +117,17 @@ public class Teletel {
         mterm.writeByte((byte) (0x1e));
 
     }
+
+    public void moveCursorXY(int x, int y) throws IOException {  // Voir p.95
+        mterm.writeByte((byte) (0x1B));
+        mterm.writeByte((byte) (0x5B));
+        mterm.writeByteP(y);   // Pr : Voir section Private ci-dessous
+        mterm.writeByte((byte) (0x3B));
+        mterm.writeByteP(x);   // Pc : Voir section Private ci-dessous
+        mterm.writeByte((byte) (0x48));
+    }
+
+  
 
     public void clearLineZero() throws IOException {
         this.setCursor(0, 0);

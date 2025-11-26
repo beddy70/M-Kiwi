@@ -20,6 +20,7 @@ public class GraphTel implements PageMinitel {
 
     private boolean pen = true;
     private boolean screenGFX[];
+ 
     private byte screenColor[];
     private int widthScreen;
     private int heightScreen;
@@ -146,6 +147,55 @@ public class GraphTel implements PageMinitel {
         }
     }
 
+    public void writeBitmap(byte[] bitmap) {
+
+        if (bitmap.length < (widthScreen * heightScreen >> 3)) {
+//            throw new IllegalArgumentException("byte[] bitamp is too small (" + (widthScreen * heightScreen >> 3) + " should be good size).");
+        }
+
+//         System.out.println("w=" + widthScreen + " h=" + heightScreen);
+        for (int j = 0; j < heightScreen; j++) {
+//            String line = "";
+            for (int i = 0; i < widthScreen; i++) {
+
+                int index = ((j * ((widthScreen + 7) >> 3)) + (i >> 3));
+                //System.out.println(" i=" + i + " j=" + j + " index->" + index);
+
+                int bytemap = bitmap[index] & 0xFF;
+                int mask = ((0x80) >> ((i % 8))) & 0xFF;
+
+                if ((bytemap & mask) != 0) {
+                    setPixel(i, j);
+//                    line += "#";
+//                     System.out.println("\t\t0x" + String.format("%02X", bytemap) + " pixel=" + true + " mask=0x" + String.format("%02X", mask));
+
+                } else {
+//                   System.out.println("\t\t0x" + String.format("%02X", bytemap) + " pixel=" + false + " mask=0x" + String.format("%02X", mask));
+//                    line += "_";
+                }
+
+            }
+//            System.out.println(line);
+        }
+        debugAscii(bitmap, widthScreen, heightScreen);
+    }
+
+    private static void debugAscii(byte[] data, int width, int height) {
+        int bytesPerRow = (width + 7) / 8;
+        System.out.println("=== Aperçu ASCII ===");
+        for (int y = 0; y < height; y++) {
+            StringBuilder line = new StringBuilder();
+            for (int x = 0; x < width; x++) {
+                int byteIndex = y * bytesPerRow + (x / 8);
+                int bitIndex = 7 - (x % 8);
+                boolean black = ((data[byteIndex] >> bitIndex) & 1) != 0;
+                line.append(black ? '#' : '.');
+            }
+            System.out.println(line);
+        }
+        System.out.println("====================");
+    }
+
     public void setPixel(int x, int y) {
         if ((x < widthScreen && x >= 0) && (y < heightScreen && y >= 0)) {
             screenGFX[widthScreen * y + x] = pen;
@@ -196,6 +246,7 @@ public class GraphTel implements PageMinitel {
                 } else if (semigfx == 0) {
                     semigfx = 0x20;
                 }
+
                 data[car++] = (byte) semigfx;
                 //System.out.println(i + ":" + j + "-" + car);
             }
@@ -238,6 +289,9 @@ public class GraphTel implements PageMinitel {
         if (maxHeight > Teletel.PAGE_HEIGHT) {
             maxHeight = Teletel.PAGE_HEIGHT;
         }
+
+        System.out.println("PAGE_WIDTH=" + Teletel.PAGE_WIDTH + " PAGE_HEIGHT=" + Teletel.PAGE_HEIGHT + " maxWitdh=" + maxWitdh + " maxHeight=" + maxHeight);
+
         for (int j = posy; j < maxHeight; j++) {
             t.setCursor(posx, j);
             t.setMode(Teletel.MODE_SEMI_GRAPH);
@@ -255,6 +309,13 @@ public class GraphTel implements PageMinitel {
     @Override
     public int getNumberLine() {
         return (int) Math.ceil(heightScreen / 3);
+    }
+
+    public void inverseBitmap() {
+        for (int i = 0; i < screenGFX.length; i++) {
+            screenGFX[i]=!screenGFX[i];
+            
+        }
     }
 
 }

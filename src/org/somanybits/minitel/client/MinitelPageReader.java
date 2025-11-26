@@ -99,7 +99,7 @@ public class MinitelPageReader {
             LogManager logmgr = Kernel.getIntance().getLogManager();
 
             TagInfo ti = new TagInfo(tagname, depth, attr, value);
-            logmgr.addLog(LogManager.ANSI_BOLD_WHITE + depth + ">" + LogManager.ANSI_YELLOW + "\t".repeat(depth - 3) + "<" + tagname+">");
+            logmgr.addLog(LogManager.ANSI_BOLD_WHITE + depth + ">" + LogManager.ANSI_YELLOW + "  ".repeat(depth - 3) + "<" + tagname+">");
 
             if (ti.depth == MINITEL_TAG_DEPTH) {
                 if (roottag == null) {

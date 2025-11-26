@@ -101,6 +101,16 @@ public class MinitelConnection implements Closeable {
         out.flush();
     }
 
+    void writeByteP(int n) throws IOException {
+        // Pn, Pr, Pc : Voir remarques p.95 et 96
+        if (n <= 9) {
+            writeByte((byte) (0x30 + n));
+        } else {
+            writeByte((byte) (0x30 + n / 10));
+            writeByte((byte) (0x30 + n % 10));
+        }
+    }
+
     public void writeText(String s) throws IOException {
         writeBytes(s.getBytes(StandardCharsets.US_ASCII)); // 7-bit friendly
     }
@@ -260,4 +270,5 @@ public class MinitelConnection implements Closeable {
             this.listcodesequencelistener.get(i).SequenceSent(event);
         }
     }
+
 }
