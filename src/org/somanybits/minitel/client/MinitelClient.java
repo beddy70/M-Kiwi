@@ -5,7 +5,6 @@
 package org.somanybits.minitel.client;
 
 //import jssc.SerialPortException;
-import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,64 +17,61 @@ import org.somanybits.minitel.events.CodeSequenceListener;
 import org.somanybits.minitel.events.CodeSequenceSentEvent;
 import org.somanybits.minitel.events.KeyPressedEvent;
 import org.somanybits.minitel.events.KeyPressedListener;
-import org.somanybits.minitel.client.MinitelPageReader;
-import org.somanybits.minitel.client.Page;
 import org.somanybits.minitel.components.GraphTel;
 import org.somanybits.minitel.kernel.Kernel;
-import tools.ImageTo1bpp;
 
 /**
  *
  * @author eddy
  */
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
-
+    
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
     private static final String VERSION = "0.1";
     private static LogManager logmgr;
-
+    
     private Thread rxThread;
     private volatile boolean running = false;
-
+    
     MinitelConnection mc;
     MinitelPageReader mtr;
-
+    
     Teletel t;
-
+    
     public static void main(String[] args) throws Exception {
-
+        
         logmgr = Kernel.getIntance().getLogManager();
         logmgr.setPrefix("> ");
-
+        
         if (args.length == 0) {
             logmgr.addLog("Usage:  Minitel <DOCUMENT_ROOT> [PORT]", LogManager.MSG_TYPE_ERROR);
             System.exit(1);
         }
         String server = args[0];
         int port = (args.length >= 2) ? Integer.parseInt(args[1]) : 8080;
-
+        
         logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "Minitel Client  version" + VERSION);
         logmgr.addLog(LogManager.ANSI_WHITE + "Connection to " + server + ":" + port + "/");
         new MinitelClient(server, port);
     }
     private Page currentpage;
-
+    
     public MinitelClient(String server, int port) throws IOException, InterruptedException {
-
+        
         PageManager pmgr = PageManager.getInstance();
         mc = new MinitelConnection("/dev/serial0", MinitelConnection.BAUD_9600);
-
+        
         mc.open();
 
         // BufferedImage buffImg = new BufferedImage(240, 240, BufferedImage.TYPE_INT_ARGB);
         //inti Events
         mc.addKeyPressedEvent(this);
         mc.addCodeSequenceEvent(this);
-
+        
         t = new Teletel(mc);
         t.clear();
         t.clearLineZero();
-
+        
         t.setScreenMode(Teletel.MODE_VIDEOTEXT);
 
 //        t.setBGColor(Teletel.COLOR_GREEN);
@@ -107,23 +103,33 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //        };
 //        GraphTel gfx = new GraphTel(16, 6);
 //        gfx.writeBitmap(bitmap);
-        ImageTo1bpp img = new ImageTo1bpp("images_src/groupe.jpg", 80, 69);
+//        ImageTo1bpp img = new ImageTo1bpp("images_src/groupe.jpg", 80, 69);
+//        
+//        GraphTel gfx = new GraphTel(img.getWidth(), img.getHeight());
+//        //gfx.setLine(0, 0, img.getWidth(), img.getHeight());
+//        gfx.writeBitmap(img.getBitmap());
+//        gfx.inverseBitmap();
+//        gfx.drawToPage(t, 0, 1);
+        // Créer GraphTel avec résolution optimale pour QR Code
+        // 80x72 = résolution semi-graphique Minitel (40x24 caractères * 2x3 pixels)
+        // Ligne 25 souvent réservée au curseur
+        GraphTel qrgfx = new GraphTel(29, 29);
+        //qrgfx.generateCenteredVisualQR("MINITEL 2024", 3);
+        // Utiliser ZXing pour un QR Code VRAIMENT SCANNABLE !
+        // Si ZXing échoue, fallback automatique vers version améliorée
+        qrgfx.generateCenteredScannableQR("https://eddy-briere.com", 1);
+        qrgfx.inverseBitmap();
+        qrgfx.drawToPage(t, 0, 1);
         
-        GraphTel gfx = new GraphTel(img.getWidth(), img.getHeight());
-        //gfx.setLine(0, 0, img.getWidth(), img.getHeight());
-        gfx.writeBitmap(img.getBitmap());
-        gfx.inverseBitmap();
-        gfx.drawToPage(t, 0, 1);
-
         try {
-            Thread.sleep(5000); // pause de 1000 millisecondes = 1 seconde
+            Thread.sleep(15000); // pause de 1000 millisecondes = 1 seconde
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // bonne pratique
             System.err.println("Pause interrompue");
         }
-
+        
         mtr = new MinitelPageReader(server, port);
-
+        
         currentpage = mtr.get("");
         mc.writeBytes(currentpage.getData());
 
@@ -160,14 +166,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //                    + "- Sur Raspberry Pi: privilégie le PL011 (ttyAMA0) via dtoverlay=disable-bt.");
 //        }
     }
-
+    
     @Override
     public void keyPressed(KeyPressedEvent event) {
-
+        
         String keyvalue = null;
-
+        
         System.out.println("event keypressed=" + event.getKeyCode() + " type=" + event.getType());
-
+        
         switch (event.getType()) {
             case KeyPressedEvent.TYPE_KEY_MENU_EVENT:
                 switch (event.getKeyCode()) {
@@ -207,7 +213,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 break;
             case KeyPressedEvent.TYPE_KEY_CHAR_EVENT:
                 keyvalue = event.getKeyCode() + "";
-
+                
                 char car = (char) event.getKeyCode();
                 if (currentpage != null) {
                     if (currentpage.getLink("" + car) != null) {
@@ -218,12 +224,12 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                         } catch (IOException ex) {
                             System.getLogger(MinitelClient.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
                         }
-
+                        
                     }
                 }
-
+                
                 break;
-
+            
             case KeyPressedEvent.TYPE_KEY_DIRECTION_EVENT:
                 switch (event.getKeyCode()) {
                     case KeyPressedEvent.KEY_UP:
@@ -243,14 +249,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             default:
                 keyvalue = "Key (" + event.getKeyCode() + ") unkwon !!!";
         }
-
+        
         System.out.println(">" + keyvalue);
     }
-
+    
     @Override
     public void SequenceSent(CodeSequenceSentEvent event) {
         byte[] sequence = event.getSequenceCode();
-
+        
         switch (sequence.length) {
             case 2:
                 int seq16 = (int) (sequence[0] << 8 | sequence[1]);
@@ -264,9 +270,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 }
                 break;
             default:
-
+                
                 System.out.println("#" + MinitelConnection.toHex(event.getSequenceCode()));
         }
     }
-
+    
 }

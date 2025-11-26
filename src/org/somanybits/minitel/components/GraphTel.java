@@ -361,6 +361,8 @@ public class GraphTel implements PageMinitel {
      */
     private void drawQRMatrix(boolean[][] qrMatrix, int startX, int startY, int scale) {
         int qrSize = qrMatrix.length;
+        int pixelsDrawn = 0;
+        int pixelsSkipped = 0;
         
         // Sauvegarder l'état du pen
         boolean originalPen = pen;
@@ -374,8 +376,18 @@ public class GraphTel implements PageMinitel {
                 for (int sy = 0; sy < scale; sy++) {
                     for (int sx = 0; sx < scale; sx++) {
                         int pixelX = startX + (qrX * scale) + sx;
-                        int pixelY = startY + (qrY * scale) + sy;
-                        setPixel(pixelX, pixelY);
+                        int pixelY = startY + (qrY * scale) + sy; 
+                        
+                        // Vérifier si le pixel est dans les limites
+                        if (pixelX >= 0 && pixelX < widthScreen && pixelY >= 0 && pixelY < heightScreen) {
+                            setPixel(pixelX, pixelY);
+                            pixelsDrawn++;
+                        } else {
+                            pixelsSkipped++;
+                            if (pixelsSkipped <= 5) { // Limiter les messages
+                                System.out.println("⚠️  Pixel hors limites: (" + pixelX + ", " + pixelY + ")");
+                            }
+                        }
                     }
                 }
             }
@@ -383,6 +395,12 @@ public class GraphTel implements PageMinitel {
         
         // Restaurer l'état du pen
         setPen(originalPen);
+        
+        // Rapport de debug
+        System.out.println("📊 Pixels dessinés: " + pixelsDrawn + ", ignorés: " + pixelsSkipped);
+        if (pixelsSkipped > 0) {
+            System.out.println("❌ ATTENTION: " + pixelsSkipped + " pixels perdus (QR Code tronqué)");
+        }
     }
     
     /**
@@ -404,6 +422,114 @@ public class GraphTel implements PageMinitel {
         drawQRMatrix(qrMatrix, centerX, centerY, scale);
         
         System.out.println("QR Code centré généré pour: \"" + text + "\" (taille: " + scaledSize + "x" + scaledSize + ")");
+    }
+    
+    /**
+     * Génère un motif visuel centré représentant un QR Code
+     * Plus présentable que le QR Code technique
+     * @param text Texte à représenter
+     * @param scale Facteur d'échelle
+     */
+    public void generateCenteredVisualQR(String text, int scale) {
+        QRCodeGenerator qrGen = new QRCodeGenerator(1);
+        boolean[][] qrMatrix = qrGen.generateVisualPattern(text);
+        
+        int qrSize = qrMatrix.length;
+        int scaledSize = qrSize * scale;
+        
+        // Calculer la position pour centrer
+        int centerX = (widthScreen - scaledSize) / 2;
+        int centerY = (heightScreen - scaledSize) / 2;
+        
+        drawQRMatrix(qrMatrix, centerX, centerY, scale);
+        
+        System.out.println("Motif visuel QR centré pour: \"" + text + "\" (taille: " + scaledSize + "x" + scaledSize + ")");
+    }
+    
+    /**
+     * Génère un QR Code amélioré (plus proche du standard, SANS ZXing)
+     * Meilleure chance d'être scannable que la version basique
+     * @param text Texte à encoder
+     * @param scale Facteur d'échelle
+     */
+    public void generateCenteredImprovedQR(String text, int scale) {
+        SimpleScannableQR improvedGen = new SimpleScannableQR();
+        boolean[][] qrMatrix = improvedGen.generateImprovedQR(text);
+        
+        int qrSize = qrMatrix.length;
+        int scaledSize = qrSize * scale;
+        
+        // DEBUG: Vérifier les dimensions
+        System.out.println("🔍 DEBUG GraphTel:");
+        System.out.println("   Screen: " + widthScreen + "x" + heightScreen + " pixels");
+        System.out.println("   QR brut: " + qrSize + "x" + qrSize + " modules");
+        System.out.println("   QR scalé: " + scaledSize + "x" + scaledSize + " pixels");
+        
+        // Vérifier si le QR Code rentre dans l'écran
+        if (scaledSize > widthScreen || scaledSize > heightScreen) {
+            System.out.println("⚠️  ATTENTION: QR Code trop grand pour l'écran !");
+            System.out.println("   Réduisez l'échelle ou augmentez la résolution GraphTel");
+            
+            // Calculer l'échelle maximale
+            int maxScale = Math.min(widthScreen / qrSize, heightScreen / qrSize);
+            System.out.println("   Échelle max recommandée: " + maxScale);
+            
+            if (maxScale > 0) {
+                scale = maxScale;
+                scaledSize = qrSize * scale;
+                System.out.println("   🔧 Auto-ajustement à l'échelle " + scale);
+            }
+        }
+        
+        // Calculer la position pour centrer
+        int centerX = (widthScreen - scaledSize) / 2;
+        int centerY = (heightScreen - scaledSize) / 2;
+        
+        System.out.println("   Position: (" + centerX + ", " + centerY + ")");
+        System.out.println("   Zone QR: (" + centerX + ", " + centerY + ") à (" + (centerX + scaledSize - 1) + ", " + (centerY + scaledSize - 1) + ")");
+        
+        drawQRMatrix(qrMatrix, centerX, centerY, scale);
+        
+        System.out.println("✅ QR Code AMÉLIORÉ centré pour: \"" + text + "\" (taille: " + scaledSize + "x" + scaledSize + ")");
+    }
+    
+    /**
+     * Génère un QR Code SCANNABLE centré avec ZXing
+     * Compatible avec les smartphones (iPhone, Android)
+     * @param text Texte à encoder
+     * @param scale Facteur d'échelle
+     */
+    public void generateCenteredScannableQR(String text, int scale) {
+        try {
+            ScannableQRGenerator scannableGen = new ScannableQRGenerator();
+            boolean[][] qrMatrix = scannableGen.generateScannableQR(text, 21); // Version 1
+            
+            int qrSize = qrMatrix.length;
+            int scaledSize = qrSize * scale;
+            
+            // DEBUG: Vérifier les dimensions
+            System.out.println("🔍 DEBUG ZXing QR:");
+            System.out.println("   Screen: " + widthScreen + "x" + heightScreen + " pixels");
+            System.out.println("   QR ZXing: " + qrSize + "x" + qrSize + " modules");
+            System.out.println("   QR scalé: " + scaledSize + "x" + scaledSize + " pixels");
+            
+            // Calculer la position pour centrer
+            int centerX = (widthScreen - scaledSize) / 2;
+            int centerY = (heightScreen - scaledSize) / 2;
+            
+            System.out.println("   Position: (" + centerX + ", " + centerY + ")");
+            System.out.println("   Zone QR: (" + centerX + ", " + centerY + ") à (" + (centerX + scaledSize - 1) + ", " + (centerY + scaledSize - 1) + ")");
+            
+            drawQRMatrix(qrMatrix, centerX, centerY, scale);
+            
+            System.out.println("✅ QR Code ZXing SCANNABLE pour: \"" + text + "\" (taille: " + scaledSize + "x" + scaledSize + ")");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Erreur QR ZXing, fallback vers amélioré: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback vers la version améliorée
+            generateCenteredImprovedQR(text, scale);
+        }
     }
 
 }

@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 public class TeletelCode {
 
-    static public final byte PAGE_WIDTH      = 40;
+    static public final byte PAGE_WIDTH       = 40;
     static public final byte PAGE_HEIGHT     = 24;
 
     static public final byte COLOR_BLACK     = 0x00;

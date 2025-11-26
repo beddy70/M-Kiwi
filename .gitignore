@@ -1,2 +1,10 @@
 /build/
 /dist/
+
+# Fichiers compilés Java
+*.class
+src/**/*.class
+
+# Fichiers temporaires
+*.tmp
+*.temp

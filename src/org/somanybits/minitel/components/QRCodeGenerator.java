@@ -20,7 +20,7 @@ public class QRCodeGenerator {
     public static final int QR_VERSION_2 = 25; // 25x25 modules  
     public static final int QR_VERSION_3 = 29; // 29x29 modules
     
-    // Patterns de positionnement (7x7)
+    // Patterns de positionnement (7x7) - Standard QR Code correct
     private static final boolean[][] FINDER_PATTERN = {
         {true,  true,  true,  true,  true,  true,  true},
         {true,  false, false, false, false, false, true},
@@ -54,15 +54,20 @@ public class QRCodeGenerator {
     
     /**
      * Génère un QR Code simple avec le texte donné
+     * ATTENTION: Version simplifiée pour démonstration Minitel
+     * Ne respecte pas entièrement le standard QR Code
      * @param text Texte à encoder
      * @return Matrice de pixels (true = noir, false = blanc)
      */
     public boolean[][] generateQRCode(String text) {
+        System.out.println("⚠️  ATTENTION: QR Code simplifié - non conforme au standard ISO/IEC 18004");
+        System.out.println("   Utilisé uniquement pour démonstration visuelle sur Minitel");
+        
         // Réinitialiser
         clearModules();
         initializeFixedPatterns();
         
-        // Encoder le texte (version simplifiée)
+        // Encoder le texte (version très simplifiée)
         encodeText(text);
         
         // Appliquer un masque simple
@@ -91,6 +96,33 @@ public class QRCodeGenerator {
         return modules;
     }
     
+    /**
+     * Génère un motif visuel représentant un QR Code
+     * Plus lisible qu'un vrai QR Code pour démonstration
+     * @param text Texte à représenter visuellement
+     * @return Matrice avec motif visuel
+     */
+    public boolean[][] generateVisualPattern(String text) {
+        clearModules();
+        initializeFixedPatterns();
+        
+        // Créer un motif basé sur le hash du texte
+        int hash = text.hashCode();
+        
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                if (!reserved[y][x]) {
+                    // Motif pseudo-aléatoire basé sur le texte
+                    int seed = (x * 31 + y * 17 + hash) % 256;
+                    modules[y][x] = (seed % 3 == 0); // ~33% de pixels noirs
+                }
+            }
+        }
+        
+        System.out.println("Motif visuel généré pour: \"" + text + "\" (hash: " + hash + ")");
+        return modules;
+    }
+    
     private void clearModules() {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
@@ -109,17 +141,27 @@ public class QRCodeGenerator {
         // Timing patterns (lignes de synchronisation)
         placeTimingPatterns();
         
+        // Module noir obligatoire (Dark Module)
+        placeDarkModule();
+        
         // Format information (version simplifiée)
         placeFormatInfo();
     }
     
     private void placeFinderPattern(int x, int y) {
         // Placer le finder pattern 7x7
+        // CORRECTION: Ne pas tronquer les patterns aux bords !
         for (int dy = 0; dy < 7; dy++) {
             for (int dx = 0; dx < 7; dx++) {
-                if (x + dx < size && y + dy < size) {
-                    modules[y + dy][x + dx] = FINDER_PATTERN[dy][dx];
-                    reserved[y + dy][x + dx] = true;
+                int px = x + dx;
+                int py = y + dy;
+                // Vérification correcte : les finder patterns DOIVENT être complets
+                if (px >= 0 && px < size && py >= 0 && py < size) {
+                    modules[py][px] = FINDER_PATTERN[dy][dx];
+                    reserved[py][px] = true;
+                } else {
+                    // DEBUG: Signaler si un finder pattern est tronqué (ne devrait jamais arriver)
+                    System.err.println("❌ ERREUR: Finder pattern tronqué à (" + px + ", " + py + ") - Taille QR incorrecte!");
                 }
             }
         }
@@ -140,16 +182,29 @@ public class QRCodeGenerator {
     }
     
     private void placeTimingPatterns() {
-        // Ligne horizontale (y=6)
+        // Ligne horizontale (y=6) - Pattern alterné noir/blanc
         for (int x = 8; x < size - 8; x++) {
-            modules[6][x] = (x % 2 == 0);
+            modules[6][x] = ((x - 8) % 2 == 0); // Commence par noir
             reserved[6][x] = true;
         }
         
-        // Ligne verticale (x=6)  
+        // Ligne verticale (x=6) - Pattern alterné noir/blanc
         for (int y = 8; y < size - 8; y++) {
-            modules[y][6] = (y % 2 == 0);
+            modules[y][6] = ((y - 8) % 2 == 0); // Commence par noir
             reserved[y][6] = true;
+        }
+    }
+    
+    private void placeDarkModule() {
+        // Module noir obligatoire pour QR Code Version 1
+        // Position: (4 * version + 9, 8) = (13, 8) pour version 1
+        if (size == QR_VERSION_1) {
+            int darkX = 8;
+            int darkY = 4 * 1 + 9; // 4 * version + 9 = 13
+            if (darkY < size && darkX < size) {
+                modules[darkY][darkX] = true;
+                reserved[darkY][darkX] = true;
+            }
         }
     }
     
@@ -226,11 +281,14 @@ public class QRCodeGenerator {
     }
     
     private void applyMask() {
-        // Masque simple : pattern 0 = (i + j) % 2 == 0
+        // Masque QR Code Pattern 0 : (i + j) % 2 == 0
+        // Applique le masque seulement sur les modules de données (non réservés)
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                if (!reserved[y][x] && (x + y) % 2 == 0) {
-                    modules[y][x] = !modules[y][x];
+                if (!reserved[y][x]) {
+                    if ((x + y) % 2 == 0) {
+                        modules[y][x] = !modules[y][x];
+                    }
                 }
             }
         }
