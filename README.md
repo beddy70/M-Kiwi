@@ -248,6 +248,7 @@ String niveau = params.get("niveau");            // "admin"
 ### Exemples de MModules
 
 - **`ServerStatus.mod`** : Informations système
+- **`QRCodeDemo.mod`** : Générateur de QR codes interactif
 - **`Meteo.mod`** : Données météorologiques via API
 - **`News.mod`** : Flux RSS adapté pour Minitel
 - **`Chat.mod`** : Système de messagerie simple
@@ -255,13 +256,14 @@ String niveau = params.get("niveau");            // "admin"
 
 ## 🎨 Composants Graphiques
 
-### GraphTel - Affichage Bitmap
+### GraphTel - Affichage Bitmap et QR Codes
 
-Le système **GraphTel** permet d'afficher des images bitmap sur Minitel :
+Le système **GraphTel** permet d'afficher des images bitmap et de générer des QR codes sur Minitel :
 
+#### **Affichage d'Images**
 ```java
 // Conversion d'image en bitmap 1bpp
-ImageTo1bpp img = new ImageTo1bpp("photo.jpg", 80, 69);
+ImageTo1bpp img = new ImageTo1bpp("images_src/photo.jpg", 80, 69);
 
 // Création du composant graphique
 GraphTel gfx = new GraphTel(img.getWidth(), img.getHeight());
@@ -269,6 +271,30 @@ gfx.writeBitmap(img.getBitmap());
 gfx.inverseBitmap();  // Inversion noir/blanc si nécessaire
 gfx.drawToPage(teletel, 0, 1);  // Affichage à la position (0,1)
 ```
+
+#### **Génération de QR Codes**
+```java
+// Créer un GraphTel avec résolution 80x75 (semi-graphique)
+GraphTel gfx = new GraphTel(80, 75);
+
+// Générer un QR Code centré
+gfx.generateCenteredQRCode("MINITEL 2024", 2);  // Échelle 2x
+
+// Ou positionner manuellement
+gfx.generateQRCode("Hello World", 10, 10, 3);  // Position (10,10), échelle 3x
+
+// QR Code de test
+gfx.generateTestQRCode(0, 0, 1);  // Motif de démonstration
+
+// Afficher sur Minitel
+gfx.drawToPage(teletel, 0, 1);
+```
+
+**Caractéristiques QR Code :**
+- **Résolution** : 80×75 pixels en semi-graphique
+- **Versions supportées** : QR Code Version 1 (21×21 modules)
+- **Facteurs d'échelle** : 1x à 4x (recommandé : 2x ou 3x)
+- **Encodage** : Texte simple, URLs, données courtes
 
 ### Composants de Mise en Page
 

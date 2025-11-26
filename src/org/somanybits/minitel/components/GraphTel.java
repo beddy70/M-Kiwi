@@ -318,4 +318,92 @@ public class GraphTel implements PageMinitel {
         }
     }
 
+    /**
+     * Génère un QR Code et l'affiche dans le bitmap GraphTel
+     * @param text Texte à encoder dans le QR Code
+     * @param x Position X du QR Code dans le bitmap
+     * @param y Position Y du QR Code dans le bitmap
+     * @param scale Facteur d'échelle (1 = 1 pixel par module, 2 = 2x2 pixels par module, etc.)
+     */
+    public void generateQRCode(String text, int x, int y, int scale) {
+        QRCodeGenerator qrGen = new QRCodeGenerator(1); // Version 1 (21x21)
+        boolean[][] qrMatrix = qrGen.generateQRCode(text);
+        
+        drawQRMatrix(qrMatrix, x, y, scale);
+        
+        // Debug: afficher le QR Code en console
+        System.out.println("QR Code généré pour: \"" + text + "\"");
+        qrGen.printQRCode(qrMatrix);
+    }
+    
+    /**
+     * Génère un QR Code de test avec motif de démonstration
+     * @param x Position X du QR Code dans le bitmap
+     * @param y Position Y du QR Code dans le bitmap  
+     * @param scale Facteur d'échelle
+     */
+    public void generateTestQRCode(int x, int y, int scale) {
+        QRCodeGenerator qrGen = new QRCodeGenerator(1);
+        boolean[][] qrMatrix = qrGen.generateTestPattern();
+        
+        drawQRMatrix(qrMatrix, x, y, scale);
+        
+        System.out.println("QR Code de test généré");
+        qrGen.printQRCode(qrMatrix);
+    }
+    
+    /**
+     * Dessine une matrice QR Code dans le bitmap GraphTel
+     * @param qrMatrix Matrice du QR Code (true = noir, false = blanc)
+     * @param startX Position X de départ
+     * @param startY Position Y de départ
+     * @param scale Facteur d'échelle
+     */
+    private void drawQRMatrix(boolean[][] qrMatrix, int startX, int startY, int scale) {
+        int qrSize = qrMatrix.length;
+        
+        // Sauvegarder l'état du pen
+        boolean originalPen = pen;
+        
+        for (int qrY = 0; qrY < qrSize; qrY++) {
+            for (int qrX = 0; qrX < qrSize; qrX++) {
+                // Définir la couleur du pixel
+                setPen(qrMatrix[qrY][qrX]);
+                
+                // Dessiner le module avec le facteur d'échelle
+                for (int sy = 0; sy < scale; sy++) {
+                    for (int sx = 0; sx < scale; sx++) {
+                        int pixelX = startX + (qrX * scale) + sx;
+                        int pixelY = startY + (qrY * scale) + sy;
+                        setPixel(pixelX, pixelY);
+                    }
+                }
+            }
+        }
+        
+        // Restaurer l'état du pen
+        setPen(originalPen);
+    }
+    
+    /**
+     * Génère un QR Code centré dans le bitmap
+     * @param text Texte à encoder
+     * @param scale Facteur d'échelle
+     */
+    public void generateCenteredQRCode(String text, int scale) {
+        QRCodeGenerator qrGen = new QRCodeGenerator(1);
+        boolean[][] qrMatrix = qrGen.generateQRCode(text);
+        
+        int qrSize = qrMatrix.length;
+        int scaledSize = qrSize * scale;
+        
+        // Calculer la position pour centrer le QR Code
+        int centerX = (widthScreen - scaledSize) / 2;
+        int centerY = (heightScreen - scaledSize) / 2;
+        
+        drawQRMatrix(qrMatrix, centerX, centerY, scale);
+        
+        System.out.println("QR Code centré généré pour: \"" + text + "\" (taille: " + scaledSize + "x" + scaledSize + ")");
+    }
+
 }

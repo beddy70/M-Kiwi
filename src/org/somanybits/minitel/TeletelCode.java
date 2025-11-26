@@ -14,24 +14,24 @@ import java.io.IOException;
  */
 public class TeletelCode {
 
-    static public final byte PAGE_WIDTH = 40;
-    static public final byte PAGE_HEIGHT = 24;
+    static public final byte PAGE_WIDTH      = 40;
+    static public final byte PAGE_HEIGHT     = 24;
 
-    static public final byte COLOR_BLACK = 0x00;
-    static public final byte COLOR_RED = 0x01;
-    static public final byte COLOR_GREEN = 0x02;
-    static public final byte COLOR_YELLOW = 0x03;
-    static public final byte COLOR_BLUE = 0x04;
-    static public final byte COLOR_MAGENTA = 0x05;
-    static public final byte COLOR_CYAN = 0x06;
-    static public final byte COLOR_WHITE = 0x07;
+    static public final byte COLOR_BLACK     = 0x00;
+    static public final byte COLOR_RED       = 0x01;
+    static public final byte COLOR_GREEN     = 0x02;
+    static public final byte COLOR_YELLOW    = 0x03;
+    static public final byte COLOR_BLUE      = 0x04;
+    static public final byte COLOR_MAGENTA   = 0x05;
+    static public final byte COLOR_CYAN      = 0x06;
+    static public final byte COLOR_WHITE     = 0x07;
 
-    static public final byte MODE_TEXT = 0x01;
+    static public final byte MODE_TEXT       = 0x01;
     static public final byte MODE_SEMI_GRAPH = 0x00;
 
     static public final byte MODE_VIDEOTEXT = 0x00;
-    static public final byte MODE_MIXTE = 0x01;
-    static public final byte MODE_STANDARD = 0x02;
+    static public final byte MODE_MIXTE     = 0x01;
+    static public final byte MODE_STANDARD  = 0x02;
     private int screenmode = MODE_VIDEOTEXT;
 
     ByteArrayOutputStream buf = new ByteArrayOutputStream(1024);
