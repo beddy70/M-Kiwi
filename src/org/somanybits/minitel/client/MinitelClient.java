@@ -18,6 +18,8 @@ import org.somanybits.minitel.events.CodeSequenceSentEvent;
 import org.somanybits.minitel.events.KeyPressedEvent;
 import org.somanybits.minitel.events.KeyPressedListener;
 import org.somanybits.minitel.components.GraphTel;
+import org.somanybits.minitel.components.qrcode.ScannableQRGenerator;
+import org.somanybits.minitel.components.qrcode.WiFiQRGenerator;
 import org.somanybits.minitel.kernel.Kernel;
 
 /**
@@ -110,16 +112,24 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //        gfx.writeBitmap(img.getBitmap());
 //        gfx.inverseBitmap();
 //        gfx.drawToPage(t, 0, 1);
-        // Créer GraphTel avec résolution optimale pour QR Code
-        // 80x72 = résolution semi-graphique Minitel (40x24 caractères * 2x3 pixels)
-        // Ligne 25 souvent réservée au curseur
-        GraphTel qrgfx = new GraphTel(29, 29);
-        //qrgfx.generateCenteredVisualQR("MINITEL 2024", 3);
-        // Utiliser ZXing pour un QR Code VRAIMENT SCANNABLE !
-        // Si ZXing échoue, fallback automatique vers version améliorée
-        qrgfx.generateCenteredScannableQR("https://eddy-briere.com", 1);
-        qrgfx.inverseBitmap();
-        qrgfx.drawToPage(t, 0, 1);
+        // QR CODE ZXING UNIQUEMENT - 100% SCANNABLE
+        // Générer la chaîne WiFi
+        String wifiString = WiFiQRGenerator.generateWPAWiFi("Labo Game", "Girafe1970");
+        System.out.println("📶 Chaîne WiFi: " + wifiString);
+        
+        // Utiliser ZXing pour générer un QR Code scannable
+        ScannableQRGenerator scannableGen = new ScannableQRGenerator();
+        boolean[][] qrMatrix = scannableGen.generateScannableQR(wifiString, 21);
+        
+        // Convertir en bitmap 1D pour GraphTel (méthode utilitaire)
+        boolean[] bitmap1D = ScannableQRGenerator.matrixTo1D(qrMatrix);
+        
+        GraphTel gfx = new GraphTel(qrMatrix.length, qrMatrix.length);
+        gfx.writeBitmap(bitmap1D);
+        gfx.inverseBitmap();
+        gfx.drawToPage(t, 0, 1);
+        
+        System.out.println("✅ QR Code ZXing généré (100% scannable)");
         
         try {
             Thread.sleep(15000); // pause de 1000 millisecondes = 1 seconde

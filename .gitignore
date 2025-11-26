@@ -1,9 +1,10 @@
 /build/
 /dist/
 
-# Fichiers compilés Java
+# Fichiers compilés Java - INTERDITS dans src/
 *.class
 src/**/*.class
+**/src/**/*.class
 
 # Fichiers temporaires
 *.tmp

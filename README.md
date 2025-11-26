@@ -249,6 +249,7 @@ String niveau = params.get("niveau");            // "admin"
 
 - **`ServerStatus.mod`** : Informations système
 - **`QRCodeDemo.mod`** : Générateur de QR codes interactif
+- **`WiFiQRDemo.mod`** : Génération de QR Codes WiFi pour connexion automatique
 - **`Meteo.mod`** : Données météorologiques via API
 - **`News.mod`** : Flux RSS adapté pour Minitel
 - **`Chat.mod`** : Système de messagerie simple
@@ -274,20 +275,21 @@ gfx.drawToPage(teletel, 0, 1);  // Affichage à la position (0,1)
 
 #### **Génération de QR Codes**
 ```java
-// Créer un GraphTel avec résolution 80x75 (semi-graphique)
-GraphTel gfx = new GraphTel(80, 75);
+// Génération de QR Code centré avec échelle 2
+graphtel.generateCenteredQRCode("https://example.com", 2);
 
-// Générer un QR Code centré
-gfx.generateCenteredQRCode("MINITEL 2024", 2);  // Échelle 2x
+// QR Code SCANNABLE avec ZXing (iPhone/Android compatible)
+graphtel.generateCenteredScannableQR("https://eddy-briere.com", 2);
 
-// Ou positionner manuellement
-gfx.generateQRCode("Hello World", 10, 10, 3);  // Position (10,10), échelle 3x
+// QR Code WiFi pour connexion automatique
+graphtel.generateWiFiWPA("MonWiFi", "motdepasse123", 2);
+graphtel.generateWiFiOpen("WiFi_Gratuit", 2);
 
-// QR Code de test
-gfx.generateTestQRCode(0, 0, 1);  // Motif de démonstration
+// QR Code de test avec motif de vérification
+graphtel.generateTestQRCode(10, 10, 3);
 
-// Afficher sur Minitel
-gfx.drawToPage(teletel, 0, 1);
+// Motif visuel décoratif
+graphtel.generateCenteredVisualQR("MINITEL 2024", 3);
 ```
 
 **Caractéristiques QR Code :**

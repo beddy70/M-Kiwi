@@ -1,4 +1,4 @@
-package org.somanybits.minitel.components;
+package org.somanybits.minitel.components.qrcode;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -54,12 +54,8 @@ public class ScannableQRGenerator {
             return result;
             
         } catch (WriterException e) {
-            System.err.println("❌ Erreur génération QR Code: " + e.getMessage());
-            
-            // Fallback vers le générateur visuel
-            System.out.println("🔄 Fallback vers motif visuel...");
-            QRCodeGenerator fallback = new QRCodeGenerator(1);
-            return fallback.generateVisualPattern(text);
+            System.err.println("❌ Erreur génération QR Code ZXing: " + e.getMessage());
+            throw new RuntimeException("ZXing requis pour générer des QR codes scannables", e);
         }
     }
     
@@ -130,5 +126,27 @@ public class ScannableQRGenerator {
             System.out.println();
         }
         System.out.println("=========================");
+    }
+    
+    /**
+     * Convertit une matrice QR Code 2D en tableau 1D pour GraphTel
+     * @param qrMatrix Matrice 2D (boolean[][])
+     * @return Tableau 1D (boolean[]) compatible GraphTel.writeBitmap()
+     */
+    public static boolean[] matrixTo1D(boolean[][] qrMatrix) {
+        if (qrMatrix == null || qrMatrix.length == 0) {
+            return new boolean[0];
+        }
+        
+        int size = qrMatrix.length;
+        boolean[] bitmap1D = new boolean[size * size];
+        
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                bitmap1D[y * size + x] = qrMatrix[y][x];
+            }
+        }
+        
+        return bitmap1D;
     }
 }
