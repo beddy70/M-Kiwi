@@ -107,7 +107,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //        };
 //        GraphTel gfx = new GraphTel(16, 6);
 //        gfx.writeBitmap(bitmap);
-        ImageTo1bpp img = new ImageTo1bpp("groupe.jpg", 80, 69);
+        ImageTo1bpp img = new ImageTo1bpp("images_src/groupe.jpg", 80, 69);
         
         GraphTel gfx = new GraphTel(img.getWidth(), img.getHeight());
         //gfx.setLine(0, 0, img.getWidth(), img.getHeight());
