@@ -26,8 +26,9 @@ public class MText extends ModelMComponent {
         return line.intValue();
 
     }
-    public String getString(){
-        return text;
+    @Override
+    public byte[] getBytes(){
+        return text.getBytes();
     }
 
 }

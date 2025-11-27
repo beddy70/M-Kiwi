@@ -114,25 +114,25 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //        gfx.drawToPage(t, 0, 1);
         // QR CODE ZXING UNIQUEMENT - 100% SCANNABLE
         // Générer la chaîne WiFi
-        String wifiString = WiFiQRGenerator.generateWPAWiFi("Labo Game", "Girafe1970");
-        System.out.println("📶 Chaîne WiFi: " + wifiString);
+        // String wifiString = WiFiQRGenerator.generateWPAWiFi("Labo Game", "Girafe1970");
+        // System.out.println("📶 Chaîne WiFi: " + wifiString);
         
-        // Utiliser ZXing pour générer un QR Code scannable
-        ScannableQRGenerator scannableGen = new ScannableQRGenerator();
-        boolean[][] qrMatrix = scannableGen.generateScannableQR(wifiString, 21);
+        // // Utiliser ZXing pour générer un QR Code scannable
+        // ScannableQRGenerator scannableGen = new ScannableQRGenerator();
+        // boolean[][] qrMatrix = scannableGen.generateScannableQR(wifiString, 21);
         
-        // Convertir en bitmap 1D pour GraphTel (méthode utilitaire)
-        boolean[] bitmap1D = ScannableQRGenerator.matrixTo1D(qrMatrix);
+        // // Convertir en bitmap 1D pour GraphTel (méthode utilitaire)
+        // boolean[] bitmap1D = ScannableQRGenerator.matrixTo1D(qrMatrix);
         
-        GraphTel gfx = new GraphTel(qrMatrix.length, qrMatrix.length);
-        gfx.writeBitmap(bitmap1D);
-        gfx.inverseBitmap();
-        gfx.drawToPage(t, 0, 1);
+        // GraphTel gfx = new GraphTel(qrMatrix.length, qrMatrix.length);
+        // gfx.writeBitmap(bitmap1D);
+        // gfx.inverseBitmap();
+        // gfx.drawToPage(t, 0, 1);
         
-        System.out.println("✅ QR Code ZXing généré (100% scannable)");
+        // System.out.println("✅ QR Code ZXing généré (100% scannable)");
         
         try {
-            Thread.sleep(15000); // pause de 1000 millisecondes = 1 seconde
+            Thread.sleep(1000); // pause de 1000 millisecondes = 1 seconde
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // bonne pratique
             System.err.println("Pause interrompue");

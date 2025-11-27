@@ -4,18 +4,21 @@
  */
 package org.somanybits.minitel.components;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author eddy
  */
 public class ModelMComponent implements MComponent {
-    
 
     private int width;
     private int height;
     private int x;
     private int y;
+    private String textContent;
     protected MComponent parent;
+    protected ArrayList<MComponent> childs = new ArrayList<MComponent>();
 
     @Override
     public int getWidth() {
@@ -64,21 +67,42 @@ public class ModelMComponent implements MComponent {
 
     @Override
     public MComponent getParent() {
-       return parent;
+        return parent;
     }
 
+    @Override
     public void setParent(MComponent parent) {
         this.parent = parent;
     }
 
     @Override
     public void arrange() {
-        
+
     }
 
     @Override
-    public String getString() {
-        return "";
+    public byte[] getBytes() {
+        return new byte[0];
+    }
+
+    @Override
+    public void addChild(MComponent child) {
+        childs.add(child);
+        child.setParent(this);
+    }
+
+    public ArrayList<MComponent> getChilds() {
+        return childs;
+    }
+
+    @Override
+    public void setTextContent(String textContent) {
+        this.textContent = textContent;
+    }
+
+    @Override
+    public String getTextContent() {
+        return textContent;
     }
 
 }

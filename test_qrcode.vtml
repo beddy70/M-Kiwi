@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test QR Code VTML</title>
+</head>
+<body>
+    <minitel title="Test QR Codes">
+        <div left="0" top="2">
+            <row>===== TEST QR CODE VTML =====</row>
+            <br/>
+            <row>1. QR Code URL:</row>
+        </div>
+        
+        <qrcode type="url" message="https://eddy-briere.com" size="1" left="2" top="6"/>
+        
+        <div left="0" top="18">
+            <row>2. QR Code WiFi WPA:</row>
+        </div>
+        
+        <qrcode type="wpawifi" message="ssid:'Labo Game', password:'Girafe1970'" size="1" left="2" top="20"/>
+        
+        <div left="0" top="32">
+            <row>3. QR Code WiFi Ouvert:</row>
+        </div>
+        
+        <qrcode type="wpawifi" message="ssid:'WiFi_Gratuit'" size="1" left="2" top="34"/>
+        
+        <div left="0" top="46">
+            <row>Test termine !</row>
+        </div>
+    </minitel>
+</body>
+</html>

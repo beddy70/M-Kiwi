@@ -26,9 +26,9 @@ public class MTitle extends ModelMComponent {
     }
 
     @Override
-    public String getString() {
-  
-        return (title.length()<getParent().getWidth()?title:title.substring(0,getParent().getWidth()-1));
+    public byte[] getBytes() {
+        String result = (title.length()<getParent().getWidth()?title:title.substring(0,getParent().getWidth()-1));
+        return result.getBytes();
     }
 
 }

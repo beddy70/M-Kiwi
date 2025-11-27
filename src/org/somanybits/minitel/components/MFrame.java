@@ -4,6 +4,8 @@
  */
 package org.somanybits.minitel.components;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -13,7 +15,7 @@ import java.util.ArrayList;
 public class MFrame extends ModelMComponent {
 
     private boolean autoHeight = false;
-    private String textFrame = "";
+    private ByteArrayOutputStream textFrame = new ByteArrayOutputStream();
     private int currentLine = 0;
 
     ArrayList<MComponent> clist = new ArrayList();
@@ -40,20 +42,22 @@ public class MFrame extends ModelMComponent {
     @Override
     public void arrange() {
         this.currentLine = 0;
-        this.textFrame = "";
+        this.textFrame = new ByteArrayOutputStream();
 
         for (int i = 0; i < clist.size(); i++) {
-
             MComponent cc = clist.get(i);
-
-            textFrame += cc.getString()+"\n";
-        
+            try {
+                textFrame.write(cc.getBytes());
+                textFrame.write('\n');
+            } catch (IOException e) {
+                // ignore
+            }
         }
     }
 
     @Override
-    public String getString() {
-        return textFrame;
+    public byte[] getBytes() {
+        return textFrame.toByteArray();
     }
 
 }

@@ -8,7 +8,7 @@ package org.somanybits.minitel.components;
  *
  * @author eddy
  */
-interface MComponent {
+public interface MComponent {
 
     public int getNumberLine();
 
@@ -30,9 +30,15 @@ interface MComponent {
 
     public MComponent getParent();
 
+    public String getTextContent();
+
+    public void setTextContent(String textContent);
+
     public void arrange();
 
-    public String getString();
+    public byte[] getBytes();
 
     public void setParent(MComponent parent);
+
+    public void addChild(MComponent child);
 }

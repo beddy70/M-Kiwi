@@ -14,6 +14,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 public class ImageTo1bpp {
 
@@ -21,13 +22,33 @@ public class ImageTo1bpp {
     private int width;
     private int height;
 
+    /**
+     * Constructeur depuis un fichier local
+     */
     public ImageTo1bpp(String filename, int targetW, int targetH) throws IOException {
-
         File file = new File(filename);
         BufferedImage src = ImageIO.read(file);
         if (src == null) {
             throw new IOException("Impossible de lire l'image: " + file);
         }
+        processImage(src, targetW, targetH);
+    }
+
+    /**
+     * Constructeur depuis une URL
+     */
+    public ImageTo1bpp(URL url, int targetW, int targetH) throws IOException {
+        BufferedImage src = ImageIO.read(url);
+        if (src == null) {
+            throw new IOException("Impossible de lire l'image: " + url);
+        }
+        processImage(src, targetW, targetH);
+    }
+
+    /**
+     * Traitement commun de l'image
+     */
+    private void processImage(BufferedImage src, int targetW, int targetH) {
 
         // Redimensionnement vers targetW x targetH
         BufferedImage img = new BufferedImage(targetW, targetH, BufferedImage.TYPE_INT_ARGB);

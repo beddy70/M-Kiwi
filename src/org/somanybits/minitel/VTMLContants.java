@@ -22,6 +22,8 @@ public interface VTMLContants {
     // Form
     public static final String VTML_TAG_FORM = "form";
     public static final String VTML_TAG_LSIT = "list";
+    // QR Code
+    public static final String VTML_TAG_QRCODE = "qrcode";
     
 
 }

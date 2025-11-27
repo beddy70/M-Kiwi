@@ -42,6 +42,43 @@ public class Page {
     }
 
     public void addData(byte[] data) throws IOException {
+        // Affichage hexadécimal sur la console (style hex editor)
+        System.out.println("=== Page.addData (" + data.length + " bytes) ===");
+        
+        for (int offset = 0; offset < data.length; offset += 16) {
+            StringBuilder hexPart = new StringBuilder();
+            StringBuilder asciiPart = new StringBuilder();
+            
+            for (int i = 0; i < 16; i++) {
+                if (offset + i < data.length) {
+                    int b = data[offset + i] & 0xFF;
+                    // Partie hex
+                    if (b == 0x1B) {
+                        // ESC en rouge
+                        hexPart.append("\u001B[31m").append(String.format("%02X ", b)).append("\u001B[0m");
+                    } else if (b == 0x1F) {
+                        // Cursor position en cyan
+                        hexPart.append("\u001B[36m").append(String.format("%02X ", b)).append("\u001B[0m");
+                    } else {
+                        hexPart.append(String.format("%02X ", b));
+                    }
+                    // Partie ASCII (affichable: 0x20-0x7E)
+                    if (b >= 0x20 && b <= 0x7E) {
+                        asciiPart.append((char) b);
+                    } else {
+                        asciiPart.append('.');
+                    }
+                } else {
+                    hexPart.append("   ");
+                    asciiPart.append(' ');
+                }
+            }
+            
+            System.out.printf("%08X  %s |%s|\n", offset, hexPart.toString(), asciiPart.toString());
+        }
+        
+        System.out.println("================================");
+        
         buf.write(data);
     }
 
