@@ -293,9 +293,10 @@ public class MinitelPageReader {
                 int width = parseInt(attrs.get("width"), 32);
                 int height = parseInt(attrs.get("height"), 32);
                 boolean negative = "true".equalsIgnoreCase(attrs.get("negative"));
+                String style = attrs.get("style");  // "dithering", "bitmap", ou null (couleur)
                 
                 // baseUrl sera récupéré depuis Kernel.getConfig() si non défini
-                return new VTMLImgComponent(src, left, top, width, height, negative);
+                return new VTMLImgComponent(src, left, top, width, height, negative, style);
             }
             
             case "script" -> {

@@ -113,25 +113,46 @@ Conteneur de menu interactif avec navigation par touches.
 
 ### `<img>`
 
-Affiche une image convertie en semi-graphique Minitel (1 bit par pixel).
+Affiche une image convertie en semi-graphique Minitel.
 
-| Attribut   | Type    | Défaut | Description                      |
-|------------|---------|--------|----------------------------------|
-| `src`      | string  | -      | Chemin de l'image (local ou URL) |
-| `left`     | int     | 0      | Position X                       |
-| `top`      | int     | 0      | Position Y                       |
-| `width`    | int     | 32     | Largeur en pixels                |
-| `height`   | int     | 32     | Hauteur en pixels                |
-| `negative` | boolean | false  | Inverser les couleurs            |
+| Attribut   | Type    | Défaut | Description                              |
+|------------|---------|--------|------------------------------------------|
+| `src`      | string  | -      | Chemin de l'image (local ou URL)         |
+| `left`     | int     | 0      | Position X (en caractères, 0-39)         |
+| `top`      | int     | 0      | Position Y (en caractères, 0-24)         |
+| `width`    | int     | 32     | Largeur en caractères                    |
+| `height`   | int     | 32     | Hauteur en caractères                    |
+| `negative` | boolean | false  | Inverser les couleurs                    |
+| `style`    | string  | -      | Mode de rendu : `dithering` ou `bitmap`  |
+
+#### Modes de rendu (attribut `style`)
+
+| Valeur      | Description                                           |
+|-------------|-------------------------------------------------------|
+| *(aucun)*   | Couleur 8 couleurs Minitel (par défaut)               |
+| `dithering` | Couleur avec tramage Floyd-Steinberg (meilleur rendu) |
+| `bitmap`    | Noir et blanc uniquement                              |
 
 ```xml
-<img src="images/logo.jpg" left="4" top="2" width="32" height="32">
-<img src="images/photo.png" left="0" top="10" width="64" height="48" negative="true">
+<!-- Image en couleur (8 couleurs Minitel) -->
+<img src="images/logo.jpg" left="4" top="2" width="32" height="20">
+
+<!-- Image avec dithering (meilleur pour les photos et dégradés) -->
+<img src="images/photo.png" left="0" top="0" width="40" height="24" style="dithering">
+
+<!-- Image en noir et blanc -->
+<img src="images/icon.png" left="10" top="5" width="20" height="15" style="bitmap">
+
+<!-- Image inversée -->
+<img src="images/logo.png" left="0" top="10" width="40" height="14" negative="true">
 ```
 
 **Formats supportés** : JPG, PNG, GIF, BMP
 
-**Note** : L'image est automatiquement redimensionnée et convertie en noir et blanc.
+**Notes** :
+- Les dimensions sont en **caractères** (1 caractère = 2×3 pixels semi-graphiques)
+- L'image est automatiquement redimensionnée pour remplir la zone spécifiée
+- Le mode `dithering` utilise l'algorithme Floyd-Steinberg pour simuler plus de couleurs
 
 ---
 

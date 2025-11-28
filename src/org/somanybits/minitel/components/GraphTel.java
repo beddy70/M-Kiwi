@@ -239,6 +239,46 @@ public class GraphTel implements PageMinitel {
         return 0;
     }
 
+    /**
+     * Retourne la couleur d'encre (foreground) pour un bloc semi-graphique (2x3 pixels)
+     * La couleur d'encre est la couleur dominante parmi TOUS les pixels du bloc
+     * @param charX Position X en caractères (0-39)
+     * @param charY Position Y en caractères (0-24)
+     * @return Couleur d'encre (0-7), blanc par défaut
+     */
+    public byte getBlockColor(int charX, int charY) {
+        int pixelX = charX * 2;
+        int pixelY = charY * 3;
+        
+        // Compter les occurrences de chaque couleur dans le bloc 2x3
+        int[] colorCount = new int[8];
+        
+        for (int dy = 0; dy < 3; dy++) {
+            for (int dx = 0; dx < 2; dx++) {
+                int px = pixelX + dx;
+                int py = pixelY + dy;
+                if (px < widthScreen && py < heightScreen) {
+                    int index = widthScreen * py + px;
+                    byte color = (byte) (screenColor[index] & 0x07);
+                    colorCount[color]++;
+                }
+            }
+        }
+        
+        // Trouver la couleur dominante (ignorer noir car c'est le fond)
+        int maxCount = 0;
+        byte dominantColor = GetTeletelCode.COLOR_WHITE;  // Blanc par défaut
+        
+        for (int c = 1; c < 8; c++) {  // Ignorer noir (0)
+            if (colorCount[c] > maxCount) {
+                maxCount = colorCount[c];
+                dominantColor = (byte) c;
+            }
+        }
+        
+        return dominantColor;
+    }
+
     private byte[] convertToSemiGraph() {
         byte[] data = new byte[(widthScreen / 2) * (heightScreen / 3)];
 
@@ -359,31 +399,106 @@ public class GraphTel implements PageMinitel {
         System.out.println("PAGE_WIDTH=" + Teletel.PAGE_WIDTH + " PAGE_HEIGHT=" + Teletel.PAGE_HEIGHT + " maxWitdh="
                 + maxWitdh + " maxHeight=" + maxHeight);
 
+        byte lastFgColor = -1;  // Couleur d'encre précédente
+        byte lastBgColor = -1;  // Couleur de fond précédente
+        
         for (int j = posy; j < maxHeight; j++) {
             fulldraw.write(GetTeletelCode.setCursor(posx, j));
             fulldraw.write(GetTeletelCode.setMode(Teletel.MODE_SEMI_GRAPH));
+            
+            // Réinitialiser les couleurs à chaque ligne (le Minitel les reset)
+            lastFgColor = -1;
+            lastBgColor = -1;
 
-            byte currentcolor = GetTeletelCode.COLOR_BLACK;
-            byte curreentbgcolor = currentcolor;
             for (int i = posx; i < maxWitdh; i++) {
-
-                currentcolor = (byte) (getColor(i, j) & 0x0F);
-                if (ink != currentcolor) {
-                    ink = currentcolor;
-                    fulldraw.write(GetTeletelCode.setTextColor(ink));
+                // Coordonnées relatives dans le GraphTel (pas sur l'écran)
+                int localX = i - posx;
+                int localY = j - posy;
+                
+                // Récupérer les couleurs du bloc semi-graphique
+                byte[] colors = getBlockColors(localX, localY);
+                byte fgColor = colors[0];  // Couleur d'encre (pixels allumés)
+                byte bgColor = colors[1];  // Couleur de fond (pixels éteints)
+                
+                // Changer la couleur de fond si différente
+                if (bgColor != lastBgColor) {
+                    fulldraw.write(GetTeletelCode.setBGColor(bgColor));
+                    // Écrire un espace pour appliquer la couleur de fond
+                    fulldraw.write(' ');
+                    // Repositionner le curseur
+                    fulldraw.write(GetTeletelCode.setCursor(i, j));
+                    fulldraw.write(GetTeletelCode.setMode(Teletel.MODE_SEMI_GRAPH));
+                    lastBgColor = bgColor;
                 }
-                curreentbgcolor = (byte) ((getColor(i, j) >> 8) & 0x0F);
-                if (bgcolor != curreentbgcolor) {
-                    bgcolor = curreentbgcolor;
-                    fulldraw.write(GetTeletelCode.setBGColor(bgcolor));
+                
+                // Changer la couleur d'encre si différente
+                if (fgColor != lastFgColor) {
+                    fulldraw.write(GetTeletelCode.setTextColor(fgColor));
+                    lastFgColor = fgColor;
                 }
 
-                fulldraw.write(data[wpage * (j - posy) + (i - posx)]);
+                fulldraw.write(data[wpage * localY + localX]);
             }
         }
         fulldraw.write(GetTeletelCode.setMode(Teletel.MODE_TEXT));
 
         return fulldraw.toByteArray();
+    }
+    
+    /**
+     * Retourne les couleurs d'encre et de fond pour un bloc semi-graphique
+     * @param charX Position X en caractères
+     * @param charY Position Y en caractères
+     * @return byte[2] : [0]=foreground (encre), [1]=background (fond)
+     */
+    private byte[] getBlockColors(int charX, int charY) {
+        int pixelX = charX * 2;
+        int pixelY = charY * 3;
+        
+        // Compter les couleurs des pixels allumés et éteints séparément
+        int[] fgColorCount = new int[8];  // Couleurs des pixels allumés
+        int[] bgColorCount = new int[8];  // Couleurs des pixels éteints
+        
+        for (int dy = 0; dy < 3; dy++) {
+            for (int dx = 0; dx < 2; dx++) {
+                int px = pixelX + dx;
+                int py = pixelY + dy;
+                if (px < widthScreen && py < heightScreen) {
+                    int index = widthScreen * py + px;
+                    byte color = (byte) (screenColor[index] & 0x07);
+                    
+                    if (screenGFX[index]) {
+                        // Pixel allumé -> compte pour foreground
+                        fgColorCount[color]++;
+                    } else {
+                        // Pixel éteint -> compte pour background
+                        bgColorCount[color]++;
+                    }
+                }
+            }
+        }
+        
+        // Trouver la couleur dominante pour l'encre (ignorer noir)
+        int maxFg = 0;
+        byte fgColor = GetTeletelCode.COLOR_WHITE;
+        for (int c = 1; c < 8; c++) {
+            if (fgColorCount[c] > maxFg) {
+                maxFg = fgColorCount[c];
+                fgColor = (byte) c;
+            }
+        }
+        
+        // Trouver la couleur dominante pour le fond (inclure noir)
+        int maxBg = 0;
+        byte bgColor = GetTeletelCode.COLOR_BLACK;
+        for (int c = 0; c < 8; c++) {
+            if (bgColorCount[c] > maxBg) {
+                maxBg = bgColorCount[c];
+                bgColor = (byte) c;
+            }
+        }
+        
+        return new byte[] { fgColor, bgColor };
     }
 
     @Override
@@ -488,114 +603,146 @@ public class GraphTel implements PageMinitel {
     }
 
     // ========== CHARGEMENT D'IMAGES ==========
-
     /**
      * Palette des 8 couleurs Minitel
      */
     private static final int[][] MINITEL_PALETTE = {
-        {0, 0, 0},       // 0 = BLACK
-        {255, 0, 0},     // 1 = RED
-        {0, 255, 0},     // 2 = GREEN
-        {255, 255, 0},   // 3 = YELLOW
-        {0, 0, 255},     // 4 = BLUE
-        {255, 0, 255},   // 5 = MAGENTA
-        {0, 255, 255},   // 6 = CYAN
-        {255, 255, 255}  // 7 = WHITE
+        {0, 0, 0}, // 0 = BLACK
+        {255, 0, 0}, // 1 = RED
+        {0, 255, 0}, // 2 = GREEN
+        {255, 255, 0}, // 3 = YELLOW
+        {0, 0, 255}, // 4 = BLUE
+        {255, 0, 255}, // 5 = MAGENTA
+        {0, 255, 255}, // 6 = CYAN
+        {255, 255, 255} // 7 = WHITE
     };
 
     /**
-     * Charge une image depuis un fichier et la convertit en semi-graphique Minitel
+     * Charge une image depuis un fichier et la convertit en semi-graphique
+     * Minitel
+     *
      * @param file Fichier image (PNG, JPEG, etc.)
      */
     public void loadImage(File file) throws IOException {
+        loadImage(file, false);
+    }
+    
+    public void loadImage(File file, boolean dithering) throws IOException {
         BufferedImage img = ImageIO.read(file);
         if (img == null) {
             throw new IOException("Impossible de lire l'image: " + file.getPath());
         }
-        convertImage(img);
+        if (dithering) {
+            convertImageWithDithering(img);
+        } else {
+            convertImage(img);
+        }
     }
 
     /**
      * Charge une image depuis une URL et la convertit en semi-graphique Minitel
+     *
      * @param url URL de l'image
      */
     public void loadImage(URL url) throws IOException {
+        loadImage(url, (String) null);
+    }
+    
+    public void loadImage(URL url, boolean dithering) throws IOException {
+        loadImage(url, dithering ? "dithering" : null);
+    }
+    
+    public void loadImage(URL url, String style) throws IOException {
         BufferedImage img = ImageIO.read(url);
         if (img == null) {
             throw new IOException("Impossible de lire l'image: " + url);
         }
-        convertImage(img);
+        convertImageWithStyle(img, style);
     }
 
     /**
-     * Charge une image depuis un InputStream et la convertit en semi-graphique Minitel
+     * Charge une image depuis un InputStream et la convertit en semi-graphique
+     * Minitel
+     *
      * @param is InputStream de l'image
      */
     public void loadImage(InputStream is) throws IOException {
+        loadImage(is, false);
+    }
+    
+    public void loadImage(InputStream is, boolean dithering) throws IOException {
         BufferedImage img = ImageIO.read(is);
         if (img == null) {
             throw new IOException("Impossible de lire l'image depuis le stream");
         }
-        convertImage(img);
+        if (dithering) {
+            convertImageWithDithering(img);
+        } else {
+            convertImage(img);
+        }
+    }
+
+    /**
+     * Convertit une BufferedImage selon le style spécifié
+     * @param img Image source
+     * @param style "dithering", "bitmap", ou null (couleur par défaut)
+     */
+    private void convertImageWithStyle(BufferedImage img, String style) {
+        if ("dithering".equalsIgnoreCase(style)) {
+            convertImageWithDithering(img);
+        } else if ("bitmap".equalsIgnoreCase(style)) {
+            convertImageBW(img);
+        } else {
+            convertImage(img);
+        }
     }
 
     /**
      * Convertit une BufferedImage en pixels Minitel
+     * L'image est étirée pour remplir tout le GraphTel
+     *
      * @param img Image source
      */
     public void convertImage(BufferedImage img) {
-        System.out.println("🖼️ Conversion image " + img.getWidth() + "x" + img.getHeight() + 
-                          " -> GraphTel " + widthScreen + "x" + heightScreen);
+        System.out.println("🖼️ Conversion image " + img.getWidth() + "x" + img.getHeight()
+                + " -> GraphTel " + widthScreen + "x" + heightScreen);
 
         // Effacer l'écran
         clear();
 
-        // Calculer le ratio pour adapter l'image
-        double scaleX = (double) widthScreen / img.getWidth();
-        double scaleY = (double) heightScreen / img.getHeight();
-        double scale = Math.min(scaleX, scaleY);
+        // Calculer les ratios pour étirer l'image (pas de conservation du ratio)
+        double scaleX = (double) img.getWidth() / widthScreen;
+        double scaleY = (double) img.getHeight() / heightScreen;
 
-        int scaledWidth = (int) (img.getWidth() * scale);
-        int scaledHeight = (int) (img.getHeight() * scale);
-        int offsetX = (widthScreen - scaledWidth) / 2;
-        int offsetY = (heightScreen - scaledHeight) / 2;
-
-        System.out.println("   Échelle: " + String.format("%.2f", scale) + 
-                          ", Taille: " + scaledWidth + "x" + scaledHeight +
-                          ", Offset: (" + offsetX + ", " + offsetY + ")");
+        System.out.println("   Échelle X: " + String.format("%.2f", scaleX)
+                + ", Échelle Y: " + String.format("%.2f", scaleY));
 
         // Parcourir chaque pixel de l'écran GraphTel
         for (int screenY = 0; screenY < heightScreen; screenY++) {
             for (int screenX = 0; screenX < widthScreen; screenX++) {
                 // Calculer la position correspondante dans l'image source
-                int imgX = (int) ((screenX - offsetX) / scale);
-                int imgY = (int) ((screenY - offsetY) / scale);
+                int imgX = (int) (screenX * scaleX);
+                int imgY = (int) (screenY * scaleY);
 
-                // Vérifier si on est dans les limites de l'image
-                if (imgX >= 0 && imgX < img.getWidth() && imgY >= 0 && imgY < img.getHeight()) {
-                    int rgb = img.getRGB(imgX, imgY);
-                    int r = (rgb >> 16) & 0xFF;
-                    int g = (rgb >> 8) & 0xFF;
-                    int b = rgb & 0xFF;
+                // Limiter aux bornes de l'image
+                imgX = Math.min(imgX, img.getWidth() - 1);
+                imgY = Math.min(imgY, img.getHeight() - 1);
 
-                    // Trouver la couleur Minitel la plus proche
-                    byte minitelColor = findClosestMinitelColor(r, g, b);
+                int rgb = img.getRGB(imgX, imgY);
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
 
-                    // Déterminer si le pixel est "allumé" (pas noir)
-                    boolean pixelOn = (minitelColor != GetTeletelCode.COLOR_BLACK);
+                // Trouver la couleur Minitel la plus proche
+                byte minitelColor = findClosestMinitelColor(r, g, b);
 
-                    // Stocker le pixel
-                    int index = widthScreen * screenY + screenX;
-                    screenGFX[index] = pixelOn;
-                    // Pour l'instant, on stocke juste la couleur du pixel (ink)
-                    // Le fond sera géré lors du rendu
-                    screenColor[index] = minitelColor;
-                } else {
-                    // Hors de l'image = noir
-                    int index = widthScreen * screenY + screenX;
-                    screenGFX[index] = false;
-                    screenColor[index] = GetTeletelCode.COLOR_BLACK;
-                }
+                // Déterminer si le pixel est "allumé" (pas noir)
+                boolean pixelOn = (minitelColor != GetTeletelCode.COLOR_BLACK);
+
+                // Stocker le pixel
+                int index = widthScreen * screenY + screenX;
+                screenGFX[index] = pixelOn;
+                screenColor[index] = minitelColor;
             }
         }
 
@@ -603,8 +750,107 @@ public class GraphTel implements PageMinitel {
     }
 
     /**
-     * Trouve la couleur Minitel la plus proche d'une couleur RGB
-     * Utilise la distance euclidienne dans l'espace RGB
+     * Convertit une BufferedImage en pixels Minitel avec dithering Floyd-Steinberg
+     * L'image est étirée pour remplir tout le GraphTel
+     *
+     * @param img Image source
+     */
+    public void convertImageWithDithering(BufferedImage img) {
+        System.out.println("🖼️ Conversion image avec dithering " + img.getWidth() + "x" + img.getHeight()
+                + " -> GraphTel " + widthScreen + "x" + heightScreen);
+
+        // Effacer l'écran
+        clear();
+
+        // Calculer les ratios pour étirer l'image
+        double scaleX = (double) img.getWidth() / widthScreen;
+        double scaleY = (double) img.getHeight() / heightScreen;
+
+        // Créer un buffer pour les erreurs de quantification (float pour précision)
+        float[][] errorR = new float[heightScreen][widthScreen];
+        float[][] errorG = new float[heightScreen][widthScreen];
+        float[][] errorB = new float[heightScreen][widthScreen];
+
+        // Pré-calculer les couleurs de l'image redimensionnée
+        int[][] imgColors = new int[heightScreen][widthScreen];
+        for (int screenY = 0; screenY < heightScreen; screenY++) {
+            for (int screenX = 0; screenX < widthScreen; screenX++) {
+                int imgX = Math.min((int) (screenX * scaleX), img.getWidth() - 1);
+                int imgY = Math.min((int) (screenY * scaleY), img.getHeight() - 1);
+                imgColors[screenY][screenX] = img.getRGB(imgX, imgY);
+            }
+        }
+
+        // Appliquer Floyd-Steinberg dithering
+        for (int screenY = 0; screenY < heightScreen; screenY++) {
+            for (int screenX = 0; screenX < widthScreen; screenX++) {
+                int rgb = imgColors[screenY][screenX];
+                
+                // Couleur originale + erreur accumulée
+                float oldR = ((rgb >> 16) & 0xFF) + errorR[screenY][screenX];
+                float oldG = ((rgb >> 8) & 0xFF) + errorG[screenY][screenX];
+                float oldB = (rgb & 0xFF) + errorB[screenY][screenX];
+                
+                // Limiter aux bornes 0-255
+                oldR = Math.max(0, Math.min(255, oldR));
+                oldG = Math.max(0, Math.min(255, oldG));
+                oldB = Math.max(0, Math.min(255, oldB));
+
+                // Trouver la couleur Minitel la plus proche
+                byte minitelColor = findClosestMinitelColor((int) oldR, (int) oldG, (int) oldB);
+                
+                // Couleur Minitel choisie
+                int newR = MINITEL_PALETTE[minitelColor][0];
+                int newG = MINITEL_PALETTE[minitelColor][1];
+                int newB = MINITEL_PALETTE[minitelColor][2];
+
+                // Calculer l'erreur de quantification
+                float errR = oldR - newR;
+                float errG = oldG - newG;
+                float errB = oldB - newB;
+
+                // Distribuer l'erreur aux pixels voisins (Floyd-Steinberg)
+                // Pixel à droite: 7/16
+                if (screenX + 1 < widthScreen) {
+                    errorR[screenY][screenX + 1] += errR * 7 / 16;
+                    errorG[screenY][screenX + 1] += errG * 7 / 16;
+                    errorB[screenY][screenX + 1] += errB * 7 / 16;
+                }
+                // Pixel en bas à gauche: 3/16
+                if (screenY + 1 < heightScreen && screenX - 1 >= 0) {
+                    errorR[screenY + 1][screenX - 1] += errR * 3 / 16;
+                    errorG[screenY + 1][screenX - 1] += errG * 3 / 16;
+                    errorB[screenY + 1][screenX - 1] += errB * 3 / 16;
+                }
+                // Pixel en bas: 5/16
+                if (screenY + 1 < heightScreen) {
+                    errorR[screenY + 1][screenX] += errR * 5 / 16;
+                    errorG[screenY + 1][screenX] += errG * 5 / 16;
+                    errorB[screenY + 1][screenX] += errB * 5 / 16;
+                }
+                // Pixel en bas à droite: 1/16
+                if (screenY + 1 < heightScreen && screenX + 1 < widthScreen) {
+                    errorR[screenY + 1][screenX + 1] += errR * 1 / 16;
+                    errorG[screenY + 1][screenX + 1] += errG * 1 / 16;
+                    errorB[screenY + 1][screenX + 1] += errB * 1 / 16;
+                }
+
+                // Déterminer si le pixel est "allumé" (pas noir)
+                boolean pixelOn = (minitelColor != GetTeletelCode.COLOR_BLACK);
+
+                // Stocker le pixel
+                int index = widthScreen * screenY + screenX;
+                screenGFX[index] = pixelOn;
+                screenColor[index] = minitelColor;
+            }
+        }
+
+        System.out.println("✅ Image convertie avec dithering");
+    }
+
+    /**
+     * Trouve la couleur Minitel la plus proche d'une couleur RGB Utilise la
+     * distance euclidienne dans l'espace RGB
      */
     private byte findClosestMinitelColor(int r, int g, int b) {
         int bestColor = 0;
@@ -627,6 +873,7 @@ public class GraphTel implements PageMinitel {
 
     /**
      * Charge une image en noir et blanc (sans couleurs)
+     *
      * @param file Fichier image
      */
     public void loadImageBW(File file) throws IOException {
@@ -639,48 +886,46 @@ public class GraphTel implements PageMinitel {
 
     /**
      * Convertit une image en noir et blanc
+     * L'image est étirée pour remplir tout le GraphTel
+     *
      * @param img Image source
      */
     public void convertImageBW(BufferedImage img) {
-        System.out.println("🖼️ Conversion image N&B " + img.getWidth() + "x" + img.getHeight() + 
-                          " -> GraphTel " + widthScreen + "x" + heightScreen);
+        System.out.println("🖼️ Conversion image N&B " + img.getWidth() + "x" + img.getHeight()
+                + " -> GraphTel " + widthScreen + "x" + heightScreen);
 
         clear();
 
-        double scaleX = (double) widthScreen / img.getWidth();
-        double scaleY = (double) heightScreen / img.getHeight();
-        double scale = Math.min(scaleX, scaleY);
+        // Calculer les ratios pour étirer l'image (pas de conservation du ratio)
+        double scaleX = (double) img.getWidth() / widthScreen;
+        double scaleY = (double) img.getHeight() / heightScreen;
 
-        int scaledWidth = (int) (img.getWidth() * scale);
-        int scaledHeight = (int) (img.getHeight() * scale);
-        int offsetX = (widthScreen - scaledWidth) / 2;
-        int offsetY = (heightScreen - scaledHeight) / 2;
+        System.out.println("   Échelle X: " + String.format("%.2f", scaleX)
+                + ", Échelle Y: " + String.format("%.2f", scaleY));
 
         for (int screenY = 0; screenY < heightScreen; screenY++) {
             for (int screenX = 0; screenX < widthScreen; screenX++) {
-                int imgX = (int) ((screenX - offsetX) / scale);
-                int imgY = (int) ((screenY - offsetY) / scale);
+                int imgX = (int) (screenX * scaleX);
+                int imgY = (int) (screenY * scaleY);
 
-                if (imgX >= 0 && imgX < img.getWidth() && imgY >= 0 && imgY < img.getHeight()) {
-                    int rgb = img.getRGB(imgX, imgY);
-                    int r = (rgb >> 16) & 0xFF;
-                    int g = (rgb >> 8) & 0xFF;
-                    int b = rgb & 0xFF;
+                // Limiter aux bornes de l'image
+                imgX = Math.min(imgX, img.getWidth() - 1);
+                imgY = Math.min(imgY, img.getHeight() - 1);
 
-                    // Luminance (formule standard)
-                    int luminance = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+                int rgb = img.getRGB(imgX, imgY);
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
 
-                    // Seuil à 128 pour noir/blanc
-                    boolean pixelOn = (luminance > 128);
+                // Luminance (formule standard)
+                int luminance = (int) (0.299 * r + 0.587 * g + 0.114 * b);
 
-                    int index = widthScreen * screenY + screenX;
-                    screenGFX[index] = pixelOn;
-                    screenColor[index] = (byte) (pixelOn ? GetTeletelCode.COLOR_WHITE : GetTeletelCode.COLOR_BLACK);
-                } else {
-                    int index = widthScreen * screenY + screenX;
-                    screenGFX[index] = false;
-                    screenColor[index] = GetTeletelCode.COLOR_BLACK;
-                }
+                // Seuil à 128 pour noir/blanc
+                boolean pixelOn = (luminance > 128);
+
+                int index = widthScreen * screenY + screenX;
+                screenGFX[index] = pixelOn;
+                screenColor[index] = (byte) (pixelOn ? GetTeletelCode.COLOR_WHITE : GetTeletelCode.COLOR_BLACK);
             }
         }
 

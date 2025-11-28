@@ -1,11 +1,12 @@
 package org.somanybits.minitel.components.vtml;
 
+import java.net.URI;
 import java.net.URL;
+import org.somanybits.minitel.Teletel;
 import org.somanybits.minitel.components.GraphTel;
 import org.somanybits.minitel.components.ModelMComponent;
 import org.somanybits.minitel.kernel.Config;
 import org.somanybits.minitel.kernel.Kernel;
-import tools.ImageTo1bpp;
 
 /**
  * Composant VTML représentant le tag <img>
@@ -18,16 +19,18 @@ public class VTMLImgComponent extends ModelMComponent {
 
     private String src;
     private boolean negative;
+    private String style;  // "dithering", "bitmap", ou null (couleur par défaut)
     private String baseUrl; // URL de base pour les chemins relatifs
 
     public VTMLImgComponent() {
         super();
     }
 
-    public VTMLImgComponent(String src, int left, int top, int width, int height, boolean negative) {
+    public VTMLImgComponent(String src, int left, int top, int width, int height, boolean negative, String style) {
         super();
         this.src = src;
         this.negative = negative;
+        this.style = style;
         setX(left);
         setY(top);
         setWidth(width);
@@ -58,6 +61,14 @@ public class VTMLImgComponent extends ModelMComponent {
         this.baseUrl = baseUrl;
     }
 
+    public String getStyle() {
+        return style;
+    }
+
+    public void setStyle(String style) {
+        this.style = style;
+    }
+
     /**
      * Résout l'URL de l'image
      * Si src commence par http:// ou https://, utilise tel quel
@@ -65,7 +76,7 @@ public class VTMLImgComponent extends ModelMComponent {
      */
     private URL resolveImageUrl() throws Exception {
         if (src.startsWith("http://") || src.startsWith("https://")) {
-            return new URL(src);
+            return new URI(src).toURL();
         }
         
         // Chemin relatif - utiliser la config du Kernel
@@ -81,7 +92,7 @@ public class VTMLImgComponent extends ModelMComponent {
         // S'assurer que le chemin commence par / pour l'URL
         String path = !src.startsWith("/") ? "/" + src : src;
         
-        return new URL(base + path);
+        return new URI(base + path).toURL();
     }
 
     @Override
@@ -90,12 +101,24 @@ public class VTMLImgComponent extends ModelMComponent {
             // Résoudre l'URL de l'image
             URL imageUrl = resolveImageUrl();
             
-            // Charger et convertir l'image en 1bpp depuis l'URL
-            ImageTo1bpp img = new ImageTo1bpp(imageUrl, getWidth(), getHeight());
-
-            // Créer le GraphTel avec les dimensions de l'image
-            GraphTel gfx = new GraphTel(img.getWidth(), img.getHeight());
-            gfx.writeBitmap(img.getBitmap());
+            // Calculer l'espace disponible sur l'écran
+            int availableCharsX = Math.min(getWidth(), Teletel.PAGE_WIDTH - getX());
+            int availableCharsY = Math.min(getHeight(), Teletel.PAGE_HEIGHT - getY());
+            
+            // Dimensions en pixels (2 pixels par caractère en X, 3 en Y)
+            int pixelWidth = availableCharsX * 2;
+            int pixelHeight = availableCharsY * 3;
+            
+            System.out.println("📷 VTMLImgComponent: src=" + src + 
+                              " pos=(" + getX() + "," + getY() + ")" +
+                              " requested=" + getWidth() + "x" + getHeight() + " chars" +
+                              " available=" + availableCharsX + "x" + availableCharsY + " chars" +
+                              " -> " + pixelWidth + "x" + pixelHeight + " pixels" +
+                              " style=" + style);
+            
+            // Créer le GraphTel et charger l'image selon le style
+            GraphTel gfx = new GraphTel(pixelWidth, pixelHeight);
+            gfx.loadImage(imageUrl, style);
 
             // Inverser si demandé
             if (negative) {
@@ -106,6 +129,7 @@ public class VTMLImgComponent extends ModelMComponent {
             return gfx.getDrawToBytes(getX(), getY());
 
         } catch (Exception e) {
+            e.printStackTrace();
             System.err.println("Erreur chargement image " + src + ": " + e.getMessage());
             return ("[IMG ERROR: " + e.getMessage() + "]").getBytes();
         }

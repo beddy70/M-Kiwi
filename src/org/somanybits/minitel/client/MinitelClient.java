@@ -6,12 +6,14 @@ package org.somanybits.minitel.client;
 
 //import jssc.SerialPortException;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.somanybits.log.LogManager;
 import org.somanybits.minitel.MinitelConnection;
 import org.somanybits.minitel.Teletel;
+import org.somanybits.minitel.components.GraphTel;
 import org.somanybits.minitel.events.CodeSequenceListener;
 import org.somanybits.minitel.events.CodeSequenceSentEvent;
 import org.somanybits.minitel.events.KeyPressedEvent;
@@ -89,6 +91,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.writeString("Initialisation ! Waiting please... ");
         t.setBlink(false);
 
+
+
 //        byte[] bitmap= {
 //            (byte)0b11111111, (byte)0b11111111,
 //            (byte)0b11000001, (byte)0b10000011,
@@ -146,8 +150,6 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //            
 //            t.writeString("toto\r\n");
 //            t.writeString("titi\r\n");
-     
-
         // Mode interactif: pipe stdin -> série, RX affiché en continu
         System.out.println("Mode interactif: tape du texte (Ctrl-C pour quitter).");
         try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII))) {
@@ -249,7 +251,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             System.out.println("key=" + ((char) car) + " link=" + currentpage.getLink((char) car + ""));
                             try {
                                 //currentpage = mtr.get(currentpage.getLink((char) car + ""));
-                               currentpage = pmgr.navigate(currentpage.getLink((char) car + ""));
+                                currentpage = pmgr.navigate(currentpage.getLink((char) car + ""));
                                 mc.writeBytes(currentpage.getData());
                             } catch (IOException ex) {
                                 System.getLogger(MinitelClient.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
