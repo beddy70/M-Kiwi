@@ -47,7 +47,7 @@ public class VTMLMinitelComponent extends ModelMComponent {
             for (var child : getChilds()) {
                 divdata.write(child.getBytes());
             }
-            
+            divdata.write(GetTeletelCode.setEcho(true));
             return divdata.toByteArray();
 
         } catch (IOException ex) {

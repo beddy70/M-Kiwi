@@ -302,7 +302,7 @@ public class GraphTel implements PageMinitel {
                 t.getMterm().writeByte(data[wpage * (j - posy) + (i - posx)]);
             }
         }
-        t.setMode(Teletel.MODE_VIDEOTEXT);
+        t.setMode(Teletel.MODE_TEXT);
     }
 
     public String getDrawToString(int posx, int posy) throws IOException {
@@ -339,7 +339,7 @@ public class GraphTel implements PageMinitel {
                 fulldraw.write(data[wpage * (j - posy) + (i - posx)]);
             }
         }
-        fulldraw.write(GetTeletelCode.setMode(Teletel.MODE_VIDEOTEXT));
+        fulldraw.write(GetTeletelCode.setMode(Teletel.MODE_TEXT));
 
         
         return fulldraw.toByteArray();

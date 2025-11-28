@@ -197,7 +197,8 @@ public class MinitelPageReader {
     private boolean isContainerComponent(MComponent component) {
         return component instanceof VTMLMinitelComponent
             || component instanceof VTMLDivComponent
-            || component instanceof VTMLMenuComponent;
+            || component instanceof VTMLMenuComponent
+            || component instanceof VTMLFormComponent;
     }
 
     /**
@@ -218,7 +219,8 @@ public class MinitelPageReader {
     private boolean isContainerTag(String tagname) {
         return "minitel".equals(tagname)
             || "div".equals(tagname)
-            || "menu".equals(tagname);
+            || "menu".equals(tagname)
+            || "form".equals(tagname);
     }
 
     /**
@@ -271,14 +273,14 @@ public class MinitelPageReader {
             case "qrcode" -> {
                 String type = attrs.get("type");
                 String message = attrs.get("message");
-                int size = parseInt(attrs.get("size"), 1);
+                int scale = parseInt(attrs.get("scale"), 1);
                 int left = parseInt(attrs.get("left"), 0);
                 int top = parseInt(attrs.get("top"), 0);
                 
                 VTMLQRCodeComponent.QRType qrType = "wpawifi".equals(type) ? 
                     VTMLQRCodeComponent.QRType.WPAWIFI : VTMLQRCodeComponent.QRType.URL;
                 
-                VTMLQRCodeComponent qrComponent = new VTMLQRCodeComponent(qrType, message, size);
+                VTMLQRCodeComponent qrComponent = new VTMLQRCodeComponent(qrType, message, scale);
                 qrComponent.setX(left);
                 qrComponent.setY(top);
                 return qrComponent;
@@ -299,6 +301,51 @@ public class MinitelPageReader {
             case "script" -> {
                 // Le contenu du script est dans textContent
                 return new VTMLScriptComponent(textContent);
+            }
+            
+            case "form" -> {
+                String action = attrs.get("action");
+                String method = attrs.get("method");
+                int left = parseInt(attrs.get("left"), 0);
+                int top = parseInt(attrs.get("top"), 0);
+                int width = parseInt(attrs.get("width"), 40);
+                int height = parseInt(attrs.get("height"), 25);
+                return new VTMLFormComponent(action, method, left, top, width, height);
+            }
+            
+            case "input" -> {
+                String name = attrs.get("name");
+                int left = parseInt(attrs.get("left"), 0);
+                int top = parseInt(attrs.get("top"), 0);
+                int width = parseInt(attrs.get("width"), 20);
+                String label = attrs.get("label");
+                VTMLInputComponent input = new VTMLInputComponent(name, left, top, width, label);
+                
+                String placeholder = attrs.get("placeholder");
+                if (placeholder != null) {
+                    input.setPlaceholder(placeholder);
+                }
+                
+                String value = attrs.get("value");
+                if (value != null) {
+                    input.setValue(value);
+                }
+                
+                return input;
+            }
+            
+            case "key" -> {
+                String name = attrs.get("name");
+                String link = attrs.get("link");
+                
+                VTMLKeyComponent.KeyName keyName = VTMLKeyComponent.parseKeyName(name);
+                if (keyName != null && link != null) {
+                    // Enregistrer l'association dans la page
+                    page.addFunctionKey(keyName.name(), link);
+                    return new VTMLKeyComponent(keyName, link);
+                }
+                System.out.println("⚠️ Tag <key> invalide: name=" + name + ", link=" + link);
+                return null;
             }
             
             default -> {

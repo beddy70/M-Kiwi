@@ -7,6 +7,7 @@ package org.somanybits.minitel.kernel;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.somanybits.log.LogManager;
+import org.somanybits.minitel.client.PageManager;
 import org.somanybits.minitel.server.MModulesManager;
 
 /**
@@ -19,6 +20,7 @@ public class Kernel {
     private LogManager logmgr;
     private MModulesManager mmodmgr;
     private Config cfg;
+    private PageManager pageManager;
 
     private Kernel() throws IOException {
 
@@ -26,6 +28,9 @@ public class Kernel {
         mmodmgr = new MModulesManager();
 
         cfg = ConfigLoader.load(Path.of("./config.json"));
+        
+        // Initialiser le PageManager avec la config
+        pageManager = new PageManager("localhost", cfg.server.port);
 
     }
 
@@ -46,6 +51,10 @@ public class Kernel {
 
     public MModulesManager getMModulesManager() {
         return mmodmgr;
+    }
+
+    public PageManager getPageManager() {
+        return pageManager;
     }
 
 }

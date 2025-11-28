@@ -94,6 +94,17 @@ public final class GetTeletelCode {
     }
 
     /**
+     * Génère les codes pour activer/désactiver l'inversion vidéo
+     * @param inverse true pour activer, false pour désactiver
+     */
+    public static byte[] setInverse(boolean inverse) {
+        return new byte[] {
+            (byte) 0x1b,
+            (byte) (inverse ? 0x5d : 0x5c)  // ESC ] = inverse on, ESC \ = inverse off
+        };
+    }
+
+    /**
      * Génère les codes pour déplacer le curseur (format ANSI)
      */
     public static byte[] moveCursorXY(int x, int y) {
@@ -161,7 +172,9 @@ public final class GetTeletelCode {
     }
 
     /**
-     * Génère les codes pour activer/désactiver l'écho
+     * @param flag
+     * @return 
+     * @return  
      */
     public static byte[] setEcho(boolean flag) {
         return new byte[] {
@@ -187,6 +200,21 @@ public final class GetTeletelCode {
      * Génère les codes pour définir le mode (texte/semi-graphique)
      */
     public static byte[] setMode(int mode) {
+        if (mode != MODE_TEXT && mode != MODE_SEMI_GRAPH) {
+            mode = MODE_TEXT;
+        }
+        switch (mode) {
+            case MODE_TEXT:
+                return new byte[] {
+                    (byte) 0x0f
+                };
+            case MODE_SEMI_GRAPH:
+                return new byte[] {
+                    (byte) 0x0e
+                };
+            default:
+                break;
+        }
         return new byte[] {
             (byte) (0x0e + mode)
         };

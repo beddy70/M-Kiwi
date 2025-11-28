@@ -20,19 +20,19 @@ public class VTMLQRCodeComponent extends ModelMComponent {
 
     private QRType type;
     private String message;
-    private int size;
+    private int scale;
 
     public VTMLQRCodeComponent() {
         super();
         this.type = QRType.URL;
-        this.size = 1;
+        this.scale = 1;
     }
 
-    public VTMLQRCodeComponent(QRType type, String message, int size) {
+    public VTMLQRCodeComponent(QRType type, String message, int scale) {
         super();
         this.type = type;
         this.message = message;
-        this.size = size;
+        this.scale = scale;
     }
 
     public QRType getType() {
@@ -51,12 +51,12 @@ public class VTMLQRCodeComponent extends ModelMComponent {
         this.message = message;
     }
 
-    public int getSize() {
-        return size;
+    public int getScale() {
+        return scale;
     }
 
-    public void setSize(int size) {
-        this.size = size;
+    public void setScale(int scale) {
+        this.scale = scale;
     }
 
     /**
@@ -110,6 +110,11 @@ public class VTMLQRCodeComponent extends ModelMComponent {
             ScannableQRGenerator scannableGen = new ScannableQRGenerator();
             boolean[][] qrMatrix = scannableGen.generateScannableQR(qrContent, 21);
 
+            // Appliquer le scale si > 1
+            if (scale > 1) {
+                qrMatrix = scaleMatrix(qrMatrix, scale);
+            }
+
             boolean[] bitmap1D = ScannableQRGenerator.matrixTo1D(qrMatrix);
 
             GraphTel gfx = new GraphTel(qrMatrix.length, qrMatrix.length);
@@ -121,5 +126,28 @@ public class VTMLQRCodeComponent extends ModelMComponent {
         } catch (Exception e) {
             return ("[QR ERROR: " + e.getMessage() + "]\n").getBytes();
         }
+    }
+
+    /**
+     * Agrandit la matrice QR selon le facteur d'échelle
+     */
+    private boolean[][] scaleMatrix(boolean[][] original, int scaleFactor) {
+        int originalSize = original.length;
+        int newSize = originalSize * scaleFactor;
+        boolean[][] scaled = new boolean[newSize][newSize];
+        
+        for (int y = 0; y < originalSize; y++) {
+            for (int x = 0; x < originalSize; x++) {
+                boolean value = original[y][x];
+                // Remplir le bloc scaleFactor x scaleFactor
+                for (int dy = 0; dy < scaleFactor; dy++) {
+                    for (int dx = 0; dx < scaleFactor; dx++) {
+                        scaled[y * scaleFactor + dy][x * scaleFactor + dx] = value;
+                    }
+                }
+            }
+        }
+        
+        return scaled;
     }
 }

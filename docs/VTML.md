@@ -143,16 +143,16 @@ Génère un QR code affichable sur Minitel.
 |-----------|--------|--------|------------------------------------|
 | `type`    | string | `url`  | Type : `url` ou `wpawifi`          |
 | `message` | string | -      | Contenu du QR code                 |
-| `size`    | int    | 1      | Facteur de taille (1-3)            |
+| `scale`   | int    | 1      | Facteur d'échelle (1-3)            |
 | `left`    | int    | 0      | Position X                         |
 | `top`     | int    | 0      | Position Y                         |
 
 ```xml
 <!-- QR code URL -->
-<qrcode type="url" message="https://example.com" size="2" left="10" top="5">
+<qrcode type="url" message="https://example.com" scale="2" left="10" top="5">
 
 <!-- QR code WiFi -->
-<qrcode type="wpawifi" message="MonSSID:MonMotDePasse" size="1" left="5" top="10">
+<qrcode type="wpawifi" message="ssid:'MonSSID', password:'MonMotDePasse'" scale="1" left="5" top="10">
 ```
 
 ---
@@ -199,6 +199,75 @@ Exécute du JavaScript côté serveur. Permet de générer du contenu dynamique.
 
 ---
 
+### `<form>`
+
+Conteneur de formulaire pour la saisie utilisateur. Utilise la méthode GET.
+
+| Attribut | Type   | Défaut | Description                    |
+|----------|--------|--------|--------------------------------|
+| `action` | string | -      | URL cible (page .vtml)         |
+| `method` | string | `GET`  | Méthode HTTP (GET uniquement)  |
+| `left`   | int    | 0      | Position X                     |
+| `top`    | int    | 0      | Position Y                     |
+| `width`  | int    | 40     | Largeur                        |
+| `height` | int    | 25     | Hauteur                        |
+
+```xml
+<form action="search.vtml" left="2" top="5">
+  <input name="query" left="0" top="0" width="20" label="Recherche: ">
+  <input name="ville" left="0" top="2" width="15" label="Ville: ">
+</form>
+```
+
+---
+
+### `<input>`
+
+Champ de saisie texte. Doit être enfant de `<form>`.
+
+| Attribut      | Type   | Défaut | Description                    |
+|---------------|--------|--------|--------------------------------|
+| `name`        | string | -      | Nom du paramètre GET           |
+| `left`        | int    | 0      | Position X (relative au form)  |
+| `top`         | int    | 0      | Position Y (relative au form)  |
+| `width`       | int    | 20     | Largeur du champ               |
+| `label`       | string | -      | Label affiché avant le champ   |
+| `placeholder` | string | -      | Texte indicatif                |
+| `value`       | string | -      | Valeur par défaut              |
+
+```xml
+<input name="email" left="0" top="0" width="25" label="Email: " placeholder="exemple@mail.com">
+```
+
+**Affichage** : Le champ de saisie est affiché en vidéo inverse pour être visible.
+
+---
+
+### `<key>`
+
+Associe une touche de fonction Minitel à une URL de navigation.
+
+| Attribut | Type   | Défaut | Description                              |
+|----------|--------|--------|------------------------------------------|
+| `name`   | string | -      | Nom de la touche : `sommaire` ou `guide` |
+| `link`   | string | -      | URL cible                                |
+
+```xml
+<!-- Touche SOMMAIRE -> page d'accueil -->
+<key name="sommaire" link="index.vtml">
+
+<!-- Touche GUIDE -> page d'aide -->
+<key name="guide" link="aide.vtml">
+```
+
+**Touches supportées** :
+- `sommaire` - Touche SOMMAIRE
+- `guide` - Touche GUIDE
+
+**Note** : Ce tag ne génère pas d'affichage, il définit uniquement le comportement des touches.
+
+---
+
 ## Exemple complet
 
 ```xml
@@ -231,8 +300,12 @@ Exécute du JavaScript côté serveur. Permet de générer du contenu dynamique.
   
   <!-- QR code -->
   <div left="25" top="15">
-    <qrcode type="url" message="https://example.com" size="1" left="0" top="0">
+    <qrcode type="url" message="https://example.com" scale="1" left="0" top="0">
   </div>
+  
+  <!-- Touches de fonction -->
+  <key name="sommaire" link="index.vtml">
+  <key name="guide" link="aide.vtml">
   
 </minitel>
 ```

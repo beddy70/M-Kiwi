@@ -24,12 +24,34 @@ public class Page {
 
     private int mode;
     private String title;
+    private String url;
 
     private ByteArrayOutputStream buf = new ByteArrayOutputStream(1024);
 
     public Page(int mode) {
         this.mode = mode;
         keylinklist = new LinkedHashMap<>();
+    }
+
+    public Page(int mode, String url) {
+        this(mode);
+        this.url = url;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    /**
+     * Réinitialise les données de la page (pour reload)
+     */
+    public void reset() {
+        buf.reset();
+        keylinklist.clear();
     }
 
     public void setTile(String title) {
@@ -94,4 +116,51 @@ public class Page {
         keylinklist.put(key, link);
     }
 
+    // Associations touches de fonction -> URL
+    private Map<String, String> functionKeyLinks = new LinkedHashMap<>();
+
+    /**
+     * Associe une touche de fonction à une URL
+     * @param keyName Nom de la touche (sommaire, guide)
+     * @param link URL cible
+     */
+    public void addFunctionKey(String keyName, String link) {
+        functionKeyLinks.put(keyName.toUpperCase(), link);
+    }
+
+    /**
+     * Récupère l'URL associée à une touche de fonction
+     * @param keyName Nom de la touche (SOMMAIRE, GUIDE)
+     * @return URL ou null si non définie
+     */
+    public String getFunctionKeyLink(String keyName) {
+        return functionKeyLinks.get(keyName.toUpperCase());
+    }
+
+    /**
+     * Vérifie si une touche de fonction a une URL associée
+     */
+    public boolean hasFunctionKey(String keyName) {
+        return functionKeyLinks.containsKey(keyName.toUpperCase());
+    }
+
+    /**
+     * Hérite des touches de fonction d'une page précédente
+     * Les touches déjà définies dans cette page ne sont pas écrasées
+     * @param previousPage Page dont on hérite les touches
+     */
+    public void inheritFunctionKeys(Page previousPage) {
+        if (previousPage == null) return;
+        
+        // Pour chaque touche de la page précédente
+        for (Map.Entry<String, String> entry : previousPage.functionKeyLinks.entrySet()) {
+            String keyName = entry.getKey();
+            // Hériter seulement si cette page n'a pas redéfini la touche
+            if (!functionKeyLinks.containsKey(keyName)) {
+                functionKeyLinks.put(keyName, entry.getValue());
+            }
+        }
+    }
+
 }
+
