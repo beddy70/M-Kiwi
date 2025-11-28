@@ -289,6 +289,69 @@ Associe une touche de fonction Minitel à une URL de navigation.
 
 ---
 
+### `<color>`
+
+Définit les couleurs d'encre (texte) et de fond pour le contenu suivant.
+
+| Attribut     | Type   | Défaut | Description                    |
+|--------------|--------|--------|--------------------------------|
+| `ink`        | string | -      | Couleur du texte (encre)       |
+| `background` | string | -      | Couleur de fond                |
+
+#### Valeurs de couleur
+
+| Nom (FR)  | Nom (EN)  | Valeur |
+|-----------|-----------|--------|
+| `noir`    | `black`   | 0      |
+| `rouge`   | `red`     | 1      |
+| `vert`    | `green`   | 2      |
+| `jaune`   | `yellow`  | 3      |
+| `bleu`    | `blue`    | 4      |
+| `magenta` | `magenta` | 5      |
+| `cyan`    | `cyan`    | 6      |
+| `blanc`   | `white`   | 7      |
+
+```xml
+<!-- Texte jaune sur fond bleu -->
+<color ink="yellow" background="blue">
+<row>Texte en jaune sur fond bleu</row>
+
+<!-- Texte rouge (fond inchangé) -->
+<color ink="red">
+<row>Texte en rouge</row>
+
+<!-- Utilisation des valeurs numériques -->
+<color ink="7" background="4">
+<row>Blanc sur bleu</row>
+
+<!-- Noms en français -->
+<color ink="blanc" background="noir">
+<row>Texte blanc sur fond noir</row>
+```
+
+**Note** : Les couleurs restent actives jusqu'au prochain changement de couleur.
+
+---
+
+### `<blink>`
+
+Fait clignoter le texte contenu.
+
+```xml
+<!-- Texte clignotant -->
+<blink>ATTENTION!</blink>
+
+<!-- Combiné avec couleur -->
+<color ink="red"><blink>ALERTE IMPORTANTE</blink></color>
+
+<!-- Dans une ligne -->
+<row>Status: <blink>EN COURS</blink></row>
+```
+
+**Note** : Le clignotement est automatiquement désactivé après le texte pour ne pas affecter le reste de la page.
+
+---
+
 ## Exemple complet
 
 ```xml

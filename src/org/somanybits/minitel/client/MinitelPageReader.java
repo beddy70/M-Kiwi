@@ -349,6 +349,16 @@ public class MinitelPageReader {
                 return null;
             }
             
+            case "color" -> {
+                String ink = attrs.get("ink");
+                String background = attrs.get("background");
+                return new VTMLColorComponent(ink, background, textContent);
+            }
+            
+            case "blink" -> {
+                return new VTMLBlinkComponent(textContent);
+            }
+            
             default -> {
                 // Tag non reconnu
                 System.out.println("⚠️ Tag VTML non reconnu: " + tagname);
