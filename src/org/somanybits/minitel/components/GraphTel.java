@@ -5,8 +5,13 @@
  */
 package org.somanybits.minitel.components;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import javax.imageio.ImageIO;
 
 import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.Teletel;
@@ -27,14 +32,24 @@ public class GraphTel implements PageMinitel {
     private byte screenColor[];
     private int widthScreen;
     private int heightScreen;
-    private byte ink = Teletel.COLOR_WHITE;
+    private byte ink = GetTeletelCode.COLOR_WHITE;
+    private byte bgcolor = GetTeletelCode.COLOR_BLACK;
 
     public GraphTel(int w, int h) {
         init(w, h);
+
     }
 
     public GraphTel() {
         init(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
+    }
+
+    public void setInk(byte color) {
+        ink = color;
+    }
+
+    public void setBGColor(byte bgcolor) {
+        bgcolor = bgcolor;
     }
 
     private void init(int w, int h) {
@@ -52,10 +67,14 @@ public class GraphTel implements PageMinitel {
 
         screenGFX = new boolean[widthScreen * heightScreen];
         screenColor = new byte[widthScreen * heightScreen];
+
+        intColor();
     }
 
-    public void setInk(byte color) {
-        ink = color;
+    private void intColor() {
+        for (int i = 0; i < screenColor.length; i++) {
+            screenColor[i] = (byte) (bgcolor << 8 | ink);
+        }
     }
 
     public void setPen(boolean color) {
@@ -155,7 +174,7 @@ public class GraphTel implements PageMinitel {
         // Calculer les dimensions réelles du bitmap à partir de sa taille
         int bytesPerRow = (widthScreen + 7) >> 3;
         int bitmapHeight = bitmap.length / bytesPerRow;
-        
+
         // Limiter aux dimensions réelles du bitmap
         int maxHeight = Math.min(heightScreen, bitmapHeight);
         int maxWidth = widthScreen;
@@ -164,7 +183,7 @@ public class GraphTel implements PageMinitel {
             for (int i = 0; i < maxWidth; i++) {
 
                 int index = (j * bytesPerRow) + (i >> 3);
-                
+
                 // Vérifier que l'index est valide
                 if (index >= bitmap.length) {
                     continue;
@@ -200,7 +219,8 @@ public class GraphTel implements PageMinitel {
     public void setPixel(int x, int y) {
         if ((x < widthScreen && x >= 0) && (y < heightScreen && y >= 0)) {
             screenGFX[widthScreen * y + x] = pen;
-            screenColor[widthScreen * y + x] = ink;
+            screenColor[widthScreen * y + x] = (byte) (bgcolor << 8 | ink);
+
         }
 
     }
@@ -210,6 +230,13 @@ public class GraphTel implements PageMinitel {
             return screenGFX[widthScreen * y + x];
         }
         return false;
+    }
+
+    public byte getColor(int x, int y) {
+        if ((x < widthScreen && x >= 0) && (y < heightScreen && y >= 0)) {
+            return screenColor[widthScreen * y + x];
+        }
+        return 0;
     }
 
     private byte[] convertToSemiGraph() {
@@ -311,7 +338,7 @@ public class GraphTel implements PageMinitel {
 
     public byte[] getDrawToBytes(int posx, int posy) throws IOException {
         byte data[] = convertToSemiGraph();
-        
+
         ByteArrayOutputStream fulldraw = new ByteArrayOutputStream();
 
         fulldraw.write(GetTeletelCode.setCursor(posx, posy));
@@ -335,13 +362,27 @@ public class GraphTel implements PageMinitel {
         for (int j = posy; j < maxHeight; j++) {
             fulldraw.write(GetTeletelCode.setCursor(posx, j));
             fulldraw.write(GetTeletelCode.setMode(Teletel.MODE_SEMI_GRAPH));
+
+            byte currentcolor = GetTeletelCode.COLOR_BLACK;
+            byte curreentbgcolor = currentcolor;
             for (int i = posx; i < maxWitdh; i++) {
+
+                currentcolor = (byte) (getColor(i, j) & 0x0F);
+                if (ink != currentcolor) {
+                    ink = currentcolor;
+                    fulldraw.write(GetTeletelCode.setTextColor(ink));
+                }
+                curreentbgcolor = (byte) ((getColor(i, j) >> 8) & 0x0F);
+                if (bgcolor != curreentbgcolor) {
+                    bgcolor = curreentbgcolor;
+                    fulldraw.write(GetTeletelCode.setBGColor(bgcolor));
+                }
+
                 fulldraw.write(data[wpage * (j - posy) + (i - posx)]);
             }
         }
         fulldraw.write(GetTeletelCode.setMode(Teletel.MODE_TEXT));
 
-        
         return fulldraw.toByteArray();
     }
 
@@ -364,7 +405,7 @@ public class GraphTel implements PageMinitel {
 
     /**
      * Écrit un bitmap dans le GraphTel
-     * 
+     *
      * @param mbits Tableau de bits (true = noir, false = blanc)
      */
     public void writeBitmap(boolean[] mbits) {
@@ -391,8 +432,9 @@ public class GraphTel implements PageMinitel {
         int scaleY = heightScreen / bitmapSize;
         int scale = Math.min(scaleX, scaleY);
 
-        if (scale < 1)
+        if (scale < 1) {
             scale = 1;
+        }
 
         // Calculer la position de centrage
         int scaledWidth = bitmapSize * scale;
@@ -417,8 +459,8 @@ public class GraphTel implements PageMinitel {
                         int screenX = offsetX + (x * scale) + sx;
                         int screenY = offsetY + (y * scale) + sy;
 
-                        if (screenX >= 0 && screenX < widthScreen &&
-                                screenY >= 0 && screenY < heightScreen) {
+                        if (screenX >= 0 && screenX < widthScreen
+                                && screenY >= 0 && screenY < heightScreen) {
                             setPixel(screenX, screenY);
                         }
                     }
@@ -443,6 +485,206 @@ public class GraphTel implements PageMinitel {
 
     public boolean getPen() {
         return pen;
+    }
+
+    // ========== CHARGEMENT D'IMAGES ==========
+
+    /**
+     * Palette des 8 couleurs Minitel
+     */
+    private static final int[][] MINITEL_PALETTE = {
+        {0, 0, 0},       // 0 = BLACK
+        {255, 0, 0},     // 1 = RED
+        {0, 255, 0},     // 2 = GREEN
+        {255, 255, 0},   // 3 = YELLOW
+        {0, 0, 255},     // 4 = BLUE
+        {255, 0, 255},   // 5 = MAGENTA
+        {0, 255, 255},   // 6 = CYAN
+        {255, 255, 255}  // 7 = WHITE
+    };
+
+    /**
+     * Charge une image depuis un fichier et la convertit en semi-graphique Minitel
+     * @param file Fichier image (PNG, JPEG, etc.)
+     */
+    public void loadImage(File file) throws IOException {
+        BufferedImage img = ImageIO.read(file);
+        if (img == null) {
+            throw new IOException("Impossible de lire l'image: " + file.getPath());
+        }
+        convertImage(img);
+    }
+
+    /**
+     * Charge une image depuis une URL et la convertit en semi-graphique Minitel
+     * @param url URL de l'image
+     */
+    public void loadImage(URL url) throws IOException {
+        BufferedImage img = ImageIO.read(url);
+        if (img == null) {
+            throw new IOException("Impossible de lire l'image: " + url);
+        }
+        convertImage(img);
+    }
+
+    /**
+     * Charge une image depuis un InputStream et la convertit en semi-graphique Minitel
+     * @param is InputStream de l'image
+     */
+    public void loadImage(InputStream is) throws IOException {
+        BufferedImage img = ImageIO.read(is);
+        if (img == null) {
+            throw new IOException("Impossible de lire l'image depuis le stream");
+        }
+        convertImage(img);
+    }
+
+    /**
+     * Convertit une BufferedImage en pixels Minitel
+     * @param img Image source
+     */
+    public void convertImage(BufferedImage img) {
+        System.out.println("🖼️ Conversion image " + img.getWidth() + "x" + img.getHeight() + 
+                          " -> GraphTel " + widthScreen + "x" + heightScreen);
+
+        // Effacer l'écran
+        clear();
+
+        // Calculer le ratio pour adapter l'image
+        double scaleX = (double) widthScreen / img.getWidth();
+        double scaleY = (double) heightScreen / img.getHeight();
+        double scale = Math.min(scaleX, scaleY);
+
+        int scaledWidth = (int) (img.getWidth() * scale);
+        int scaledHeight = (int) (img.getHeight() * scale);
+        int offsetX = (widthScreen - scaledWidth) / 2;
+        int offsetY = (heightScreen - scaledHeight) / 2;
+
+        System.out.println("   Échelle: " + String.format("%.2f", scale) + 
+                          ", Taille: " + scaledWidth + "x" + scaledHeight +
+                          ", Offset: (" + offsetX + ", " + offsetY + ")");
+
+        // Parcourir chaque pixel de l'écran GraphTel
+        for (int screenY = 0; screenY < heightScreen; screenY++) {
+            for (int screenX = 0; screenX < widthScreen; screenX++) {
+                // Calculer la position correspondante dans l'image source
+                int imgX = (int) ((screenX - offsetX) / scale);
+                int imgY = (int) ((screenY - offsetY) / scale);
+
+                // Vérifier si on est dans les limites de l'image
+                if (imgX >= 0 && imgX < img.getWidth() && imgY >= 0 && imgY < img.getHeight()) {
+                    int rgb = img.getRGB(imgX, imgY);
+                    int r = (rgb >> 16) & 0xFF;
+                    int g = (rgb >> 8) & 0xFF;
+                    int b = rgb & 0xFF;
+
+                    // Trouver la couleur Minitel la plus proche
+                    byte minitelColor = findClosestMinitelColor(r, g, b);
+
+                    // Déterminer si le pixel est "allumé" (pas noir)
+                    boolean pixelOn = (minitelColor != GetTeletelCode.COLOR_BLACK);
+
+                    // Stocker le pixel
+                    int index = widthScreen * screenY + screenX;
+                    screenGFX[index] = pixelOn;
+                    // Pour l'instant, on stocke juste la couleur du pixel (ink)
+                    // Le fond sera géré lors du rendu
+                    screenColor[index] = minitelColor;
+                } else {
+                    // Hors de l'image = noir
+                    int index = widthScreen * screenY + screenX;
+                    screenGFX[index] = false;
+                    screenColor[index] = GetTeletelCode.COLOR_BLACK;
+                }
+            }
+        }
+
+        System.out.println("✅ Image convertie");
+    }
+
+    /**
+     * Trouve la couleur Minitel la plus proche d'une couleur RGB
+     * Utilise la distance euclidienne dans l'espace RGB
+     */
+    private byte findClosestMinitelColor(int r, int g, int b) {
+        int bestColor = 0;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (int i = 0; i < MINITEL_PALETTE.length; i++) {
+            int dr = r - MINITEL_PALETTE[i][0];
+            int dg = g - MINITEL_PALETTE[i][1];
+            int db = b - MINITEL_PALETTE[i][2];
+            int distance = dr * dr + dg * dg + db * db;
+
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestColor = i;
+            }
+        }
+
+        return (byte) bestColor;
+    }
+
+    /**
+     * Charge une image en noir et blanc (sans couleurs)
+     * @param file Fichier image
+     */
+    public void loadImageBW(File file) throws IOException {
+        BufferedImage img = ImageIO.read(file);
+        if (img == null) {
+            throw new IOException("Impossible de lire l'image: " + file.getPath());
+        }
+        convertImageBW(img);
+    }
+
+    /**
+     * Convertit une image en noir et blanc
+     * @param img Image source
+     */
+    public void convertImageBW(BufferedImage img) {
+        System.out.println("🖼️ Conversion image N&B " + img.getWidth() + "x" + img.getHeight() + 
+                          " -> GraphTel " + widthScreen + "x" + heightScreen);
+
+        clear();
+
+        double scaleX = (double) widthScreen / img.getWidth();
+        double scaleY = (double) heightScreen / img.getHeight();
+        double scale = Math.min(scaleX, scaleY);
+
+        int scaledWidth = (int) (img.getWidth() * scale);
+        int scaledHeight = (int) (img.getHeight() * scale);
+        int offsetX = (widthScreen - scaledWidth) / 2;
+        int offsetY = (heightScreen - scaledHeight) / 2;
+
+        for (int screenY = 0; screenY < heightScreen; screenY++) {
+            for (int screenX = 0; screenX < widthScreen; screenX++) {
+                int imgX = (int) ((screenX - offsetX) / scale);
+                int imgY = (int) ((screenY - offsetY) / scale);
+
+                if (imgX >= 0 && imgX < img.getWidth() && imgY >= 0 && imgY < img.getHeight()) {
+                    int rgb = img.getRGB(imgX, imgY);
+                    int r = (rgb >> 16) & 0xFF;
+                    int g = (rgb >> 8) & 0xFF;
+                    int b = rgb & 0xFF;
+
+                    // Luminance (formule standard)
+                    int luminance = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+
+                    // Seuil à 128 pour noir/blanc
+                    boolean pixelOn = (luminance > 128);
+
+                    int index = widthScreen * screenY + screenX;
+                    screenGFX[index] = pixelOn;
+                    screenColor[index] = (byte) (pixelOn ? GetTeletelCode.COLOR_WHITE : GetTeletelCode.COLOR_BLACK);
+                } else {
+                    int index = widthScreen * screenY + screenX;
+                    screenGFX[index] = false;
+                    screenColor[index] = GetTeletelCode.COLOR_BLACK;
+                }
+            }
+        }
+
+        System.out.println("✅ Image N&B convertie");
     }
 
 }
