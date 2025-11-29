@@ -251,13 +251,13 @@ Champ de saisie texte. Doit être enfant de `<form>`.
 | `name`        | string | -      | Nom du paramètre GET           |
 | `left`        | int    | 0      | Position X (relative au form)  |
 | `top`         | int    | 0      | Position Y (relative au form)  |
-| `width`       | int    | 20     | Largeur du champ               |
+| `size`        | int    | 20     | Taille du champ en caractères  |
 | `label`       | string | -      | Label affiché avant le champ   |
 | `placeholder` | string | -      | Texte indicatif                |
 | `value`       | string | -      | Valeur par défaut              |
 
 ```xml
-<input name="email" left="0" top="0" width="25" label="Email: " placeholder="exemple@mail.com">
+<input name="email" left="0" top="0" size="25" label="Email: " placeholder="exemple@mail.com">
 ```
 
 **Affichage** : Le champ de saisie est affiché en vidéo inverse pour être visible.
@@ -415,8 +415,8 @@ Zone dédiée à l'affichage des informations de focus (menu/input actif). Ce ta
   
   <!-- Formulaire de recherche -->
   <form action="search.vtml" left="0" top="17">
-    <input name="query" left="0" top="0" width="20" label="Recherche: "/>
-    <input name="ville" left="0" top="2" width="15" label="Ville: "/>
+    <input name="query" left="0" top="0" size="20" label="Recherche: "/>
+    <input name="ville" left="0" top="2" size="15" label="Ville: "/>
   </form>
   
   <!-- QR code -->

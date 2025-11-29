@@ -208,7 +208,7 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
     
     /**
      * Ajoute un caractère à la valeur (appelé lors de la saisie)
-     * @return Les bytes pour afficher le caractère
+     * @return Les bytes (vide si OK, bip + correction si champ plein)
      */
     public byte[] appendChar(char c) {
         if (value == null) {
@@ -216,10 +216,11 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
         }
         if (value.length() < getWidth()) {
             value += c;
-            // DEBUG: ne rien renvoyer pour tester si l'écho vient du Minitel
+            // Ne rien renvoyer : le Minitel affiche déjà via écho local
             return new byte[0];
         }
-        return new byte[0]; // Champ plein
+        // Champ plein : bip + backspace + espace + backspace pour annuler l'écho local
+        return new byte[] { 0x07, 0x08, ' ', 0x08 };
     }
     
     /**

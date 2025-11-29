@@ -325,9 +325,9 @@ public class MinitelPageReader {
                 String name = attrs.get("name");
                 int left = parseInt(attrs.get("left"), 0);
                 int top = parseInt(attrs.get("top"), 0);
-                int width = parseInt(attrs.get("width"), 20);
+                int size = parseInt(attrs.get("size"), 20);
                 String label = attrs.get("label");
-                VTMLInputComponent input = new VTMLInputComponent(name, left, top, width, label);
+                VTMLInputComponent input = new VTMLInputComponent(name, left, top, size, label);
                 
                 String placeholder = attrs.get("placeholder");
                 if (placeholder != null) {
