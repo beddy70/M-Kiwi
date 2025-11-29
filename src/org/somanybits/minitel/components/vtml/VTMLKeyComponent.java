@@ -16,7 +16,8 @@ public class VTMLKeyComponent extends ModelMComponent {
 
     public enum KeyName {
         SOMMAIRE,
-        GUIDE
+        GUIDE,
+        TELEPHONE
     }
 
     private KeyName keyName;
@@ -59,6 +60,8 @@ public class VTMLKeyComponent extends ModelMComponent {
                 return KeyName.SOMMAIRE;
             case "guide":
                 return KeyName.GUIDE;
+            case "telephone":
+                return KeyName.TELEPHONE;
             default:
                 return null;
         }

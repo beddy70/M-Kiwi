@@ -245,6 +245,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             keyvalue = "ENVOI";
                             break;
                         case KeyPressedEvent.KEY_TELEPHONE:
+                            // Naviguer vers l'URL associée à TELEPHONE si définie
+                            if (pmgr.getCurrentPage() != null && pmgr.getCurrentPage().hasFunctionKey("TELEPHONE")) {
+                                String link = pmgr.getCurrentPage().getFunctionKeyLink("TELEPHONE");
+                                pmgr.navigate(link);
+                                mc.writeBytes(pmgr.getCurrentPage().getData());
+                                updateCurrentForm(pmgr.getCurrentPage());
+                            }
                             keyvalue = "TELEPHONE";
                             break;
                         case KeyPressedEvent.KEY_CONNEXION_FIN:

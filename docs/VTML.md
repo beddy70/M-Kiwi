@@ -268,10 +268,10 @@ Champ de saisie texte. Doit être enfant de `<form>`.
 
 Associe une touche de fonction Minitel à une URL de navigation.
 
-| Attribut | Type   | Défaut | Description                              |
-|----------|--------|--------|------------------------------------------|
-| `name`   | string | -      | Nom de la touche : `sommaire` ou `guide` |
-| `link`   | string | -      | URL cible                                |
+| Attribut | Type   | Défaut | Description                                          |
+|----------|--------|--------|------------------------------------------------------|
+| `name`   | string | -      | Nom de la touche : `sommaire`, `guide` ou `telephone` |
+| `link`   | string | -      | URL cible                                            |
 
 ```xml
 <!-- Touche SOMMAIRE -> page d'accueil -->
@@ -279,11 +279,15 @@ Associe une touche de fonction Minitel à une URL de navigation.
 
 <!-- Touche GUIDE -> page d'aide -->
 <key name="guide" link="aide.vtml">
+
+<!-- Touche TELEPHONE -> page contact -->
+<key name="telephone" link="contact.vtml">
 ```
 
 **Touches supportées** :
 - `sommaire` - Touche SOMMAIRE
 - `guide` - Touche GUIDE
+- `telephone` - Touche TELEPHONE
 
 **Note** : Ce tag ne génère pas d'affichage, il définit uniquement le comportement des touches.
 
