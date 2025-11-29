@@ -101,6 +101,12 @@ public class PageManager {
         Page newPage = pageReader.get(url);
         newPage.setUrl(url);
         
+        // Hériter des touches de fonction de la page précédente dans l'historique
+        if (currentIndex > 0) {
+            Page previousPage = history.get(currentIndex - 1);
+            newPage.inheritFunctionKeys(previousPage);
+        }
+        
         System.out.println("✅ reload: page rechargée, " + newPage.getData().length + " bytes");
         
         // Remplacer dans l'historique

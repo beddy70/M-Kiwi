@@ -17,39 +17,116 @@ import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.Teletel;
 
 /**
- *
+ * GraphTel - Gestionnaire de graphiques semi-graphiques pour Minitel
+ * 
+ * <h2>Description</h2>
+ * Cette classe gère un buffer graphique en mémoire et le convertit en caractères
+ * semi-graphiques Minitel. Le Minitel utilise des caractères spéciaux où chaque
+ * caractère représente un bloc de 2×3 pixels (6 pixels par caractère).
+ * 
+ * <h2>Système de coordonnées</h2>
+ * <ul>
+ *   <li><b>Pixels</b> : Coordonnées internes (widthScreen × heightScreen)</li>
+ *   <li><b>Caractères</b> : Coordonnées écran Minitel (40×25 max)</li>
+ *   <li>Conversion : 1 caractère = 2 pixels en X, 3 pixels en Y</li>
+ * </ul>
+ * 
+ * <h2>Palette de couleurs</h2>
+ * Le Minitel supporte 8 couleurs :
+ * <pre>
+ * 0 = Noir    (BLACK)     4 = Bleu    (BLUE)
+ * 1 = Rouge   (RED)       5 = Magenta (MAGENTA)
+ * 2 = Vert    (GREEN)     6 = Cyan    (CYAN)
+ * 3 = Jaune   (YELLOW)    7 = Blanc   (WHITE)
+ * </pre>
+ * 
+ * <h2>Modes de conversion d'images</h2>
+ * <ul>
+ *   <li><b>Couleur</b> : Conversion vers les 8 couleurs Minitel</li>
+ *   <li><b>Dithering</b> : Tramage Floyd-Steinberg pour meilleur rendu des dégradés</li>
+ *   <li><b>Bitmap</b> : Noir et blanc uniquement (seuil de luminance)</li>
+ * </ul>
+ * 
+ * <h2>Exemple d'utilisation</h2>
+ * <pre>{@code
+ * // Créer un GraphTel de 40×24 caractères (80×72 pixels)
+ * GraphTel gfx = new GraphTel(80, 72);
+ * 
+ * // Dessiner des primitives
+ * gfx.setPen(true);
+ * gfx.setLine(0, 0, 79, 71);
+ * gfx.setCircle(40, 36, 20);
+ * 
+ * // Charger une image
+ * gfx.loadImage(new URL("http://example.com/image.png"), "dithering");
+ * 
+ * // Obtenir les bytes pour envoi au Minitel
+ * byte[] data = gfx.getDrawToBytes(0, 0);
+ * }</pre>
+ * 
  * @author eddy
+ * @see Teletel
+ * @see GetTeletelCode
  */
 public class GraphTel implements PageMinitel {
 
+    /** Largeur par défaut en pixels (80 = 40 caractères × 2) */
     final public static int DEFAULT_SCREEN_WIDTH = Teletel.PAGE_WIDTH * 2;
+    
+    /** Hauteur par défaut en pixels (75 = 25 caractères × 3) */
     final public static int DEFAULT_SCREEN_HEIGHT = Teletel.PAGE_HEIGHT * 3;
-    // private byte pen=Teletel.COLOR_WHITE;
 
+    /** État du stylo (true = dessine, false = efface) */
     private boolean pen = true;
+    
+    /** Buffer des pixels (true = allumé, false = éteint) */
     private boolean screenGFX[];
 
+    /** Buffer des couleurs par pixel (0-7) */
     private byte screenColor[];
+    
+    /** Largeur en pixels */
     private int widthScreen;
+    
+    /** Hauteur en pixels */
     private int heightScreen;
+    
+    /** Couleur d'encre courante (foreground) */
     private byte ink = GetTeletelCode.COLOR_WHITE;
+    
+    /** Couleur de fond courante (background) */
     private byte bgcolor = GetTeletelCode.COLOR_BLACK;
 
+    /**
+     * Constructeur avec dimensions personnalisées
+     * @param w Largeur en pixels (sera arrondie au multiple de 2 supérieur)
+     * @param h Hauteur en pixels (sera arrondie au multiple de 3 supérieur)
+     */
     public GraphTel(int w, int h) {
         init(w, h);
-
     }
 
+    /**
+     * Constructeur par défaut (plein écran : 80×75 pixels = 40×25 caractères)
+     */
     public GraphTel() {
         init(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
     }
 
+    /**
+     * Définit la couleur d'encre (foreground) pour les prochains dessins
+     * @param color Code couleur Minitel (0-7)
+     */
     public void setInk(byte color) {
         ink = color;
     }
 
+    /**
+     * Définit la couleur de fond (background) pour les prochains dessins
+     * @param bgcolor Code couleur Minitel (0-7)
+     */
     public void setBGColor(byte bgcolor) {
-        bgcolor = bgcolor;
+        this.bgcolor = bgcolor;
     }
 
     private void init(int w, int h) {
@@ -77,10 +154,23 @@ public class GraphTel implements PageMinitel {
         }
     }
 
+    /**
+     * Définit l'état du stylo
+     * @param color true = dessine (allume les pixels), false = efface (éteint les pixels)
+     */
     public void setPen(boolean color) {
         pen = color;
     }
 
+    // ========== PRIMITIVES DE DESSIN ==========
+    
+    /**
+     * Trace une ligne entre deux points (algorithme de Bresenham)
+     * @param x1 Coordonnée X du point de départ (en pixels)
+     * @param y1 Coordonnée Y du point de départ (en pixels)
+     * @param x2 Coordonnée X du point d'arrivée (en pixels)
+     * @param y2 Coordonnée Y du point d'arrivée (en pixels)
+     */
     public void setLine(int x1, int y1, int x2, int y2) {
         // algo built with this link http://fvirtman.free.fr/recueil/02_03_03_line.c.php
         // int dx = (x2 - x1);
@@ -138,6 +228,12 @@ public class GraphTel implements PageMinitel {
         setPixel(x2, y2);
     }
 
+    /**
+     * Trace un cercle (algorithme d'Andres)
+     * @param x1 Coordonnée X du centre (en pixels)
+     * @param y1 Coordonnée Y du centre (en pixels)
+     * @param r Rayon du cercle (en pixels)
+     */
     public void setCircle(int x1, int y1, int r) {
         // Algo built with this link
         // https://www.wikiwand.com/fr/Algorithme_de_trac%C3%A9_de_cercle_d'Andres
@@ -170,6 +266,12 @@ public class GraphTel implements PageMinitel {
         }
     }
 
+    // ========== GESTION DES BITMAPS ==========
+    
+    /**
+     * Écrit un bitmap (format byte array) dans le GraphTel
+     * @param bitmap Tableau d'octets représentant le bitmap (1 bit par pixel, MSB first)
+     */
     public void writeBitmap(byte[] bitmap) {
         // Calculer les dimensions réelles du bitmap à partir de sa taille
         int bytesPerRow = (widthScreen + 7) >> 3;
@@ -200,6 +302,9 @@ public class GraphTel implements PageMinitel {
         debugAscii(bitmap, maxWidth, maxHeight);
     }
 
+    /**
+     * Affiche un aperçu ASCII du bitmap dans la console (debug)
+     */
     private static void debugAscii(byte[] data, int width, int height) {
         int bytesPerRow = (width + 7) / 8;
         System.out.println("=== Aperçu ASCII ===");
@@ -216,6 +321,13 @@ public class GraphTel implements PageMinitel {
         System.out.println("====================");
     }
 
+    // ========== MANIPULATION DES PIXELS ==========
+    
+    /**
+     * Allume ou éteint un pixel selon l'état du stylo (pen)
+     * @param x Coordonnée X (en pixels)
+     * @param y Coordonnée Y (en pixels)
+     */
     public void setPixel(int x, int y) {
         if ((x < widthScreen && x >= 0) && (y < heightScreen && y >= 0)) {
             screenGFX[widthScreen * y + x] = pen;
@@ -225,6 +337,12 @@ public class GraphTel implements PageMinitel {
 
     }
 
+    /**
+     * Retourne l'état d'un pixel
+     * @param x Coordonnée X (en pixels)
+     * @param y Coordonnée Y (en pixels)
+     * @return true si allumé, false si éteint ou hors limites
+     */
     public boolean getPixel(int x, int y) {
         if ((x < widthScreen && x >= 0) && (y < heightScreen && y >= 0)) {
             return screenGFX[widthScreen * y + x];
@@ -232,6 +350,12 @@ public class GraphTel implements PageMinitel {
         return false;
     }
 
+    /**
+     * Retourne la couleur d'un pixel
+     * @param x Coordonnée X (en pixels)
+     * @param y Coordonnée Y (en pixels)
+     * @return Code couleur Minitel (0-7) ou 0 si hors limites
+     */
     public byte getColor(int x, int y) {
         if ((x < widthScreen && x >= 0) && (y < heightScreen && y >= 0)) {
             return screenColor[widthScreen * y + x];
@@ -316,21 +440,17 @@ public class GraphTel implements PageMinitel {
                 }
 
                 data[car++] = (byte) semigfx;
-                // System.out.println(i + ":" + j + "-" + car);
             }
 
         }
         return data;
     }
 
-    // public void drawClipScreen(Teletel t, int x1, int y1, int width, int length)
-    // {
-    // byte data[] = convertToSemiGraph();
-    //
-    // }
-    // public void drawScreen(Teletel t) {
-    //
-    // }
+    // ========== MÉTHODES D'AFFICHAGE ==========
+    
+    /**
+     * Efface le buffer graphique (tous les pixels à false)
+     */
     @Override
     public void clear() {
 
@@ -339,10 +459,15 @@ public class GraphTel implements PageMinitel {
         }
     }
 
+    /**
+     * Dessine le GraphTel sur un terminal Minitel à la position spécifiée
+     * @param t Terminal Minitel
+     * @param posx Position X en caractères (0-39)
+     * @param posy Position Y en caractères (0-24)
+     */
     @Override
     public void drawToPage(Teletel t, int posx, int posy) throws IOException {
         byte data[] = convertToSemiGraph();
-        // t.setCursorHome();
 
         t.setCursor(posx, posy);
 
@@ -372,10 +497,31 @@ public class GraphTel implements PageMinitel {
         t.setMode(Teletel.MODE_TEXT);
     }
 
+    /**
+     * Retourne les données graphiques sous forme de String (pour debug)
+     * @param posx Position X en caractères
+     * @param posy Position Y en caractères
+     * @return String contenant les codes Vidéotex
+     */
     public String getDrawToString(int posx, int posy) throws IOException {
         return new String(getDrawToBytes(posx, posy));
     }
 
+    /**
+     * Génère les codes Vidéotex pour afficher le GraphTel
+     * <p>
+     * Cette méthode convertit le buffer graphique en séquence d'octets
+     * prête à être envoyée au Minitel. Elle gère :
+     * <ul>
+     *   <li>Le positionnement du curseur</li>
+     *   <li>Les changements de couleur (encre et fond)</li>
+     *   <li>La conversion en caractères semi-graphiques</li>
+     * </ul>
+     * 
+     * @param posx Position X de départ en caractères (0-39)
+     * @param posy Position Y de départ en caractères (0-24)
+     * @return Tableau d'octets contenant les codes Vidéotex
+     */
     public byte[] getDrawToBytes(int posx, int posy) throws IOException {
         byte data[] = convertToSemiGraph();
 
@@ -511,17 +657,18 @@ public class GraphTel implements PageMinitel {
         return (int) Math.ceil(heightScreen / 3);
     }
 
+    /**
+     * Inverse tous les pixels du buffer (négatif)
+     */
     public void inverseBitmap() {
         for (int i = 0; i < screenGFX.length; i++) {
             screenGFX[i] = !screenGFX[i];
-
         }
     }
 
     /**
-     * Écrit un bitmap dans le GraphTel
-     *
-     * @param mbits Tableau de bits (true = noir, false = blanc)
+     * Écrit un bitmap booléen dans le GraphTel avec mise à l'échelle et centrage
+     * @param mbits Tableau de bits carrés (true = pixel allumé, false = éteint)
      */
     public void writeBitmap(boolean[] mbits) {
         if (mbits == null) {
@@ -589,15 +736,19 @@ public class GraphTel implements PageMinitel {
         System.out.println("✅ Bitmap écrit avec succès");
     }
 
-    // Getters pour QRCodeDisplay
+    // ========== GETTERS ==========
+    
+    /** @return Largeur du buffer en pixels */
     public int getWidthScreen() {
         return widthScreen;
     }
 
+    /** @return Hauteur du buffer en pixels */
     public int getHeightScreen() {
         return heightScreen;
     }
 
+    /** @return État actuel du stylo */
     public boolean getPen() {
         return pen;
     }

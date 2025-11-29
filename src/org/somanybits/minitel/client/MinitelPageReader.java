@@ -114,7 +114,7 @@ public class MinitelPageReader {
             
             renderComponentTree(rootComponent);
 
-             printComponentTree(rootComponent, 0);
+            // printComponentTree(rootComponent, 0);
             System.out.println();
         }
 
