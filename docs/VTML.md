@@ -160,13 +160,13 @@ Affiche une image convertie en semi-graphique Minitel.
 
 Génère un QR code affichable sur Minitel.
 
-| Attribut  | Type   | Défaut | Description                        |
-|-----------|--------|--------|------------------------------------|
-| `type`    | string | `url`  | Type : `url` ou `wpawifi`          |
-| `message` | string | -      | Contenu du QR code                 |
-| `scale`   | int    | 1      | Facteur d'échelle (1-3)            |
-| `left`    | int    | 0      | Position X                         |
-| `top`     | int    | 0      | Position Y                         |
+| Attribut  | Type   | Défaut | Description                          |
+|-----------|--------|--------|--------------------------------------|
+| `type`    | string | `url`  | Type : `url`, `wpawifi` ou `vcard`   |
+| `message` | string | -      | Contenu du QR code                   |
+| `scale`   | int    | 1      | Facteur d'échelle (1-3)              |
+| `left`    | int    | 0      | Position X                           |
+| `top`     | int    | 0      | Position Y                           |
 
 ```xml
 <!-- QR code URL -->
@@ -174,7 +174,18 @@ Génère un QR code affichable sur Minitel.
 
 <!-- QR code WiFi -->
 <qrcode type="wpawifi" message="ssid:'MonSSID', password:'MonMotDePasse'" scale="1" left="5" top="10">
+
+<!-- QR code vCard -->
+<qrcode type="vcard" message="name:'Dupont;Marc', tel:'+33663190308', email:'contact@dupont.org', org:'Dupont Cie', title:'PDG', url:'marc@dupont.org'" left="11" top="7" scale="1"/>
 ```
+
+**Champs vCard supportés** :
+- `name:'...'` - Nom complet
+- `tel:'...'` - Téléphone
+- `email:'...'` - Email
+- `org:'...'` - Organisation
+- `title:'...'` - Titre/Fonction
+- `url:'...'` - Site web
 
 ---
 

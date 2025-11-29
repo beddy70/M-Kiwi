@@ -284,8 +284,14 @@ public class MinitelPageReader {
                 int left = parseInt(attrs.get("left"), 0);
                 int top = parseInt(attrs.get("top"), 0);
                 
-                VTMLQRCodeComponent.QRType qrType = "wpawifi".equals(type) ? 
-                    VTMLQRCodeComponent.QRType.WPAWIFI : VTMLQRCodeComponent.QRType.URL;
+                VTMLQRCodeComponent.QRType qrType;
+                if ("wpawifi".equals(type)) {
+                    qrType = VTMLQRCodeComponent.QRType.WPAWIFI;
+                } else if ("vcard".equals(type)) {
+                    qrType = VTMLQRCodeComponent.QRType.VCARD;
+                } else {
+                    qrType = VTMLQRCodeComponent.QRType.URL;
+                }
                 
                 VTMLQRCodeComponent qrComponent = new VTMLQRCodeComponent(qrType, message, scale);
                 qrComponent.setX(left);

@@ -8,14 +8,14 @@ import org.somanybits.minitel.components.qrcode.WiFiQRGenerator;
 
 /**
  * Composant VTML représentant le tag <qrcode>
- * Génère des QR codes avec types url ou wpawifi
+ * Génère des QR codes avec types url, wpawifi ou vcard
  *
  * @author eddy
  */
 public class VTMLQRCodeComponent extends ModelMComponent {
 
     public enum QRType {
-        URL, WPAWIFI
+        URL, WPAWIFI, VCARD
     }
 
     private QRType type;
@@ -57,6 +57,66 @@ public class VTMLQRCodeComponent extends ModelMComponent {
 
     public void setScale(int scale) {
         this.scale = scale;
+    }
+
+    /**
+     * Parse le message vCard au format: name:'nom', tel:'telephone', email:'email'
+     */
+    private String parseVCardMessage(String message) {
+        try {
+            String name = null;
+            String tel = null;
+            String email = null;
+            String org = null;
+            String title = null;
+            String url = null;
+
+            if (message.contains("name:'")) {
+                int start = message.indexOf("name:'") + 6;
+                int end = message.indexOf("'", start);
+                if (end > start) name = message.substring(start, end);
+            }
+            if (message.contains("tel:'")) {
+                int start = message.indexOf("tel:'") + 5;
+                int end = message.indexOf("'", start);
+                if (end > start) tel = message.substring(start, end);
+            }
+            if (message.contains("email:'")) {
+                int start = message.indexOf("email:'") + 7;
+                int end = message.indexOf("'", start);
+                if (end > start) email = message.substring(start, end);
+            }
+            if (message.contains("org:'")) {
+                int start = message.indexOf("org:'") + 5;
+                int end = message.indexOf("'", start);
+                if (end > start) org = message.substring(start, end);
+            }
+            if (message.contains("title:'")) {
+                int start = message.indexOf("title:'") + 7;
+                int end = message.indexOf("'", start);
+                if (end > start) title = message.substring(start, end);
+            }
+            if (message.contains("url:'")) {
+                int start = message.indexOf("url:'") + 5;
+                int end = message.indexOf("'", start);
+                if (end > start) url = message.substring(start, end);
+            }
+
+            StringBuilder vcard = new StringBuilder();
+            vcard.append("BEGIN:VCARD\n");
+            vcard.append("VERSION:3.0\n");
+            if (name != null) vcard.append("N:").append(name).append("\n");
+            if (tel != null) vcard.append("TEL:").append(tel).append("\n");
+            if (email != null) vcard.append("EMAIL:").append(email).append("\n");
+            if (org != null) vcard.append("ORG:").append(org).append("\n");
+            if (title != null) vcard.append("TITLE:").append(title).append("\n");
+            if (url != null) vcard.append("URL:").append(url).append("\n");
+            vcard.append("END:VCARD");
+
+            return vcard.toString();
+        } catch (Exception e) {
+            return message;
+        }
     }
 
     /**
@@ -104,6 +164,8 @@ public class VTMLQRCodeComponent extends ModelMComponent {
             String qrContent = message;
             if (type == QRType.WPAWIFI && message != null) {
                 qrContent = parseWiFiMessage(message);
+            } else if (type == QRType.VCARD && message != null) {
+                qrContent = parseVCardMessage(message);
             }
 
             // Générer le QR Code avec ZXing
