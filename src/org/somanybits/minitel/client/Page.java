@@ -10,6 +10,8 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.somanybits.minitel.components.vtml.VTMLFormComponent;
+import org.somanybits.minitel.components.vtml.VTMLStatusComponent;
 
 /**
  *
@@ -160,6 +162,56 @@ public class Page {
                 functionKeyLinks.put(keyName, entry.getValue());
             }
         }
+    }
+
+    // ========== SYSTÈME DE FORMULAIRES ==========
+    
+    private VTMLFormComponent form = null;
+    
+    /**
+     * Définit le formulaire de la page
+     */
+    public void setForm(VTMLFormComponent form) {
+        this.form = form;
+    }
+    
+    /**
+     * Retourne le formulaire de la page (ou null si pas de formulaire)
+     */
+    public VTMLFormComponent getForm() {
+        return form;
+    }
+    
+    /**
+     * Vérifie si la page contient un formulaire
+     */
+    public boolean hasForm() {
+        return form != null;
+    }
+
+    // ========== ZONE STATUS ==========
+    
+    private VTMLStatusComponent status = null;
+    
+    /**
+     * Définit la zone status de la page
+     */
+    public void setStatus(VTMLStatusComponent status) {
+        this.status = status;
+    }
+    
+    /**
+     * Retourne la zone status de la page (ou null si non définie)
+     */
+    public VTMLStatusComponent getStatus() {
+        return status;
+    }
+    
+    /**
+     * Vérifie si la page a une zone status
+     */
+    public boolean hasStatus() {
+        return status != null;
     }
 
 }

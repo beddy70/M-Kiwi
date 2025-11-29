@@ -65,6 +65,7 @@ public class MinitelPageReader {
                     .timeout(15_000)
                     .get();
         } catch (IOException ex) {
+            System.err.println("Error reading page: " + ex.getMessage());
             page.addData(("Error:" + ex.getMessage()).getBytes());
             return page;
         }
@@ -178,6 +179,12 @@ public class MinitelPageReader {
             } else if (currentComponent != null) {
                 // Ajouter comme enfant du composant courant
                 currentComponent.addChild(component);
+                
+                // Si c'est un formulaire, l'enregistrer dans la page
+                if (component instanceof VTMLFormComponent formComponent) {
+                    page.setForm(formComponent);
+                    System.out.println("📋 Formulaire enregistré dans la page");
+                }
                 
                 // Descendre dans le composant seulement s'il peut avoir des enfants
                 // (pas pour les composants "feuilles" comme qrcode, br, row, item)
@@ -357,6 +364,17 @@ public class MinitelPageReader {
             
             case "blink" -> {
                 return new VTMLBlinkComponent(textContent);
+            }
+            
+            case "status" -> {
+                int left = parseInt(attrs.get("left"), 0);
+                int top = parseInt(attrs.get("top"), 0);
+                int width = parseInt(attrs.get("width"), 40);
+                int height = parseInt(attrs.get("height"), 1);
+                VTMLStatusComponent status = new VTMLStatusComponent(left, top, width, height);
+                // Enregistrer le status dans la page
+                page.setStatus(status);
+                return status;
             }
             
             default -> {

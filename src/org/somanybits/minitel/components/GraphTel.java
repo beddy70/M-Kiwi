@@ -804,11 +804,36 @@ public class GraphTel implements PageMinitel {
     }
     
     public void loadImage(URL url, String style) throws IOException {
-        BufferedImage img = ImageIO.read(url);
+        BufferedImage img = loadImageFromUrl(url);
         if (img == null) {
             throw new IOException("Impossible de lire l'image: " + url);
         }
         convertImageWithStyle(img, style);
+    }
+    
+    /**
+     * Charge une image depuis une URL avec des headers HTTP simulant un navigateur.
+     * Cela permet de contourner les protections hotlinking de certains sites.
+     * 
+     * @param url URL de l'image
+     * @return BufferedImage ou null si échec
+     */
+    private BufferedImage loadImageFromUrl(URL url) throws IOException {
+        java.net.URLConnection conn = url.openConnection();
+        
+        // Simuler un navigateur pour éviter les blocages hotlinking
+        conn.setRequestProperty("User-Agent", 
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        conn.setRequestProperty("Accept", 
+            "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
+        conn.setRequestProperty("Accept-Language", "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7");
+        conn.setRequestProperty("Referer", url.getProtocol() + "://" + url.getHost() + "/");
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(15000);
+        
+        try (InputStream is = conn.getInputStream()) {
+            return ImageIO.read(is);
+        }
     }
 
     /**

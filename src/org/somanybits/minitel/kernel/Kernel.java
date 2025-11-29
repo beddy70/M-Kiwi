@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import org.somanybits.log.LogManager;
 import org.somanybits.minitel.client.PageManager;
 import org.somanybits.minitel.server.MModulesManager;
+import org.somanybits.minitel.util.SSLHelper;
 
 /**
  *
@@ -28,6 +29,11 @@ public class Kernel {
         mmodmgr = new MModulesManager();
 
         cfg = ConfigLoader.load(Path.of("./config.json"));
+        
+        // Désactiver la vérification SSL si configuré (pour le développement)
+        if (cfg.ssl.trustAllCertificates) {
+            SSLHelper.disableCertificateValidation();
+        }
         
         // Initialiser le PageManager avec la config
         pageManager = new PageManager("localhost", cfg.server.port);

@@ -6,14 +6,15 @@ package org.somanybits.minitel.client;
 
 //import jssc.SerialPortException;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.somanybits.log.LogManager;
 import org.somanybits.minitel.MinitelConnection;
 import org.somanybits.minitel.Teletel;
-import org.somanybits.minitel.components.GraphTel;
+import org.somanybits.minitel.components.vtml.VTMLFormComponent;
+import org.somanybits.minitel.components.vtml.VTMLInputComponent;
+import org.somanybits.minitel.components.vtml.VTMLStatusComponent;
 import org.somanybits.minitel.events.CodeSequenceListener;
 import org.somanybits.minitel.events.CodeSequenceSentEvent;
 import org.somanybits.minitel.events.KeyPressedEvent;
@@ -36,6 +37,11 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     MinitelPageReader mtr;
 
     Teletel t;
+    
+    // Système de focus pour les formulaires
+    private VTMLFormComponent currentForm = null;
+    private VTMLStatusComponent currentStatus = null;
+    private boolean formHasFocus = false;  // true = focus sur form/inputs, false = focus sur menu
 
     public static void main(String[] args) throws Exception {
 
@@ -128,6 +134,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         try {
             Thread.sleep(1000); // pause de 1000 millisecondes = 1 seconde
         } catch (InterruptedException e) {
+            t.setMode(Teletel.MODE_TEXT);
             Thread.currentThread().interrupt(); // bonne pratique
             System.err.println("Pause interrompue");
         }
@@ -196,17 +203,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             keyvalue = "ANNULATION";
                             break;
                         case KeyPressedEvent.KEY_RETOUR:
-
                             pmgr.back();
                             mc.writeBytes(pmgr.getCurrentPage().getData());
-
+                            updateCurrentForm(pmgr.getCurrentPage());
                             keyvalue = "RETOUR";
                             break;
                         case KeyPressedEvent.KEY_REPETITION:
-
                             pmgr.reload();
                             mc.writeBytes(pmgr.getCurrentPage().getData());
-
+                            updateCurrentForm(pmgr.getCurrentPage());
                             keyvalue = "REPETITION";
                             break;
                         case KeyPressedEvent.KEY_GUIDE:
@@ -222,10 +227,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             keyvalue = "CORRECTION";
                             break;
                         case KeyPressedEvent.KEY_SUITE:
-
                             pmgr.forward();
                             mc.writeBytes(pmgr.getCurrentPage().getData());
-
+                            updateCurrentForm(pmgr.getCurrentPage());
                             keyvalue = "SUITE";
                             break;
                         case KeyPressedEvent.KEY_ENVOI:
@@ -243,20 +247,81 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     break;
                 case KeyPressedEvent.TYPE_KEY_CHAR_EVENT:
                     keyvalue = event.getKeyCode() + "";
-
-                    Page currentpage = Kernel.getIntance().getPageManager().getCurrentPage();
                     char car = (char) event.getKeyCode();
+                    
+                    // Touche Entrée = basculer entre form et menu
+                    if (car == 0x0D || car == 0x0A) {
+                        if (currentForm != null && currentForm.hasInputs()) {
+                            if (formHasFocus) {
+                                // On est dans le form : passer à l'input suivant ou sortir
+                                VTMLInputComponent currentInput = currentForm.getCurrentInput();
+                                int currentIdx = currentForm.getCurrentInputIndex();
+                                int totalInputs = currentForm.getFocusableInputs().size();
+                                
+                                if (currentIdx < totalInputs - 1) {
+                                    // Pas encore au dernier input : passer au suivant
+                                    if (currentInput != null) {
+                                        mc.writeBytes(currentInput.onFocusLost());
+                                    }
+                                    currentInput = currentForm.nextInput();
+                                    if (currentInput != null) {
+                                        mc.writeBytes(currentInput.onFocusGained());
+                                        showStatusMessage(">> " + currentInput.getFocusLabel() + " <<");
+                                    }
+                                } else {
+                                    // Dernier input : sortir du form, passer au menu
+                                    if (currentInput != null) {
+                                        mc.writeBytes(currentInput.onFocusLost());
+                                    }
+                                    formHasFocus = false;
+                                    // Afficher indicateur menu dans la zone status
+                                    showStatusMessage(">> Menu <<");
+                                    System.out.println("🔄 Focus -> MENU");
+                                }
+                            } else {
+                                // On est sur le menu : revenir au premier input du form
+                                formHasFocus = true;
+                                currentForm.setInputIndex(0);
+                                VTMLInputComponent firstInput = currentForm.getCurrentInput();
+                                if (firstInput != null) {
+                                    mc.writeBytes(firstInput.onFocusGained());
+                                    showStatusMessage(">> " + firstInput.getFocusLabel() + " <<");
+                                }
+                                System.out.println("🔄 Focus -> FORM (input 0)");
+                            }
+                        }
+                        break;
+                    }
+                    
+                    // Si focus sur form : capturer les caractères pour l'input
+                    if (currentForm != null && formHasFocus && currentForm.hasInputs()) {
+                        VTMLInputComponent currentInput = currentForm.getCurrentInput();
+                        if (currentInput != null) {
+                            // Backspace / Correction
+                            if (car == 0x08 || car == 0x7F) {
+                                mc.writeBytes(currentInput.deleteChar());
+                                break;
+                            } else if (car >= 0x20 && car < 0x7F) {
+                                // Caractère imprimable -> saisie dans l'input
+                                mc.writeBytes(currentInput.appendChar(car));
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Focus sur menu (ou pas de form) : comportement navigation
+                    Page currentpage = pmgr.getCurrentPage();
                     if (currentpage != null) {
                         if (currentpage.getLink("" + car) != null) {
                             System.out.println("key=" + ((char) car) + " link=" + currentpage.getLink((char) car + ""));
                             try {
-                                //currentpage = mtr.get(currentpage.getLink((char) car + ""));
                                 currentpage = pmgr.navigate(currentpage.getLink((char) car + ""));
                                 mc.writeBytes(currentpage.getData());
+                                // Mettre à jour le formulaire si la nouvelle page en a un
+                                updateCurrentForm(currentpage);
                             } catch (IOException ex) {
                                 System.getLogger(MinitelClient.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
                             }
-
                         }
                     }
 
@@ -284,10 +349,60 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
             System.out.println(">" + keyvalue);
         } catch (IOException ex) {
+             
             System.getLogger(MinitelClient.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
     }
 
+    /**
+     * Met à jour le formulaire courant à partir de la page
+     * Cherche un VTMLFormComponent dans la page et initialise le focus
+     * Par défaut, le focus commence sur le menu (formHasFocus = false)
+     */
+    private void updateCurrentForm(Page page) {
+        currentForm = page.getForm();
+        currentStatus = page.getStatus();
+        
+        if (currentForm != null && currentForm.hasInputs()) {
+            // Par défaut, on commence sur le menu
+            formHasFocus = false;
+            currentForm.setInputIndex(0);
+            System.out.println("📋 Formulaire détecté avec " + currentForm.getFocusableInputs().size() + " inputs (focus: MENU)");
+            
+            // Afficher indicateur menu si zone status définie
+            showStatusMessage(">> Menu <<");
+        } else {
+            currentForm = null;
+            formHasFocus = false;
+        }
+    }
+    
+    /**
+     * Affiche un message dans la zone status si elle est définie
+     * Puis repositionne le curseur sur l'input courant si on est en mode form
+     */
+    private void showStatusMessage(String message) {
+        if (currentStatus != null) {
+            try {
+                mc.writeBytes(currentStatus.showMessage(message));
+                
+                // Repositionner le curseur sur l'input si on est en mode form
+                if (formHasFocus && currentForm != null) {
+                    VTMLInputComponent currentInput = currentForm.getCurrentInput();
+                    if (currentInput != null) {
+                        int cursorX = currentInput.getAbsoluteX() + 
+                                     (currentInput.getValue() != null ? currentInput.getValue().length() : 0);
+                        int cursorY = currentInput.getAbsoluteY();
+                        mc.writeBytes(org.somanybits.minitel.GetTeletelCode.setCursor(cursorX, cursorY));
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Erreur affichage status: " + e.getMessage());
+            }
+        }
+        // Si pas de status défini, on n'affiche rien
+    }
+    
     @Override
     public void SequenceSent(CodeSequenceSentEvent event) {
         byte[] sequence = event.getSequenceCode();

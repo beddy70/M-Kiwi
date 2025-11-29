@@ -352,23 +352,54 @@ Fait clignoter le texte contenu.
 
 ---
 
+### `<status>`
+
+Zone dédiée à l'affichage des informations de focus (menu/input actif). Ce tag est utilisé conjointement avec `<form>` pour indiquer à l'utilisateur quel élément a le focus.
+
+| Attribut | Type | Défaut | Description                    |
+|----------|------|--------|--------------------------------|
+| `left`   | int  | 0      | Position X (0-39)              |
+| `top`    | int  | 0      | Position Y (0-24)              |
+| `width`  | int  | 40     | Largeur en caractères          |
+| `height` | int  | 1      | Hauteur en lignes              |
+
+```xml
+<!-- Zone status en bas de l'écran -->
+<status left="0" top="24" width="40" height="1"/>
+```
+
+**Comportement** :
+- Affiche `>> Menu <<` quand le focus est sur la navigation menu
+- Affiche `>> Saisir: [label] <<` quand le focus est sur un champ de saisie
+- Si ce tag n'est pas défini, aucune information de focus n'est affichée
+
+**Cycle de focus** (touche Entrée) :
+1. Menu → Input 1 → Input 2 → ... → Input N → Menu → ...
+
+**Important** : Utiliser la syntaxe auto-fermante `<status ... />` (pas `<status></status>`).
+
+---
+
 ## Exemple complet
 
 ```xml
 <minitel title="Page d'accueil">
   
+  <!-- Zone status pour afficher le focus -->
+  <status left="0" top="24" width="40" height="1"/>
+  
   <!-- En-tête avec image -->
   <div left="0" top="0">
-    <img src="images/banner.jpg" left="0" top="0" width="80" height="24">
+    <img src="images/banner.jpg" left="0" top="0" width="40" height="6">
   </div>
   
   <!-- Titre -->
-  <div left="0" top="3">
+  <div left="0" top="7">
     <row>        BIENVENUE SUR MINITEL        </row>
   </div>
   
   <!-- Date dynamique -->
-  <div left="0" top="5">
+  <div left="0" top="9">
     <script>
       var d = new Date();
       output = "Date: " + d.getDate() + "/" + (d.getMonth()+1) + "/" + d.getFullYear();
@@ -376,20 +407,26 @@ Fait clignoter le texte contenu.
   </div>
   
   <!-- Menu principal -->
-  <menu name="main" keytype="numeric" left="5" top="8">
+  <menu name="main" keytype="numeric" left="5" top="11">
     <item link="services.vtml">1. Nos services</item>
     <item link="contact.vtml">2. Contact</item>
     <item link="about.vtml">3. À propos</item>
   </menu>
   
+  <!-- Formulaire de recherche -->
+  <form action="search.vtml" left="0" top="17">
+    <input name="query" left="0" top="0" width="20" label="Recherche: "/>
+    <input name="ville" left="0" top="2" width="15" label="Ville: "/>
+  </form>
+  
   <!-- QR code -->
-  <div left="25" top="15">
-    <qrcode type="url" message="https://example.com" scale="1" left="0" top="0">
+  <div left="25" top="17">
+    <qrcode type="url" message="https://example.com" scale="1" left="0" top="0"/>
   </div>
   
   <!-- Touches de fonction -->
-  <key name="sommaire" link="index.vtml">
-  <key name="guide" link="aide.vtml">
+  <key name="sommaire" link="index.vtml"/>
+  <key name="guide" link="aide.vtml"/>
   
 </minitel>
 ```

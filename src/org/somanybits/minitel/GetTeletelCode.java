@@ -299,4 +299,15 @@ public final class GetTeletelCode {
         }
         return sb.toString().trim();
     }
+    
+    /**
+     * Génère les codes pour afficher/masquer le curseur
+     * @param show true pour afficher, false pour masquer
+     */
+    public static byte[] showCursor(boolean show) {
+        return new byte[] {
+            (byte) 0x1f,
+            (byte) (show ? 0x11 : 0x14)  // CON : COFF
+        };
+    }
 }

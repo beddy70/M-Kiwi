@@ -9,13 +9,14 @@ import org.somanybits.minitel.components.ModelMComponent;
 /**
  * Composant VTML représentant le tag <input>
  * Champ de saisie texte pour Minitel
+ * Implémente Focusable pour le système de focus des formulaires.
  * 
  * Exemple:
  * <input name="recherche" left="5" top="10" width="20" label="Recherche:">
  *
  * @author eddy
  */
-public class VTMLInputComponent extends ModelMComponent {
+public class VTMLInputComponent extends ModelMComponent implements Focusable {
 
     private String name;
     private String value = "";
@@ -127,5 +128,110 @@ public class VTMLInputComponent extends ModelMComponent {
             System.err.println("Erreur VTMLInputComponent: " + ex.getMessage());
             return new byte[0];
         }
+    }
+    
+    /**
+     * Calcule la position X absolue (incluant le parent et le label)
+     */
+    public int getAbsoluteX() {
+        int absX = getX();
+        if (getParent() != null) {
+            absX += getParent().getX();
+        }
+        if (label != null && !label.isEmpty()) {
+            absX += label.length() + 1;
+        }
+        return absX;
+    }
+    
+    /**
+     * Calcule la position Y absolue (incluant le parent)
+     */
+    public int getAbsoluteY() {
+        int absY = getY();
+        if (getParent() != null) {
+            absY += getParent().getY();
+        }
+        return absY;
+    }
+    
+    // ========== IMPLÉMENTATION FOCUSABLE ==========
+    
+    @Override
+    public FocusType getFocusType() {
+        return FocusType.INPUT;
+    }
+    
+    @Override
+    public String getFocusLabel() {
+        if (label != null && !label.isEmpty()) {
+            return "Saisir: " + label;
+        }
+        return name != null ? "Saisir: " + name : "Saisir";
+    }
+    
+    @Override
+    public byte[] onFocusGained() {
+        // Quand l'input reçoit le focus :
+        // 1. Positionner le curseur dans le champ
+        // 2. Activer le curseur clignotant
+        // Note: l'affichage du status est géré par MinitelClient
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            
+            // Positionner le curseur au début du champ (après la valeur actuelle)
+            int cursorX = getAbsoluteX() + (value != null ? value.length() : 0);
+            int cursorY = getAbsoluteY();
+            out.write(GetTeletelCode.setCursor(cursorX, cursorY));
+            
+            // Activer le curseur visible
+            out.write(GetTeletelCode.showCursor(true));
+            
+            return out.toByteArray();
+        } catch (IOException e) {
+            return new byte[0];
+        }
+    }
+    
+    @Override
+    public byte[] onFocusLost() {
+        // Quand l'input perd le focus :
+        // 1. Masquer le curseur
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            out.write(GetTeletelCode.showCursor(false));
+            return out.toByteArray();
+        } catch (IOException e) {
+            return new byte[0];
+        }
+    }
+    
+    /**
+     * Ajoute un caractère à la valeur (appelé lors de la saisie)
+     * @return Les bytes pour mettre à jour l'affichage
+     */
+    public byte[] appendChar(char c) {
+        if (value == null) {
+            value = "";
+        }
+        if (value.length() < getWidth()) {
+            value += c;
+            // Écrire le caractère
+            return new byte[] { (byte) c };
+        }
+        return new byte[0]; // Champ plein
+    }
+    
+    /**
+     * Supprime le dernier caractère (backspace)
+     * @return Les bytes pour mettre à jour l'affichage
+     */
+    public byte[] deleteChar() {
+        if (value != null && value.length() > 0) {
+            value = value.substring(0, value.length() - 1);
+            // Reculer, écrire un espace, reculer
+            return new byte[] { 0x08, ' ', 0x08 };
+        }
+        return new byte[0];
     }
 }

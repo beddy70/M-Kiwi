@@ -26,6 +26,10 @@ public class VTMLFormComponent extends ModelMComponent {
     private String action;
     private String method = "GET";
     private List<VTMLInputComponent> inputs = new ArrayList<>();
+    
+    // Système de focus pour les inputs
+    private List<VTMLInputComponent> focusableInputs = new ArrayList<>();
+    private int currentInputIndex = 0;
 
     public VTMLFormComponent() {
         super();
@@ -93,6 +97,93 @@ public class VTMLFormComponent extends ModelMComponent {
         return url.toString();
     }
 
+    // ========== SYSTÈME DE FOCUS POUR LES INPUTS ==========
+    
+    /**
+     * Collecte tous les inputs du formulaire
+     */
+    public void collectInputs() {
+        focusableInputs.clear();
+        collectInputsRecursive(this);
+        System.out.println("📋 Form: " + focusableInputs.size() + " inputs trouvés");
+    }
+    
+    private void collectInputsRecursive(MComponent component) {
+        if (component instanceof VTMLInputComponent) {
+            focusableInputs.add((VTMLInputComponent) component);
+        }
+        if (component instanceof ModelMComponent) {
+            for (MComponent child : ((ModelMComponent) component).getChilds()) {
+                collectInputsRecursive(child);
+            }
+        }
+    }
+    
+    /**
+     * Retourne la liste des inputs
+     */
+    public List<VTMLInputComponent> getFocusableInputs() {
+        if (focusableInputs.isEmpty()) {
+            collectInputs();
+        }
+        return focusableInputs;
+    }
+    
+    /**
+     * Retourne l'input qui a actuellement le focus
+     */
+    public VTMLInputComponent getCurrentInput() {
+        if (focusableInputs.isEmpty()) {
+            collectInputs();
+        }
+        if (focusableInputs.isEmpty()) {
+            return null;
+        }
+        return focusableInputs.get(currentInputIndex);
+    }
+    
+    /**
+     * Passe à l'input suivant (cycle)
+     * @return Le nouvel input focusé
+     */
+    public VTMLInputComponent nextInput() {
+        if (focusableInputs.isEmpty()) {
+            collectInputs();
+        }
+        if (focusableInputs.isEmpty()) {
+            return null;
+        }
+        currentInputIndex = (currentInputIndex + 1) % focusableInputs.size();
+        System.out.println("🔄 Focus input -> " + currentInputIndex + "/" + focusableInputs.size());
+        return getCurrentInput();
+    }
+    
+    /**
+     * Retourne l'index de l'input actuel
+     */
+    public int getCurrentInputIndex() {
+        return currentInputIndex;
+    }
+    
+    /**
+     * Définit le focus sur un input spécifique
+     */
+    public void setInputIndex(int index) {
+        if (index >= 0 && index < focusableInputs.size()) {
+            currentInputIndex = index;
+        }
+    }
+    
+    /**
+     * Vérifie si le formulaire a des inputs
+     */
+    public boolean hasInputs() {
+        if (focusableInputs.isEmpty()) {
+            collectInputs();
+        }
+        return !focusableInputs.isEmpty();
+    }
+
     @Override
     public byte[] getBytes() {
         try {
@@ -105,6 +196,9 @@ public class VTMLFormComponent extends ModelMComponent {
             for (MComponent child : getChilds()) {
                 formdata.write(child.getBytes());
             }
+            
+            // Collecter les inputs après le rendu
+            collectInputs();
 
             return formdata.toByteArray();
         } catch (IOException ex) {
