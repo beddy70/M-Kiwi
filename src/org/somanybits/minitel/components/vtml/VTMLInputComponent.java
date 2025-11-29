@@ -175,7 +175,7 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
         // Quand l'input reçoit le focus :
         // 1. Positionner le curseur dans le champ
         // 2. Activer le curseur clignotant
-        // Note: l'affichage du status est géré par MinitelClient
+        // Note: l'écho reste désactivé, on gère l'affichage nous-mêmes dans appendChar
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             
@@ -208,7 +208,7 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
     
     /**
      * Ajoute un caractère à la valeur (appelé lors de la saisie)
-     * @return Les bytes pour mettre à jour l'affichage
+     * @return Les bytes pour afficher le caractère
      */
     public byte[] appendChar(char c) {
         if (value == null) {
@@ -216,8 +216,8 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
         }
         if (value.length() < getWidth()) {
             value += c;
-            // Écrire le caractère
-            return new byte[] { (byte) c };
+            // DEBUG: ne rien renvoyer pour tester si l'écho vient du Minitel
+            return new byte[0];
         }
         return new byte[0]; // Champ plein
     }
@@ -233,5 +233,28 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
             return new byte[] { 0x08, ' ', 0x08 };
         }
         return new byte[0];
+    }
+    
+    /**
+     * Efface complètement la valeur et réaffiche la zone vide
+     * @return Les bytes pour mettre à jour l'affichage
+     */
+    public byte[] clearValue() {
+        value = "";
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            
+            // Positionner au début de la zone de saisie
+            out.write(GetTeletelCode.setCursor(getAbsoluteX(), getAbsoluteY()));
+            
+            // Réafficher la zone vide en inverse
+            out.write(GetTeletelCode.setInverse(true));
+            out.write(" ".repeat(getWidth()).getBytes("ISO-8859-1"));
+            out.write(GetTeletelCode.setInverse(false));
+            
+            return out.toByteArray();
+        } catch (IOException e) {
+            return new byte[0];
+        }
     }
 }

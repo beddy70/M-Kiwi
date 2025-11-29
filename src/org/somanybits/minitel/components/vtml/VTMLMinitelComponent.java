@@ -38,11 +38,12 @@ public class VTMLMinitelComponent extends ModelMComponent {
         try {
             ByteArrayOutputStream divdata = new ByteArrayOutputStream();
             
-            divdata.write(GetTeletelCode.clear(Teletel.MODE_VIDEOTEXT));
+            divdata.write( GetTeletelCode.setMode(Teletel.MODE_VIDEOTEXT));
+            divdata.write(GetTeletelCode.clear());
             divdata.write(getTextContent().getBytes());
             //divdata.write(GetTeletelCode.clearLineZero());
 
-            divdata.write( GetTeletelCode.setMode(Teletel.MODE_VIDEOTEXT));
+           // divdata.write( GetTeletelCode.setMode(Teletel.MODE_VIDEOTEXT));
             // Ajouter le contenu des enfants
             for (var child : getChilds()) {
                 divdata.write(child.getBytes());

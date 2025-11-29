@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.somanybits.log.LogManager;
+import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.MinitelConnection;
 import org.somanybits.minitel.Teletel;
 import org.somanybits.minitel.components.vtml.VTMLFormComponent;
@@ -78,6 +79,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.clearLineZero();
 
         t.setScreenMode(Teletel.MODE_VIDEOTEXT);
+        
+   
 
 //        t.setBGColor(Teletel.COLOR_GREEN);
 //        t.setTextColor(Teletel.COLOR_WHITE);
@@ -117,27 +120,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //        gfx.writeBitmap(img.getBitmap());
 //        gfx.inverseBitmap();
 //        gfx.drawToPage(t, 0, 1);
-        // QR CODE ZXING UNIQUEMENT - 100% SCANNABLE
-        // Générer la chaîne WiFi
-        // String wifiString = WiFiQRGenerator.generateWPAWiFi("Labo Game", "Girafe1970");
-        // System.out.println("📶 Chaîne WiFi: " + wifiString);
-        // // Utiliser ZXing pour générer un QR Code scannable
-        // ScannableQRGenerator scannableGen = new ScannableQRGenerator();
-        // boolean[][] qrMatrix = scannableGen.generateScannableQR(wifiString, 21);
-        // // Convertir en bitmap 1D pour GraphTel (méthode utilitaire)
-        // boolean[] bitmap1D = ScannableQRGenerator.matrixTo1D(qrMatrix);
-        // GraphTel gfx = new GraphTel(qrMatrix.length, qrMatrix.length);
-        // gfx.writeBitmap(bitmap1D);
-        // gfx.inverseBitmap();
-        // gfx.drawToPage(t, 0, 1);
-        // System.out.println("✅ QR Code ZXing généré (100% scannable)");
-        try {
-            Thread.sleep(1000); // pause de 1000 millisecondes = 1 seconde
-        } catch (InterruptedException e) {
-            t.setMode(Teletel.MODE_TEXT);
-            Thread.currentThread().interrupt(); // bonne pratique
-            System.err.println("Pause interrompue");
-        }
+
+        // try {
+        //     Thread.sleep(1000); // pause de 1000 millisecondes = 1 seconde
+        // } catch (InterruptedException e) {
+        //     t.setMode(Teletel.MODE_TEXT);
+        //     Thread.currentThread().interrupt(); // bonne pratique
+        //     System.err.println("Pause interrompue");
+        // }
 
         mtr = new MinitelPageReader(server, port);
 
@@ -145,6 +135,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         pmgr.navigate("");
 
         mc.writeBytes(pmgr.getCurrentPage().getData());
+        
+        // Initialiser le système de focus pour la première page
+        updateCurrentForm(pmgr.getCurrentPage());
 
 //            ReadNews rnews = new ReadNews(URL_NEWS); 
 //
@@ -196,10 +189,18 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                 String link = pmgr.getCurrentPage().getFunctionKeyLink("SOMMAIRE");
                                 pmgr.navigate(link);
                                 mc.writeBytes(pmgr.getCurrentPage().getData());
+                                updateCurrentForm(pmgr.getCurrentPage());
                             }
                             keyvalue = "SOMMAIRE";
                             break;
                         case KeyPressedEvent.KEY_ANNULATION:
+                            // Effacer tous les champs du formulaire
+                            if (currentForm != null && currentForm.hasInputs()) {
+                                mc.writeBytes(currentForm.clearAllInputs());
+                                // Remettre le focus sur le menu
+                                formHasFocus = false;
+                                showStatusMessage(">> Menu <<");
+                            }
                             keyvalue = "ANNULATION";
                             break;
                         case KeyPressedEvent.KEY_RETOUR:
@@ -220,10 +221,18 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                 String link = pmgr.getCurrentPage().getFunctionKeyLink("GUIDE");
                                 pmgr.navigate(link);
                                 mc.writeBytes(pmgr.getCurrentPage().getData());
+                                updateCurrentForm(pmgr.getCurrentPage());
                             }
                             keyvalue = "GUIDE";
                             break;
                         case KeyPressedEvent.KEY_CORRECTION:
+                            // Supprimer le dernier caractère si on est en mode saisie
+                            if (formHasFocus && currentForm != null) {
+                                VTMLInputComponent currentInput = currentForm.getCurrentInput();
+                                if (currentInput != null) {
+                                    mc.writeBytes(currentInput.deleteChar());
+                                }
+                            }
                             keyvalue = "CORRECTION";
                             break;
                         case KeyPressedEvent.KEY_SUITE:
@@ -362,6 +371,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private void updateCurrentForm(Page page) {
         currentForm = page.getForm();
         currentStatus = page.getStatus();
+        
+        // Par défaut : curseur masqué (mode menu)
+        // Note: setEcho désactivé car génère des caractères parasites sur certains Minitel
+        try {
+            mc.writeBytes(GetTeletelCode.showCursor(false));
+            // mc.writeBytes(GetTeletelCode.setEcho(false));
+        } catch (IOException e) {
+            System.err.println("Erreur init curseur: " + e.getMessage());
+        }
         
         if (currentForm != null && currentForm.hasInputs()) {
             // Par défaut, on commence sur le menu

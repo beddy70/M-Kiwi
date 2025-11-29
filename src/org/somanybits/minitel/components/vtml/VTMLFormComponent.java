@@ -183,6 +183,24 @@ public class VTMLFormComponent extends ModelMComponent {
         }
         return !focusableInputs.isEmpty();
     }
+    
+    /**
+     * Efface tous les inputs du formulaire et réaffiche les zones vides
+     * @return Les bytes pour mettre à jour l'affichage
+     */
+    public byte[] clearAllInputs() {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            for (VTMLInputComponent input : getFocusableInputs()) {
+                out.write(input.clearValue());
+            }
+            // Remettre le focus sur le premier input
+            currentInputIndex = 0;
+            return out.toByteArray();
+        } catch (IOException e) {
+            return new byte[0];
+        }
+    }
 
     @Override
     public byte[] getBytes() {

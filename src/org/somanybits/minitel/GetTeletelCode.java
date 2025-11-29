@@ -177,12 +177,13 @@ public final class GetTeletelCode {
      * @return  
      */
     public static byte[] setEcho(boolean flag) {
+        // Séquence PRO2 pour activer/désactiver l'écho clavier
+        // ESC PRO2 START/STOP RCPT_CLAVIER
         return new byte[] {
-            (byte) 0x1b,
-            (byte) 0x3B,
-            (byte) (flag ? 0x61 : 0x60), // ON : OFF
-            (byte) 0x58,
-            (byte) 0x51
+            (byte) 0x1b,      // ESC
+            (byte) 0x3b,      // PRO2
+            (byte) (flag ? 0x61 : 0x60), // START (0x61) ou STOP (0x60)
+            (byte) 0x58       // RCPT_CLAVIER
         };
     }
 
