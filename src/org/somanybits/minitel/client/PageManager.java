@@ -3,6 +3,7 @@ package org.somanybits.minitel.client;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.somanybits.minitel.components.ModelMComponent;
 
 /**
  * Gestionnaire de navigation et d'historique des pages Minitel
@@ -217,5 +218,29 @@ public class PageManager {
         }
         
         return null;
+    }
+    
+    // ========== RECHERCHE DE COMPOSANTS ==========
+    
+    /**
+     * Recherche un composant par son ID dans la page courante
+     * @param id L'ID du composant
+     * @return Le composant ou null si non trouvé
+     */
+    public ModelMComponent getComponentById(String id) {
+        Page current = getCurrentPage();
+        if (current == null) return null;
+        return current.getComponentById(id);
+    }
+    
+    /**
+     * Recherche un composant par son nom dans la page courante
+     * @param name Le nom du composant
+     * @return Le composant ou null si non trouvé
+     */
+    public ModelMComponent getComponentByName(String name) {
+        Page current = getCurrentPage();
+        if (current == null) return null;
+        return current.getComponentByName(name);
     }
 }

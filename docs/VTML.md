@@ -2,6 +2,24 @@
 
 VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages Minitel. Il permet de structurer le contenu et de générer automatiquement les codes Vidéotex.
 
+## Attributs communs
+
+Tous les tags VTML supportent les attributs suivants :
+
+| Attribut | Type   | Défaut | Description                                      |
+|----------|--------|--------|--------------------------------------------------|
+| `id`     | string | -      | Identifiant unique du composant                  |
+| `name`   | string | -      | Nom du composant (pour recherche par nom)        |
+
+Ces attributs permettent de retrouver un composant via JavaScript :
+
+```javascript
+var comp = pageManager.getComponentById("monId");
+var comp2 = pageManager.getComponentByName("monNom");
+```
+
+---
+
 ## Structure de base
 
 ```xml

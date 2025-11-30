@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import org.somanybits.minitel.components.MComponent;
+import org.somanybits.minitel.components.ModelMComponent;
 import org.somanybits.minitel.components.vtml.VTMLFormComponent;
 import org.somanybits.minitel.components.vtml.VTMLStatusComponent;
 
@@ -212,6 +215,84 @@ public class Page {
      */
     public boolean hasStatus() {
         return status != null;
+    }
+
+    // ========== LISTE DES COMPOSANTS ==========
+    
+    private List<ModelMComponent> components = new ArrayList<>();
+    
+    /**
+     * Ajoute un composant à la page
+     */
+    public void addComponent(ModelMComponent component) {
+        components.add(component);
+    }
+    
+    /**
+     * Retourne tous les composants de la page
+     */
+    public List<ModelMComponent> getComponents() {
+        return components;
+    }
+    
+    /**
+     * Recherche un composant par son ID
+     * @param id L'ID du composant
+     * @return Le composant ou null si non trouvé
+     */
+    public ModelMComponent getComponentById(String id) {
+        if (id == null) return null;
+        return findComponentById(components, id);
+    }
+    
+    private ModelMComponent findComponentById(List<ModelMComponent> list, String id) {
+        for (ModelMComponent comp : list) {
+            if (id.equals(comp.getId())) {
+                return comp;
+            }
+            // Recherche récursive dans les enfants
+            if (!comp.getChilds().isEmpty()) {
+                List<ModelMComponent> children = new ArrayList<>();
+                for (MComponent child : comp.getChilds()) {
+                    if (child instanceof ModelMComponent) {
+                        children.add((ModelMComponent) child);
+                    }
+                }
+                ModelMComponent found = findComponentById(children, id);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Recherche un composant par son nom
+     * @param name Le nom du composant
+     * @return Le composant ou null si non trouvé
+     */
+    public ModelMComponent getComponentByName(String name) {
+        if (name == null) return null;
+        return findComponentByName(components, name);
+    }
+    
+    private ModelMComponent findComponentByName(List<ModelMComponent> list, String name) {
+        for (ModelMComponent comp : list) {
+            if (name.equals(comp.getName())) {
+                return comp;
+            }
+            // Recherche récursive dans les enfants
+            if (!comp.getChilds().isEmpty()) {
+                List<ModelMComponent> children = new ArrayList<>();
+                for (MComponent child : comp.getChilds()) {
+                    if (child instanceof ModelMComponent) {
+                        children.add((ModelMComponent) child);
+                    }
+                }
+                ModelMComponent found = findComponentByName(children, name);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
 }

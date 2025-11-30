@@ -170,6 +170,16 @@ public class MinitelPageReader {
             if (component == null) {
                 return; // Tag non reconnu
             }
+            
+            // Appliquer les attributs communs id et name
+            if (component instanceof ModelMComponent modelComp) {
+                String id = attrs.get("id");
+                String name = attrs.get("name");
+                if (id != null) modelComp.setId(id);
+                if (name != null) modelComp.setName(name);
+                // Enregistrer le composant dans la page
+                page.addComponent(modelComp);
+            }
 
             // Ajouter à l'arbre
             if (rootComponent == null && component instanceof VTMLMinitelComponent) {

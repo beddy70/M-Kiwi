@@ -17,8 +17,26 @@ public class ModelMComponent implements MComponent {
     private int x;
     private int y;
     private String textContent;
+    private String id;
+    private String name;
     protected MComponent parent;
     protected ArrayList<MComponent> childs = new ArrayList<MComponent>();
+    
+    public String getId() {
+        return id;
+    }
+    
+    public void setId(String id) {
+        this.id = id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
 
     @Override
     public int getWidth() {
