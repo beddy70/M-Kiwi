@@ -65,11 +65,72 @@ public class VTMLSpriteDefComponent extends ModelMComponent {
     
     /**
      * Retourne les données d'une frame sous forme de tableau 2D
+     * En mode BITMAP, convertit les # et espaces en caractères semi-graphiques
      */
     public char[][] getFrameData(int frameIndex) {
         VTMLSpriteComponent frame = getFrame(frameIndex);
         if (frame == null) return null;
-        return frame.getData();
+        
+        char[][] rawData = frame.getData();
+        
+        if (type == SpriteType.CHAR) {
+            return rawData;
+        }
+        
+        // Mode BITMAP : convertir en semi-graphique
+        // Chaque caractère semi-graphique = 2×3 pixels
+        // rawData contient les pixels (# = allumé, espace = éteint)
+        int pixelHeight = rawData.length;
+        int pixelWidth = rawData.length > 0 ? rawData[0].length : 0;
+        
+        // Calculer les dimensions en caractères
+        int charHeight = (pixelHeight + 2) / 3;  // Arrondi supérieur
+        int charWidth = (pixelWidth + 1) / 2;    // Arrondi supérieur
+        
+        char[][] result = new char[charHeight][charWidth];
+        
+        for (int cy = 0; cy < charHeight; cy++) {
+            for (int cx = 0; cx < charWidth; cx++) {
+                int semigfx = 0;
+                
+                // Lire les 6 pixels du bloc 2×3
+                int px = cx * 2;
+                int py = cy * 3;
+                
+                // Encodage semi-graphique Minitel (comme GraphTel)
+                // Chaque pixel allumé ajoute son bit + le bit 5 (0x20)
+                // Ligne 0
+                if (getPixel(rawData, px, py)) semigfx |= 0b0100001;      // bit 0 + bit 5
+                if (getPixel(rawData, px + 1, py)) semigfx |= 0b0100010;  // bit 1 + bit 5
+                // Ligne 1
+                if (getPixel(rawData, px, py + 1)) semigfx |= 0b0100100;  // bit 2 + bit 5
+                if (getPixel(rawData, px + 1, py + 1)) semigfx |= 0b0101000;  // bit 3 + bit 5
+                // Ligne 2
+                if (getPixel(rawData, px, py + 2)) semigfx |= 0b0110000;  // bit 4 + bit 5
+                if (getPixel(rawData, px + 1, py + 2)) semigfx |= 0b1100000;  // bit 6 + bit 5
+                
+                // Cas spéciaux
+                if (semigfx == 0b1111111) {
+                    semigfx = 0b1011111;  // Tous pixels allumés = exception
+                } else if (semigfx == 0) {
+                    semigfx = ' ';  // Espace normal = transparent (sera ignoré par drawSprite)
+                }
+                
+                result[cy][cx] = (char) semigfx;
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Lit un pixel dans les données brutes (# = true, autre = false)
+     */
+    private boolean getPixel(char[][] data, int x, int y) {
+        if (y >= data.length || x >= (data.length > 0 ? data[0].length : 0)) {
+            return false;
+        }
+        return data[y][x] == '#';
     }
     
     @Override

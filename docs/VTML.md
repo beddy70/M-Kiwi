@@ -2,6 +2,41 @@
 
 VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages Minitel. Il permet de structurer le contenu et de générer automatiquement les codes Vidéotex.
 
+## Table des matières
+
+### Structure
+- [`<minitel>`](#minitel) - Élément racine
+- [`<div>`](#div) - Conteneur de positionnement
+- [`<row>`](#row) - Ligne de texte
+- [`<br>`](#br) - Saut de ligne
+
+### Navigation
+- [`<menu>`](#menu) - Menu interactif
+- [`<item>`](#item) - Élément de menu
+
+### Médias
+- [`<img>`](#img) - Image semi-graphique
+- [`<qrcode>`](#qrcode) - QR code
+
+### Formulaires
+- [`<form>`](#form) - Formulaire
+- [`<input>`](#input) - Champ de saisie
+- [`<status>`](#status) - Zone de statut
+
+### Jeux (Layers)
+- [`<layers>`](#layers) - Zone de jeu
+- [`<map>`](#map) - Fond de jeu
+- [`<spritedef>`](#spritedef) - Définition de sprite
+- [`<sprite>`](#sprite) - Frame d'animation
+- [`<line>`](#line) - Ligne de sprite
+- [`<keypad>`](#keypad) - Mapping clavier
+- [`<timer>`](#timer) - Boucle de jeu
+
+### Scripting
+- [`<script>`](#script) - Code JavaScript
+
+---
+
 ## Attributs communs
 
 Tous les tags VTML supportent les attributs suivants :

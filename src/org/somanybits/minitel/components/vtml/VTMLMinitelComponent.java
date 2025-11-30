@@ -43,7 +43,7 @@ public class VTMLMinitelComponent extends ModelMComponent {
             divdata.write(getTextContent().getBytes());
             //divdata.write(GetTeletelCode.clearLineZero());
 
-           // divdata.write( GetTeletelCode.setMode(Teletel.MODE_VIDEOTEXT));
+     
             // Ajouter le contenu des enfants
             for (var child : getChilds()) {
                 divdata.write(child.getBytes());

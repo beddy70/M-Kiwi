@@ -217,11 +217,11 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
         }
         if (value.length() < getWidth()) {
             value += c;
-            // Ne rien renvoyer : le Minitel affiche déjà via écho local
-            return new byte[0];
+            // Afficher le caractère (écho désactivé, on gère nous-mêmes)
+            return new byte[] { (byte) c };
         }
-        // Champ plein : bip + backspace + espace + backspace pour annuler l'écho local
-        return new byte[] { 0x07, 0x08, ' ', 0x08 };
+        // Champ plein : juste un bip
+        return new byte[] { 0x07 };
     }
     
     /**

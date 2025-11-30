@@ -540,11 +540,6 @@ public class MinitelPageReader {
             page.addData(data);
         }
         
-        // 5. Si on a un layers (mode jeu), positionner le curseur en (4,0) pour l'écho des touches
-        if (layers != null) {
-            page.addData(GetTeletelCode.setCursor(4, 0));
-        }
-        
         // Enregistrer les menus pour la navigation
         registerAllMenuItems(component);
     }

@@ -185,7 +185,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         try {
             String keyvalue = null;
 
-            System.out.println("event keypressed=" + event.getKeyCode() + " type=" + event.getType());
+            //System.out.println("event keypressed=" + event.getKeyCode() + " type=" + event.getType());
             PageManager pmgr = Kernel.getInstance().getPageManager();
 
             switch (event.getType()) {
@@ -344,10 +344,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                     System.err.println("Erreur JS: " + e.getMessage());
                                 }
                             }
-                        } else {
-                            // Touche non reconnue : effacer le caractère écho et rester en position
-                            mc.writeBytes(currentLayers.clearEchoChar());
                         }
+                        // Touche non reconnue : rien à faire, l'écho est désactivé
                         break;
                     }
                     
@@ -425,20 +423,12 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         currentStatus = page.getStatus();
         currentLayers = page.getLayers();
         
-        // Par défaut : curseur masqué (mode menu)
-        // Note: setEcho désactivé car génère des caractères parasites sur certains Minitel
-        try {
-            mc.writeBytes(GetTeletelCode.showCursor(false));
-            // mc.writeBytes(GetTeletelCode.setEcho(false));
-        } catch (IOException e) {
-            System.err.println("Erreur init curseur: " + e.getMessage());
-        }
-        
         // Si la page a un layers, activer le mode jeu
         if (currentLayers != null) {
             layersHasFocus = true;
             formHasFocus = false;
             System.out.println("🎮 Layers détecté - Mode jeu activé");
+            // Note: L'écho doit être désactivé manuellement avec Fnct+T E
             showStatusMessage(">> Jeu <<");
             
             // Démarrer le game loop si configuré
@@ -449,6 +439,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         }
         
         layersHasFocus = false;
+        
+        // Masquer le curseur pour les pages normales (mode menu)
+        try {
+            mc.writeBytes(GetTeletelCode.showCursor(false));
+        } catch (IOException e) {
+            System.err.println("Erreur init curseur: " + e.getMessage());
+        }
         
         if (currentForm != null && currentForm.hasInputs()) {
             // Par défaut, on commence sur le menu

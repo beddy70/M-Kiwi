@@ -34,7 +34,11 @@ public class VTMLDivComponent extends ModelMComponent {
             ByteArrayOutputStream divdata = new ByteArrayOutputStream();
 
             divdata.write(GetTeletelCode.setCursor(getX(), getY()));
-            divdata.write(getTextContent().getBytes());
+            // Ne pas écrire le textContent s'il ne contient que des espaces/retours
+            String text = getTextContent();
+            if (text != null && !text.trim().isEmpty()) {
+                divdata.write(text.getBytes());
+            }
 
             // Ajouter le contenu des enfants
             for (MComponent child : getChilds()) {

@@ -29,6 +29,8 @@ public class VTMLLayersComponent extends ModelMComponent {
     // Buffer interne pour le rendu
     private char[][] buffer;
     private char[][] previousBuffer;
+    private boolean[][] mosaicMode;  // true = caractère semi-graphique
+    private boolean[][] previousMosaicMode;
     
     // Liste des areas (ordre = z-index, 0 = fond)
     private List<VTMLMapComponent> areas = new ArrayList<>();
@@ -56,6 +58,8 @@ public class VTMLLayersComponent extends ModelMComponent {
         this.height = height;
         this.buffer = new char[height][width];
         this.previousBuffer = new char[height][width];
+        this.mosaicMode = new boolean[height][width];
+        this.previousMosaicMode = new boolean[height][width];
         clearBuffer();
     }
     
@@ -176,16 +180,14 @@ public class VTMLLayersComponent extends ModelMComponent {
     /**
      * Compose le buffer à partir des areas et sprites
      */
-    public void compose() {
-        // Sauvegarder le buffer précédent
-        for (int y = 0; y < height; y++) {
-            System.arraycopy(buffer[y], 0, previousBuffer[y], 0, width);
-        }
+    public synchronized void compose() {
+        // NE PAS sauvegarder ici - c'est getDifferentialBytes() qui gère previousBuffer
         
-        // Effacer le buffer
+        // Effacer le buffer et le mode mosaïque
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 buffer[y][x] = ' ';
+                mosaicMode[y][x] = false;
             }
         }
         
@@ -195,10 +197,10 @@ public class VTMLLayersComponent extends ModelMComponent {
         }
         
         // Dessiner les sprites visibles par-dessus
-        System.out.println("🎮 compose() - spriteInstances=" + spriteInstances.size());
+        //System.out.println("🎮 compose() - spriteInstances=" + spriteInstances.size());
         for (String id : spriteInstances.keySet()) {
             SpriteInstance instance = spriteInstances.get(id);
-            System.out.println("  Sprite '" + id + "': visible=" + instance.isVisible() + ", pos=(" + instance.getX() + "," + instance.getY() + ")");
+            //System.out.println("  Sprite '" + id + "': visible=" + instance.isVisible() + ", pos=(" + instance.getX() + "," + instance.getY() + ")");
             if (instance.isVisible()) {
                 drawSprite(instance);
             }
@@ -227,6 +229,7 @@ public class VTMLLayersComponent extends ModelMComponent {
         
         int sx = instance.getX();
         int sy = instance.getY();
+        boolean isBitmap = def.getType() == VTMLSpriteDefComponent.SpriteType.BITMAP;
         
         for (int y = 0; y < spriteData.length; y++) {
             int bufY = sy + y;
@@ -240,6 +243,7 @@ public class VTMLLayersComponent extends ModelMComponent {
                 // Pour les sprites, espace = transparent
                 if (c != ' ') {
                     buffer[bufY][bufX] = c;
+                    mosaicMode[bufY][bufX] = isBitmap;
                 }
             }
         }
@@ -266,11 +270,24 @@ public class VTMLLayersComponent extends ModelMComponent {
             
             for (int y = 0; y < height; y++) {
                 out.write(GetTeletelCode.setCursor(left, top + y));
-                out.write(new String(buffer[y]).getBytes("ISO-8859-1"));
+                
+                for (int x = 0; x < width; x++) {
+                    // Pour le rendu initial, on envoie le code de mode avant chaque caractère mosaïque
+                    if (mosaicMode[y][x]) {
+                        out.write(0x0E);  // Mode semi-graphique
+                        out.write(buffer[y][x]);
+                        out.write(0x0F);  // Retour mode texte
+                    } else {
+                        out.write(buffer[y][x]);
+                    }
+                }
             }
             
-            // Positionner le curseur en (4,0) pour capturer l'écho des touches
-            out.write(GetTeletelCode.setCursor(4, 0));
+            // Copier les buffers pour la prochaine comparaison
+            for (int y = 0; y < height; y++) {
+                System.arraycopy(buffer[y], 0, previousBuffer[y], 0, width);
+                System.arraycopy(mosaicMode[y], 0, previousMosaicMode[y], 0, width);
+            }
             
             System.out.println("🎮 Layers output: " + out.size() + " bytes");
             return out.toByteArray();
@@ -283,7 +300,7 @@ public class VTMLLayersComponent extends ModelMComponent {
      * Génère les bytes pour un rendu différentiel (optimisé)
      * Ne redessine que les caractères modifiés
      */
-    public byte[] getDifferentialBytes() {
+    public synchronized byte[] getDifferentialBytes() {
         compose();
         
         try {
@@ -293,24 +310,38 @@ public class VTMLLayersComponent extends ModelMComponent {
             
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    if (buffer[y][x] != previousBuffer[y][x]) {
+                    // Redessiner si le caractère OU le mode a changé
+                    boolean needsRedraw = buffer[y][x] != previousBuffer[y][x] 
+                                       || mosaicMode[y][x] != previousMosaicMode[y][x];
+                    
+                    if (needsRedraw) {
                         // Positionner le curseur si nécessaire
                         if (lastY != y || lastX != x - 1) {
                             out.write(GetTeletelCode.setCursor(left + x, top + y));
                         }
-                        out.write(buffer[y][x]);
+                        
+                        // Pour chaque caractère mosaïque, envoyer mode avant/après
+                        boolean needMosaic = mosaicMode[y][x] || (previousMosaicMode[y][x] && buffer[y][x] == ' ');
+                        
+                        if (needMosaic) {
+                            out.write(0x0E);  // Mode semi-graphique
+                            out.write(buffer[y][x]);
+                            out.write(0x0F);  // Retour mode texte
+                        } else {
+                            out.write(buffer[y][x]);
+                        }
+                        
                         lastX = x;
                         lastY = y;
-                        // Copier dans previousBuffer
-                        previousBuffer[y][x] = buffer[y][x];
                     }
                 }
             }
             
-            // Effacer le caractère écho et rester en position (4,0)
-            out.write(GetTeletelCode.setCursor(4, 0));
-            out.write(' ');  // Effacer le caractère
-            out.write(GetTeletelCode.setCursor(4, 0));  // Revenir en (4,0) pour le prochain écho
+            // Copier tout le buffer dans previousBuffer pour la prochaine comparaison
+            for (int y = 0; y < height; y++) {
+                System.arraycopy(buffer[y], 0, previousBuffer[y], 0, width);
+                System.arraycopy(mosaicMode[y], 0, previousMosaicMode[y], 0, width);
+            }
             
             return out.toByteArray();
         } catch (IOException e) {
@@ -318,20 +349,6 @@ public class VTMLLayersComponent extends ModelMComponent {
         }
     }
     
-    /**
-     * Efface le caractère écho en position (4,0) et y reste
-     */
-    public byte[] clearEchoChar() {
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            out.write(GetTeletelCode.setCursor(4, 0));
-            out.write(' ');  // Effacer le caractère
-            out.write(GetTeletelCode.setCursor(4, 0));  // Revenir en position
-            return out.toByteArray();
-        } catch (IOException e) {
-            return new byte[0];
-        }
-    }
     
     // ========== GAME LOOP ==========
     
