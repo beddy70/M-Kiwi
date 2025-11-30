@@ -311,12 +311,35 @@ Définition d'un sprite avec ses frames d'animation.
 
 Une frame d'animation dans un `<spritedef>`. Contient des `<line>` pour définir l'apparence.
 
+Chaque `<sprite>` dans un `<spritedef>` est indexé à partir de 0. On peut ainsi définir plusieurs frames d'animation et choisir laquelle afficher avec `sprite.show(index)`.
+
 ```xml
-<sprite>
-  <line>###</line>
-  <line># #</line>
-  <line>###</line>
-</sprite>
+<spritedef id="player" width="3" height="2" type="char">
+  <!-- Frame 0 : bras levés -->
+  <sprite>
+    <line>\O/</line>
+    <line> | </line>
+  </sprite>
+  <!-- Frame 1 : bras baissés -->
+  <sprite>
+    <line> O </line>
+    <line>/|\</line>
+  </sprite>
+  <!-- Frame 2 : bras à droite -->
+  <sprite>
+    <line> O-</line>
+    <line>/| </line>
+  </sprite>
+</spritedef>
+```
+
+**Utilisation en JavaScript** :
+
+```javascript
+var player = layers.getSprite("player");
+player.show(0);  // Affiche la frame 0 (bras levés)
+player.show(1);  // Affiche la frame 1 (bras baissés)
+player.show(2);  // Affiche la frame 2 (bras à droite)
 ```
 
 ---
