@@ -236,6 +236,61 @@ public class VTMLLayersComponent extends ModelMComponent {
         return '\0';
     }
     
+    /**
+     * Modifie un caractère dans une map (appelable depuis JavaScript)
+     * @param areaIndex Index de la map (0 = première map)
+     * @param x Position X dans la map
+     * @param y Position Y dans la map
+     * @param c Caractère à placer
+     */
+    public void setMapChar(int areaIndex, int x, int y, char c) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            VTMLMapComponent area = areas.get(areaIndex);
+            char[][] data = area.getData();
+            if (data != null && y >= 0 && y < data.length && x >= 0 && x < data[y].length) {
+                data[y][x] = c;
+            }
+        }
+    }
+    
+    /**
+     * Efface une ligne entière d'une map (pour Tetris)
+     */
+    public void clearMapLine(int areaIndex, int y) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            VTMLMapComponent area = areas.get(areaIndex);
+            char[][] data = area.getData();
+            if (data != null && y >= 0 && y < data.length) {
+                for (int x = 0; x < data[y].length; x++) {
+                    data[y][x] = ' ';
+                }
+            }
+        }
+    }
+    
+    /**
+     * Décale les lignes d'une map vers le bas (pour Tetris)
+     */
+    public void shiftMapDown(int areaIndex, int fromY, int toY) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            VTMLMapComponent area = areas.get(areaIndex);
+            char[][] data = area.getData();
+            if (data != null) {
+                for (int y = toY; y > fromY; y--) {
+                    if (y >= 0 && y < data.length && y-1 >= 0) {
+                        System.arraycopy(data[y-1], 0, data[y], 0, data[y].length);
+                    }
+                }
+                // Vider la ligne du haut
+                if (fromY >= 0 && fromY < data.length) {
+                    for (int x = 0; x < data[fromY].length; x++) {
+                        data[fromY][x] = ' ';
+                    }
+                }
+            }
+        }
+    }
+    
     // ========== GESTION DES LABELS ==========
     
     public void addLabel(VTMLLabelComponent label) {

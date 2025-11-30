@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<minitel>
+  <div left="0" top="0" width="40" height="24">
+    <row>          TETRIS MINITEL</row>
+  </div>
+  
+  <layers id="game" left="0" top="1" width="40" height="22">
+    
+    <!-- Map 0: Décor (bordures) -->
+    <map>
+      <row>#          #         Next:</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>#          #</row>
+      <row>############</row>
+    </map>
+    
+    <!-- Map 1: Pièces posées (initialement vide) -->
+    <map>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+      <row>            </row>
+    </map>
+    
+    <!-- Pièce active (4 blocs) -->
+    <spritedef id="block0" width="1" height="1" type="char">
+      <sprite><line>#</line></sprite>
+    </spritedef>
+    <spritedef id="block1" width="1" height="1" type="char">
+      <sprite><line>#</line></sprite>
+    </spritedef>
+    <spritedef id="block2" width="1" height="1" type="char">
+      <sprite><line>#</line></sprite>
+    </spritedef>
+    <spritedef id="block3" width="1" height="1" type="char">
+      <sprite><line>#</line></sprite>
+    </spritedef>
+    
+    <!-- Prévisualisation pièce suivante -->
+    <spritedef id="next0" width="1" height="1" type="char">
+      <sprite><line>#</line></sprite>
+    </spritedef>
+    <spritedef id="next1" width="1" height="1" type="char">
+      <sprite><line>#</line></sprite>
+    </spritedef>
+    <spritedef id="next2" width="1" height="1" type="char">
+      <sprite><line>#</line></sprite>
+    </spritedef>
+    <spritedef id="next3" width="1" height="1" type="char">
+      <sprite><line>#</line></sprite>
+    </spritedef>
+    
+    <!-- Score et niveau -->
+    <label id="score" x="14" y="6" width="14">Score: 0</label>
+    <label id="level" x="14" y="8" width="14">Level: 1</label>
+    <label id="lines" x="14" y="10" width="14">Lines: 0</label>
+    
+    <!-- Contrôles -->
+    <keypad action="LEFT" key="Q" event="moveLeft"/>
+    <keypad action="RIGHT" key="D" event="moveRight"/>
+    <keypad action="DOWN" key="S" event="moveDown"/>
+    <keypad action="UP" key="Z" event="rotate"/>
+    <keypad action="ACTION1" key=" " event="drop"/>
+    
+    <!-- Game loop -->
+    <timer event="gameLoop" interval="500"></timer>
+    
+  </layers>
+  
+  <div left="0" top="23" width="40" height="1">
+    <row>[Q]&lt; [D]&gt; [S]v [Z]Rot [SPACE]Drop</row>
+  </div>
+  
+  <script>
+    // Grille de jeu (10x20)
+    var GRID_W = 10;
+    var GRID_H = 20;
+    var PIECES_MAP = 1;  // Index de la map des pièces posées
+    
+    // Définition des pièces (rotations)
+    // I, O, T, S, Z, J, L
+    var PIECES = [
+      // I
+      [[[0,0],[1,0],[2,0],[3,0]], [[0,0],[0,1],[0,2],[0,3]]],
+      // O
+      [[[0,0],[1,0],[0,1],[1,1]]],
+      // T
+      [[[0,0],[1,0],[2,0],[1,1]], [[0,0],[0,1],[0,2],[1,1]], 
+       [[1,0],[0,1],[1,1],[2,1]], [[1,0],[1,1],[1,2],[0,1]]],
+      // S
+      [[[1,0],[2,0],[0,1],[1,1]], [[0,0],[0,1],[1,1],[1,2]]],
+      // Z
+      [[[0,0],[1,0],[1,1],[2,1]], [[1,0],[0,1],[1,1],[0,2]]],
+      // J
+      [[[0,0],[0,1],[1,1],[2,1]], [[0,0],[1,0],[0,1],[0,2]],
+       [[0,0],[1,0],[2,0],[2,1]], [[1,0],[1,1],[0,2],[1,2]]],
+      // L
+      [[[2,0],[0,1],[1,1],[2,1]], [[0,0],[0,1],[0,2],[1,2]],
+       [[0,0],[1,0],[2,0],[0,1]], [[0,0],[1,0],[1,1],[1,2]]]
+    ];
+    
+    // Caractère pour les pièces posées (même que les sprites)
+    var PIECE_CHAR = '#';
+    
+    // État du jeu
+    var currentPiece = 0;
+    var currentRotation = 0;
+    var pieceX = 4;
+    var pieceY = 0;
+    var nextPiece = 0;
+    var score = 0;
+    var level = 1;
+    var linesCleared = 0;
+    var gameOver = false;
+    
+    function getLayers() {
+      return _currentLayers;
+    }
+    
+    function randomPiece() {
+      return Math.floor(Math.random() * 7);
+    }
+    
+    function domReady() {
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Initialiser les pièces
+      currentPiece = randomPiece();
+      nextPiece = randomPiece();
+      pieceX = 4;
+      pieceY = 0;
+      currentRotation = 0;
+      
+      // Afficher la pièce courante
+      drawCurrentPiece(layers);
+      drawNextPiece(layers);
+    }
+    
+    function getBlocks() {
+      var rotations = PIECES[currentPiece];
+      var rot = currentRotation % rotations.length;
+      return rotations[rot];
+    }
+    
+    function drawCurrentPiece(layers) {
+      var blocks = getBlocks();
+      for (var i = 0; i < 4; i++) {
+        var sprite = layers.getSprite("block" + i);
+        if (sprite != null) {
+          var bx = pieceX + blocks[i][0];
+          var by = pieceY + blocks[i][1];
+          sprite.show(0);
+          sprite.move(bx + 1, by);  // +1 pour la bordure gauche
+        }
+      }
+    }
+    
+    function hideCurrentPiece(layers) {
+      for (var i = 0; i < 4; i++) {
+        var sprite = layers.getSprite("block" + i);
+        if (sprite != null) {
+          sprite.hide();
+        }
+      }
+    }
+    
+    function drawNextPiece(layers) {
+      var rotations = PIECES[nextPiece];
+      var blocks = rotations[0];
+      for (var i = 0; i < 4; i++) {
+        var sprite = layers.getSprite("next" + i);
+        if (sprite != null) {
+          sprite.show(0);
+          sprite.move(15 + blocks[i][0], 2 + blocks[i][1]);
+        }
+      }
+    }
+    
+    function getMapChar(layers, x, y) {
+      // Vérifier dans la map des pièces posées
+      var hit = layers.checkMapCollisionAt("block0", x + 1, y);
+      return hit;
+    }
+    
+    function canMove(layers, dx, dy, newRotation) {
+      var rotations = PIECES[currentPiece];
+      var rot = newRotation % rotations.length;
+      var blocks = rotations[rot];
+      
+      for (var i = 0; i < 4; i++) {
+        var nx = pieceX + blocks[i][0] + dx;
+        var ny = pieceY + blocks[i][1] + dy;
+        
+        // Vérifier les limites
+        if (nx < 0 || nx >= GRID_W || ny >= GRID_H) {
+          return false;
+        }
+        
+        // Vérifier collision avec pièces posées (map 1)
+        if (ny >= 0) {
+          var c = getMapChar(layers, nx, ny);
+          if (c != 0 && c != 32) {  // 32 = espace
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    
+    function lockPiece(layers) {
+      var blocks = getBlocks();
+      
+      for (var i = 0; i < 4; i++) {
+        var bx = pieceX + blocks[i][0];
+        var by = pieceY + blocks[i][1];
+        if (by >= 0 && by < GRID_H && bx >= 0 && bx < GRID_W) {
+          // Écrire dans la map des pièces (map index 1)
+          layers.setMapChar(PIECES_MAP, bx + 1, by, PIECE_CHAR);
+        }
+      }
+    }
+    
+    function isLineFull(layers, y) {
+      for (var x = 0; x < GRID_W; x++) {
+        var c = getMapChar(layers, x, y);
+        if (c == 0 || c == 32) {
+          return false;
+        }
+      }
+      return true;
+    }
+    
+    function clearLines(layers) {
+      var cleared = 0;
+      
+      for (var y = GRID_H - 1; y >= 0; y--) {
+        if (isLineFull(layers, y)) {
+          cleared++;
+          // Décaler les lignes vers le bas dans la map
+          layers.shiftMapDown(PIECES_MAP, 0, y);
+          y++;  // Revérifier cette ligne
+        }
+      }
+      
+      if (cleared > 0) {
+        linesCleared += cleared;
+        // Score: 100, 300, 500, 800 pour 1, 2, 3, 4 lignes
+        var points = [0, 100, 300, 500, 800];
+        score += points[cleared] * level;
+        
+        // Niveau tous les 10 lignes
+        var newLevel = Math.floor(linesCleared / 10) + 1;
+        if (newLevel > level) {
+          level = newLevel;
+        }
+        
+        layers.setText("score", "Score: " + score);
+        layers.setText("level", "Level: " + level);
+        layers.setText("lines", "Lines: " + linesCleared);
+        layers.beep();
+      }
+    }
+    
+    function spawnNewPiece(layers) {
+      currentPiece = nextPiece;
+      nextPiece = randomPiece();
+      pieceX = 4;
+      pieceY = 0;
+      currentRotation = 0;
+      
+      // Vérifier game over
+      if (!canMove(layers, 0, 0, currentRotation)) {
+        gameOver = true;
+        layers.setText("score", "GAME OVER!");
+        layers.beep();
+        return;
+      }
+      
+      drawCurrentPiece(layers);
+      drawNextPiece(layers);
+    }
+    
+    function moveLeft() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      if (canMove(layers, -1, 0, currentRotation)) {
+        hideCurrentPiece(layers);
+        pieceX--;
+        drawCurrentPiece(layers);
+      }
+    }
+    
+    function moveRight() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      if (canMove(layers, 1, 0, currentRotation)) {
+        hideCurrentPiece(layers);
+        pieceX++;
+        drawCurrentPiece(layers);
+      }
+    }
+    
+    function moveDown() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      if (canMove(layers, 0, 1, currentRotation)) {
+        hideCurrentPiece(layers);
+        pieceY++;
+        drawCurrentPiece(layers);
+      } else {
+        // Verrouiller la pièce
+        lockPiece(layers);
+        hideCurrentPiece(layers);
+        clearLines(layers);
+        spawnNewPiece(layers);
+      }
+    }
+    
+    function rotate() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      var newRotation = currentRotation + 1;
+      if (canMove(layers, 0, 0, newRotation)) {
+        hideCurrentPiece(layers);
+        currentRotation = newRotation;
+        drawCurrentPiece(layers);
+      }
+    }
+    
+    function drop() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      hideCurrentPiece(layers);
+      while (canMove(layers, 0, 1, currentRotation)) {
+        pieceY++;
+      }
+      drawCurrentPiece(layers);
+      
+      // Verrouiller immédiatement
+      lockPiece(layers);
+      hideCurrentPiece(layers);
+      clearLines(layers);
+      spawnNewPiece(layers);
+    }
+    
+    function gameLoop() {
+      if (gameOver) return;
+      
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Descente automatique
+      moveDown();
+    }
+  </script>
+</minitel>
