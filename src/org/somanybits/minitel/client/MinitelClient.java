@@ -540,10 +540,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
-                    System.err.println("Erreur game loop: " + e.getMessage());
+                    System.err.println("❌ Erreur game loop: " + e.getMessage());
                 }
             }
-            System.out.println("🎮 Game loop arrêté");
         }, "GameLoop");
         
         gameLoopThread.start();

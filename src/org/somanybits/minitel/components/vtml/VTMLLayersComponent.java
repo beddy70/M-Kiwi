@@ -19,7 +19,7 @@ import org.somanybits.minitel.components.ModelMComponent;
 public class VTMLLayersComponent extends ModelMComponent {
     
     public static final int MAX_AREAS = 3;
-    public static final int MAX_SPRITES = 8;
+    public static final int MAX_SPRITES = 16;
     
     private int left;
     private int top;
@@ -47,9 +47,15 @@ public class VTMLLayersComponent extends ModelMComponent {
     // Callbacks JavaScript pour les événements
     private Map<String, String> keypadEvents = new HashMap<>();
     
+    // Labels de texte dynamique
+    private Map<String, VTMLLabelComponent> labels = new HashMap<>();
+    
     // Game loop
     private String tickFunction = null;  // Fonction JS à appeler périodiquement
     private int tickInterval = 200;      // Intervalle en ms (200ms = 5 FPS)
+    
+    // Flag pour déclencher un beep au prochain rendu
+    private boolean pendingBeep = false;
     
     public VTMLLayersComponent(int left, int top, int width, int height) {
         this.left = left;
@@ -145,6 +151,133 @@ public class VTMLLayersComponent extends ModelMComponent {
         }
     }
     
+    /**
+     * Vérifie si deux sprites entrent en collision
+     */
+    public boolean checkCollision(String id1, String id2) {
+        SpriteInstance sprite1 = getSprite(id1);
+        SpriteInstance sprite2 = getSprite(id2);
+        if (sprite1 == null || sprite2 == null) return false;
+        return sprite1.collidesWith(sprite2);
+    }
+    
+    /**
+     * Vérifie si un sprite entre en collision avec un caractère non-vide de la map.
+     * Retourne le caractère touché ou '\0' si pas de collision.
+     */
+    public char checkMapCollision(String spriteId) {
+        SpriteInstance sprite = getSprite(spriteId);
+        if (sprite == null || !sprite.isVisible()) return '\0';
+        
+        int sx = sprite.getX();
+        int sy = sprite.getY();
+        int sw = sprite.getWidth();
+        int sh = sprite.getHeight();
+        
+        // Parcourir toutes les positions du sprite
+        for (int dy = 0; dy < sh; dy++) {
+            for (int dx = 0; dx < sw; dx++) {
+                int mapX = sx + dx;
+                int mapY = sy + dy;
+                
+                // Vérifier les limites
+                if (mapX < 0 || mapX >= width || mapY < 0 || mapY >= height) continue;
+                
+                // Chercher dans les areas (de bas en haut)
+                for (VTMLMapComponent area : areas) {
+                    char[][] areaData = area.getData();
+                    if (areaData == null) continue;
+                    if (mapY >= areaData.length || mapX >= areaData[mapY].length) continue;
+                    
+                    char c = areaData[mapY][mapX];
+                    // Espace = vide, pas de collision
+                    if (c != ' ' && c != '\0') {
+                        return c;
+                    }
+                }
+            }
+        }
+        return '\0';  // Pas de collision
+    }
+    
+    /**
+     * Vérifie si un sprite toucherait un caractère non-vide à une position donnée.
+     * Utile pour tester AVANT de déplacer le sprite.
+     */
+    public char checkMapCollisionAt(String spriteId, int testX, int testY) {
+        SpriteInstance sprite = getSprite(spriteId);
+        if (sprite == null) return '\0';
+        
+        int sw = sprite.getWidth();
+        int sh = sprite.getHeight();
+        
+        // Parcourir toutes les positions du sprite à la position test
+        for (int dy = 0; dy < sh; dy++) {
+            for (int dx = 0; dx < sw; dx++) {
+                int mapX = testX + dx;
+                int mapY = testY + dy;
+                
+                // Vérifier les limites
+                if (mapX < 0 || mapX >= width || mapY < 0 || mapY >= height) continue;
+                
+                // Chercher dans les areas (de bas en haut)
+                for (VTMLMapComponent area : areas) {
+                    char[][] areaData = area.getData();
+                    if (areaData == null) continue;
+                    if (mapY >= areaData.length || mapX >= areaData[mapY].length) continue;
+                    
+                    char c = areaData[mapY][mapX];
+                    if (c != ' ' && c != '\0') {
+                        return c;
+                    }
+                }
+            }
+        }
+        return '\0';
+    }
+    
+    // ========== GESTION DES LABELS ==========
+    
+    public void addLabel(VTMLLabelComponent label) {
+        if (label.getId() != null) {
+            labels.put(label.getId(), label);
+        }
+    }
+    
+    public VTMLLabelComponent getLabel(String id) {
+        return labels.get(id);
+    }
+    
+    /**
+     * Modifie le texte d'un label (appelable depuis JavaScript)
+     */
+    public void setText(String id, String text) {
+        VTMLLabelComponent label = labels.get(id);
+        if (label != null) {
+            label.setText(text);
+        }
+    }
+    
+    // ========== SONS ==========
+    
+    /**
+     * Déclenche un beep au prochain rendu (appelable depuis JavaScript)
+     */
+    public void beep() {
+        pendingBeep = true;
+    }
+    
+    /**
+     * Vérifie et consomme le flag beep
+     */
+    public boolean consumeBeep() {
+        if (pendingBeep) {
+            pendingBeep = false;
+            return true;
+        }
+        return false;
+    }
+    
     // ========== GESTION DES KEYPADS ==========
     
     public void addKeypad(VTMLKeypadComponent keypad) {
@@ -197,12 +330,29 @@ public class VTMLLayersComponent extends ModelMComponent {
         }
         
         // Dessiner les sprites visibles par-dessus
-        //System.out.println("🎮 compose() - spriteInstances=" + spriteInstances.size());
         for (String id : spriteInstances.keySet()) {
             SpriteInstance instance = spriteInstances.get(id);
-            //System.out.println("  Sprite '" + id + "': visible=" + instance.isVisible() + ", pos=(" + instance.getX() + "," + instance.getY() + ")");
             if (instance.isVisible()) {
                 drawSprite(instance);
+            }
+        }
+        
+        // Dessiner les labels par-dessus tout
+        for (VTMLLabelComponent label : labels.values()) {
+            drawLabel(label);
+        }
+    }
+    
+    private void drawLabel(VTMLLabelComponent label) {
+        String text = label.getDisplayText();
+        int lx = label.getX();
+        int ly = label.getY();
+        
+        for (int i = 0; i < text.length(); i++) {
+            int bufX = lx + i;
+            if (bufX >= 0 && bufX < width && ly >= 0 && ly < height) {
+                buffer[ly][bufX] = text.charAt(i);
+                mosaicMode[ly][bufX] = false;  // Les labels sont toujours en mode texte
             }
         }
     }
@@ -343,6 +493,11 @@ public class VTMLLayersComponent extends ModelMComponent {
                 System.arraycopy(mosaicMode[y], 0, previousMosaicMode[y], 0, width);
             }
             
+            // Ajouter le beep si demandé
+            if (consumeBeep()) {
+                out.write(0x07);  // BEL - code sonore Minitel
+            }
+            
             return out.toByteArray();
         } catch (IOException e) {
             return new byte[0];
@@ -409,6 +564,46 @@ public class VTMLLayersComponent extends ModelMComponent {
         
         public void hide() {
             this.visible = false;
+        }
+        
+        /**
+         * Retourne la largeur du sprite en caractères
+         */
+        public int getWidth() {
+            if (definition == null) return 0;
+            char[][] data = definition.getFrameData(currentFrame);
+            if (data == null || data.length == 0) return 0;
+            return data[0].length;
+        }
+        
+        /**
+         * Retourne la hauteur du sprite en caractères
+         */
+        public int getHeight() {
+            if (definition == null) return 0;
+            char[][] data = definition.getFrameData(currentFrame);
+            if (data == null) return 0;
+            return data.length;
+        }
+        
+        /**
+         * Vérifie si ce sprite entre en collision avec un autre (AABB)
+         */
+        public boolean collidesWith(SpriteInstance other) {
+            if (!this.visible || !other.visible) return false;
+            
+            int thisLeft = this.x;
+            int thisRight = this.x + this.getWidth();
+            int thisTop = this.y;
+            int thisBottom = this.y + this.getHeight();
+            
+            int otherLeft = other.x;
+            int otherRight = other.x + other.getWidth();
+            int otherTop = other.y;
+            int otherBottom = other.y + other.getHeight();
+            
+            return thisLeft < otherRight && thisRight > otherLeft &&
+                   thisTop < otherBottom && thisBottom > otherTop;
         }
     }
 }

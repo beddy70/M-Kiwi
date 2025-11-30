@@ -1,0 +1,248 @@
+<minitel title="Pong Minitel">
+  
+  <layers id="game" left="0" top="1" width="40" height="22">
+    
+    <!-- Fond du terrain -->
+    <map id="terrain" type="char">
+      <row>########################################</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>########################################</row>
+    </map>
+    
+    <!-- Raquette joueur (gauche) -->
+    <spritedef id="paddle" width="1" height="4" type="bitmap">
+      <sprite>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+      </sprite>
+    </spritedef>
+    
+    <!-- Raquette IA (droite) -->
+    <spritedef id="paddle2" width="1" height="4" type="bitmap">
+      <sprite>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+      </sprite>
+    </spritedef>
+    
+    <!-- Balle -->
+    <spritedef id="ball" width="1" height="1" type="char">
+      <sprite>
+        <line>O</line>
+      </sprite>
+    </spritedef>
+    
+    <!-- Mapping des touches -->
+    <keypad action="UP" key="Z" event="moveUp"/>
+    <keypad action="DOWN" key="S" event="moveDown"/>
+    
+    <!-- Label pour le score -->
+    <label id="score" x="30" y="0" width="9">Score 0-0</label>
+    
+    <!-- Timer pour la boucle de jeu -->
+    <timer event="gameLoop" interval="80"></timer>
+    
+  </layers>
+  
+  <div left="0" top="23" width="40" height="1">
+    <row>[Z]=Haut [S]=Bas</row>
+  </div>
+  
+  <script>
+    // Position des raquettes
+    var paddleY = 8;
+    var paddle2Y = 8;
+    
+    // Position et vitesse de la balle
+    var ballX = 20;
+    var ballY = 10;
+    var ballDX = 1;
+    var ballDY = 1;
+    
+    // Score
+    var scorePlayer = 0;
+    var scoreAI = 0;
+
+    function getLayers() {
+      return _currentLayers;
+    }
+
+    function domReady() {
+      var layers = getLayers();
+      if (layers != null) {
+        // Raquette joueur
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.show(0);
+          paddle.move(2, paddleY);
+        }
+        
+        // Raquette IA
+        var paddle2 = layers.getSprite("paddle2");
+        if (paddle2 != null) {
+          paddle2.show(0);
+          paddle2.move(37, paddle2Y);
+        }
+        
+        // Balle
+        var ball = layers.getSprite("ball");
+        if (ball != null) {
+          ball.show(0);
+          ball.move(ballX, ballY);
+        }
+      }
+    }
+
+    function moveUp() {
+      var layers = getLayers();
+      if (layers != null && paddleY > 1) {
+        paddleY--;
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.move(2, paddleY);
+        }
+      }
+    }
+
+    function moveDown() {
+      var layers = getLayers();
+      if (layers != null && paddleY < 16) {
+        paddleY++;
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.move(2, paddleY);
+        }
+      }
+    }
+
+    function gameLoop() {
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Déplacer la balle
+      ballX = ballX + ballDX;
+      ballY = ballY + ballDY;
+      
+      // Rebond murs haut/bas
+      if (ballY <= 1) {
+        ballY = 1;
+        ballDY = -ballDY;
+      }
+      if (ballY >= 19) {
+        ballY = 19;
+        ballDY = -ballDY;
+      }
+      
+      // Mettre à jour position balle pour collision
+      var ball = layers.getSprite("ball");
+      if (ball != null) {
+        ball.move(ballX, ballY);
+      }
+      
+      // Collision avec raquette joueur
+      if (layers.checkCollision("ball", "paddle")) {
+        ballX = 3;
+        ballDX = 1;
+        // Varier l'angle selon la position d'impact
+        var hitPos = ballY - paddleY;
+        if (hitPos < 2) {
+          ballDY = -1;
+        } else if (hitPos > 2) {
+          ballDY = 1;
+        }
+      }
+      
+      // Collision avec raquette IA
+      if (layers.checkCollision("ball", "paddle2")) {
+        ballX = 36;
+        ballDX = -1;
+        var hitPos = ballY - paddle2Y;
+        if (hitPos < 2) {
+          ballDY = -1;
+        } else if (hitPos > 2) {
+          ballDY = 1;
+        }
+      }
+      
+      // Balle perdue à gauche (point pour IA)
+      if (ballX <= 1) {
+        scoreAI++;
+        updateScore();
+        resetBall(-1);
+      }
+      
+      // Balle perdue à droite (point pour joueur)
+      if (ballX >= 38) {
+        scorePlayer++;
+        updateScore();
+        resetBall(1);
+      }
+      
+      // IA simple : suivre la balle
+      if (ballDX > 0) {
+        if (paddle2Y + 2 < ballY && paddle2Y < 16) {
+          paddle2Y++;
+        } else if (paddle2Y + 2 > ballY && paddle2Y > 1) {
+          paddle2Y--;
+        }
+        var paddle2 = layers.getSprite("paddle2");
+        if (paddle2 != null) {
+          paddle2.move(37, paddle2Y);
+        }
+      }
+    }
+    
+    function resetBall(direction) {
+      ballX = 20;
+      ballY = 10;
+      ballDX = direction;
+      ballDY = (Math.random() > 0.5) ? 1 : -1;
+    }
+    
+    function updateScore() {
+      var layers = getLayers();
+      if (layers != null) {
+        layers.setText("score", scorePlayer + " - " + scoreAI);
+      }
+    }
+  </script>
+  
+</minitel>

@@ -29,6 +29,7 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 - [`<spritedef>`](#spritedef) - Définition de sprite
 - [`<sprite>`](#sprite) - Frame d'animation
 - [`<line>`](#line) - Ligne de sprite
+- [`<label>`](#label) - Texte dynamique
 - [`<keypad>`](#keypad) - Mapping clavier
 - [`<timer>`](#timer) - Boucle de jeu
 
@@ -391,6 +392,29 @@ Ligne de données dans un `<sprite>`. Définit une ligne de l'apparence du sprit
 
 ---
 
+### `<label>`
+
+Texte dynamique modifiable depuis JavaScript. Permet d'afficher des scores, messages, etc.
+
+| Attribut | Type   | Défaut | Description                           |
+|----------|--------|--------|---------------------------------------|
+| `id`     | string | -      | Identifiant pour `setText()`          |
+| `x`      | int    | 0      | Position X dans le layers             |
+| `y`      | int    | 0      | Position Y dans le layers             |
+| `width`  | int    | 10     | Largeur (padding avec espaces)        |
+
+```xml
+<label id="score" x="1" y="0" width="12">Score: 0</label>
+```
+
+Le texte initial est le contenu de la balise. Modifiable via JavaScript :
+
+```javascript
+layers.setText("score", "Score: 42");
+```
+
+---
+
 ### `<keypad>`
 
 Associe une touche du clavier à une action de jeu.
@@ -616,6 +640,31 @@ sprite.move(10, 5);
 
 // Cacher le sprite
 sprite.hide();
+
+// Vérifier collision entre deux sprites
+var collision = layers.checkCollision("ball", "paddle");
+if (collision) {
+  // Réagir à la collision
+}
+
+// Vérifier collision sprite/map (retourne le caractère touché ou '\0')
+var hitChar = layers.checkMapCollision("player");
+if (hitChar != '\0') {
+  // Le sprite touche un caractère non-vide
+  if (hitChar == '#') {
+    // Collision avec un mur
+  }
+}
+
+// Tester collision AVANT de déplacer (prévisualisation)
+var wouldHit = layers.checkMapCollisionAt("player", newX, newY);
+if (wouldHit == '\0') {
+  // Pas d'obstacle, on peut déplacer
+  player.move(newX, newY);
+}
+
+// Émettre un bip sonore
+layers.beep();
 ```
 
 #### Exemple de fonction de déplacement

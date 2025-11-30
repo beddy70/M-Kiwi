@@ -509,6 +509,27 @@ public class MinitelPageReader {
                 return null;  // Pas de composant visuel
             }
             
+            case "label" -> {
+                String id = attrs.get("id");
+                int x = parseInt(attrs.get("x"), 0);
+                int y = parseInt(attrs.get("y"), 0);
+                int labelWidth = parseInt(attrs.get("width"), 10);
+                String text = textContent != null ? textContent.trim() : "";
+                VTMLLabelComponent label = new VTMLLabelComponent(id, x, y, labelWidth, text);
+                System.out.println("🏷️ Label: id=" + id + ", pos=(" + x + "," + y + "), width=" + labelWidth + ", text='" + text + "'");
+                // Chercher le layers parent
+                MComponent parent = currentComponent;
+                while (parent != null) {
+                    if (parent instanceof VTMLLayersComponent layers) {
+                        layers.addLabel(label);
+                        System.out.println("🏷️ Label ajouté au layers");
+                        break;
+                    }
+                    parent = (parent instanceof ModelMComponent m) ? m.getParent() : null;
+                }
+                return label;
+            }
+            
             default -> {
                 // Tag non reconnu
                 System.out.println("⚠️ Tag VTML non reconnu: " + tagname);
