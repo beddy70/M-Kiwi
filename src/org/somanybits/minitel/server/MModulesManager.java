@@ -71,8 +71,8 @@ public class MModulesManager {
 
     public void loadAllMModulePlugins() throws IOException {
 
-        this.logmgr = Kernel.getIntance().getLogManager();
-        this.mmodulePath = Kernel.getIntance().getConfig().path.plugins_path + "/mmodules/";
+        this.logmgr = Kernel.getInstance().getLogManager();
+        this.mmodulePath = Kernel.getInstance().getConfig().path.plugins_path + "/mmodules/";
 
         File dir = new File(this.mmodulePath);  // contient *.jar
         File[] jars = dir.listFiles(f -> f.isFile() && f.getName().endsWith(".jar"));

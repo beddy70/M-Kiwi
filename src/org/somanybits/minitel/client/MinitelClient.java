@@ -15,6 +15,8 @@ import org.somanybits.minitel.MinitelConnection;
 import org.somanybits.minitel.Teletel;
 import org.somanybits.minitel.components.vtml.VTMLFormComponent;
 import org.somanybits.minitel.components.vtml.VTMLInputComponent;
+import org.somanybits.minitel.components.vtml.VTMLLayersComponent;
+import org.somanybits.minitel.components.vtml.VTMLScriptEngine;
 import org.somanybits.minitel.components.vtml.VTMLStatusComponent;
 import org.somanybits.minitel.events.CodeSequenceListener;
 import org.somanybits.minitel.events.CodeSequenceSentEvent;
@@ -42,11 +44,17 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     // Système de focus pour les formulaires
     private VTMLFormComponent currentForm = null;
     private VTMLStatusComponent currentStatus = null;
+    private VTMLLayersComponent currentLayers = null;
     private boolean formHasFocus = false;  // true = focus sur form/inputs, false = focus sur menu
+    private boolean layersHasFocus = false; // true = focus sur layers (mode jeu)
+    
+    // Game loop
+    private Thread gameLoopThread = null;
+    private volatile boolean gameLoopRunning = false;
 
     public static void main(String[] args) throws Exception {
 
-        logmgr = Kernel.getIntance().getLogManager();
+        logmgr = Kernel.getInstance().getLogManager();
         logmgr.setPrefix("> ");
 
         if (args.length == 0) {
@@ -64,7 +72,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public MinitelClient(String server, int port) throws IOException, InterruptedException {
 
-        PageManager pmgr = Kernel.getIntance().getPageManager();
+        PageManager pmgr = Kernel.getInstance().getPageManager();
         mc = new MinitelConnection("/dev/serial0", MinitelConnection.BAUD_9600);
 
         mc.open();
@@ -178,7 +186,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             String keyvalue = null;
 
             System.out.println("event keypressed=" + event.getKeyCode() + " type=" + event.getType());
-            PageManager pmgr = Kernel.getIntance().getPageManager();
+            PageManager pmgr = Kernel.getInstance().getPageManager();
 
             switch (event.getType()) {
                 case KeyPressedEvent.TYPE_KEY_MENU_EVENT:
@@ -318,6 +326,31 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                         break;
                     }
                     
+                    // Si focus sur layers : capturer les touches pour le jeu
+                    if (layersHasFocus && currentLayers != null) {
+                        String action = currentLayers.getActionForKey(car);
+                        if (action != null) {
+                            String eventFunc = currentLayers.getKeypadEvent(action);
+                            System.out.println("🎮 Action: " + action + " -> " + eventFunc);
+                            if (eventFunc != null) {
+                                try {
+                                    // Appeler la fonction JavaScript
+                                    VTMLScriptEngine.getInstance().execute(eventFunc + "()");
+                                    // Rafraîchir l'affichage du layers
+                                    byte[] update = currentLayers.getDifferentialBytes();
+                                    System.out.println("🎮 Update: " + update.length + " bytes");
+                                    mc.writeBytes(update);
+                                } catch (Exception e) {
+                                    System.err.println("Erreur JS: " + e.getMessage());
+                                }
+                            }
+                        } else {
+                            // Touche non reconnue : effacer le caractère écho et rester en position
+                            mc.writeBytes(currentLayers.clearEchoChar());
+                        }
+                        break;
+                    }
+                    
                     // Si focus sur form : capturer les caractères pour l'input
                     if (currentForm != null && formHasFocus && currentForm.hasInputs()) {
                         VTMLInputComponent currentInput = currentForm.getCurrentInput();
@@ -387,6 +420,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private void updateCurrentForm(Page page) {
         currentForm = page.getForm();
         currentStatus = page.getStatus();
+        currentLayers = page.getLayers();
         
         // Par défaut : curseur masqué (mode menu)
         // Note: setEcho désactivé car génère des caractères parasites sur certains Minitel
@@ -396,6 +430,25 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         } catch (IOException e) {
             System.err.println("Erreur init curseur: " + e.getMessage());
         }
+        
+        // Si la page a un layers, activer le mode jeu
+        if (currentLayers != null) {
+            layersHasFocus = true;
+            formHasFocus = false;
+            System.out.println("🎮 Layers détecté - Mode jeu activé");
+            showStatusMessage(">> Jeu <<");
+            
+            // Démarrer le game loop si configuré
+            if (currentLayers.hasGameLoop()) {
+                startGameLoop();
+            }
+            return;
+        } else {
+            // Arrêter le game loop si on quitte le mode jeu
+            stopGameLoop();
+        }
+        
+        layersHasFocus = false;
         
         if (currentForm != null && currentForm.hasInputs()) {
             // Par défaut, on commence sur le menu
@@ -456,6 +509,57 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             default:
 
                 System.out.println("#" + MinitelConnection.toHex(event.getSequenceCode()));
+        }
+    }
+    
+    // ========== GAME LOOP ==========
+    
+    private void startGameLoop() {
+        if (gameLoopRunning || currentLayers == null || !currentLayers.hasGameLoop()) {
+            return;
+        }
+        
+        gameLoopRunning = true;
+        String tickFunc = currentLayers.getTickFunction();
+        int interval = currentLayers.getTickInterval();
+        
+        System.out.println("🎮 Démarrage game loop: " + tickFunc + "() toutes les " + interval + "ms");
+        
+        gameLoopThread = new Thread(() -> {
+            while (gameLoopRunning && currentLayers != null) {
+                try {
+                    // Appeler la fonction JavaScript
+                    VTMLScriptEngine.getInstance().execute(tickFunc + "()");
+                    
+                    // Rafraîchir l'affichage
+                    byte[] update = currentLayers.getDifferentialBytes();
+                    if (update.length > 0) {
+                        synchronized (mc) {
+                            mc.writeBytes(update);
+                        }
+                    }
+                    
+                    Thread.sleep(interval);
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Exception e) {
+                    System.err.println("Erreur game loop: " + e.getMessage());
+                }
+            }
+            System.out.println("🎮 Game loop arrêté");
+        }, "GameLoop");
+        
+        gameLoopThread.start();
+    }
+    
+    private void stopGameLoop() {
+        if (gameLoopRunning) {
+            gameLoopRunning = false;
+            if (gameLoopThread != null) {
+                gameLoopThread.interrupt();
+                gameLoopThread = null;
+            }
+            System.out.println("🎮 Arrêt game loop demandé");
         }
     }
 

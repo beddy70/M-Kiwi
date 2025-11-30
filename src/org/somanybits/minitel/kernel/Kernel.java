@@ -40,7 +40,7 @@ public class Kernel {
 
     }
 
-    static public Kernel getIntance() throws IOException {
+    static public Kernel getInstance() throws IOException {
         if (Kernel.kernel == null) {
             Kernel.kernel = new Kernel();
         }

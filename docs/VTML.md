@@ -207,6 +207,354 @@ Génère un QR code affichable sur Minitel.
 
 ---
 
+## Tags Layers (Jeux)
+
+Le système de layers permet de créer des jeux interactifs sur Minitel avec des zones de fond (maps) et des sprites animés.
+
+### `<layers>`
+
+Conteneur principal pour un jeu. Définit une zone de jeu avec des maps et des sprites.
+
+| Attribut | Type   | Défaut | Description                    |
+|----------|--------|--------|--------------------------------|
+| `id`     | string | -      | Identifiant unique (requis pour JS) |
+| `left`   | int    | 0      | Position X                     |
+| `top`    | int    | 0      | Position Y                     |
+| `width`  | int    | 40     | Largeur en caractères          |
+| `height` | int    | 24     | Hauteur en lignes              |
+
+**Limites** :
+- Maximum 3 `<map>`
+- Maximum 8 `<spritedef>`
+
+```xml
+<layers id="game" left="0" top="1" width="40" height="20">
+  <!-- maps, sprites, keypads et timer ici -->
+</layers>
+```
+
+---
+
+### `<map>`
+
+Zone de fond dans un layers. Les maps sont empilées (la première = fond, la dernière = dessus).
+Les caractères espace dans les maps supérieures sont transparents.
+
+| Attribut | Type   | Défaut | Description                           |
+|----------|--------|--------|---------------------------------------|
+| `id`     | string | -      | Identifiant unique                    |
+| `type`   | string | `char` | Type : `char` ou `bitmap`             |
+
+```xml
+<map id="terrain" type="char">
+  <row>########################################</row>
+  <row>#                                      #</row>
+  <row>#                                      #</row>
+  <row>########################################</row>
+</map>
+```
+
+---
+
+### `<spritedef>`
+
+Définition d'un sprite avec ses frames d'animation.
+
+| Attribut | Type   | Défaut | Description                           |
+|----------|--------|--------|---------------------------------------|
+| `id`     | string | -      | Identifiant unique du sprite          |
+| `width`  | int    | 8      | Largeur du sprite                     |
+| `height` | int    | 8      | Hauteur du sprite                     |
+| `type`   | string | `char` | Type : `char` ou `bitmap`             |
+
+```xml
+<spritedef id="player" width="3" height="2" type="char">
+  <sprite>
+    <line> O </line>
+    <line>/|\</line>
+  </sprite>
+  <sprite>
+    <line> O </line>
+    <line>\|/</line>
+  </sprite>
+</spritedef>
+```
+
+---
+
+### `<sprite>`
+
+Une frame d'animation dans un `<spritedef>`. Contient des `<line>` pour définir l'apparence.
+
+```xml
+<sprite>
+  <line>###</line>
+  <line># #</line>
+  <line>###</line>
+</sprite>
+```
+
+---
+
+### `<line>`
+
+Ligne de données dans un `<sprite>`. Définit une ligne de l'apparence du sprite.
+
+```xml
+<line>###</line>
+```
+
+**Note** : Utilisez `<line>` dans les sprites et `<row>` dans les maps.
+
+---
+
+### `<keypad>`
+
+Associe une touche du clavier à une action de jeu.
+
+| Attribut | Type   | Défaut | Description                           |
+|----------|--------|--------|---------------------------------------|
+| `action` | string | -      | Action : LEFT, RIGHT, UP, DOWN, ACTION1, ACTION2 |
+| `key`    | string | -      | Touche du clavier (une lettre)        |
+| `event`  | string | -      | Nom de la fonction JavaScript à appeler |
+
+```xml
+<keypad action="LEFT"    key="Q" event="moveLeft"/>
+<keypad action="RIGHT"   key="D" event="moveRight"/>
+<keypad action="UP"      key="Z" event="moveUp"/>
+<keypad action="DOWN"    key="S" event="moveDown"/>
+<keypad action="ACTION1" key=" " event="jump"/>
+<keypad action="ACTION2" key="E" event="action"/>
+```
+
+**Note** : L'attribut `event` contient le nom de la fonction sans les parenthèses.
+
+---
+
+### `<timer>`
+
+Définit une boucle de jeu (game loop) qui appelle une fonction JavaScript à intervalle régulier.
+
+| Attribut   | Type   | Défaut | Description                           |
+|------------|--------|--------|---------------------------------------|
+| `event`    | string | -      | Nom de la fonction JavaScript à appeler |
+| `interval` | int    | 200    | Intervalle en millisecondes           |
+
+```xml
+<timer event="moveBall" interval="300"></timer>
+```
+
+**Note** : Utilisez la syntaxe avec balise fermante `</timer>` (pas auto-fermante).
+
+---
+
+### Exemple complet de jeu (Pong)
+
+```xml
+<minitel title="Pong Minitel">
+  
+  <layers id="game" left="0" top="1" width="40" height="22">
+    
+    <!-- Fond du terrain -->
+    <map id="terrain" type="char">
+      <row>########################################</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>########################################</row>
+    </map>
+    
+    <!-- Sprite de la raquette -->
+    <spritedef id="paddle" width="1" height="4" type="char">
+      <sprite>
+        <line>|</line>
+        <line>|</line>
+        <line>|</line>
+        <line>|</line>
+      </sprite>
+    </spritedef>
+    
+    <!-- Sprite de la balle -->
+    <spritedef id="ball" width="1" height="1" type="char">
+      <sprite>
+        <line>O</line>
+      </sprite>
+    </spritedef>
+    
+    <!-- Mapping des touches -->
+    <keypad action="UP"   key="Z" event="moveUp"/>
+    <keypad action="DOWN" key="S" event="moveDown"/>
+    
+    <!-- Timer pour animer la balle -->
+    <timer event="moveBall" interval="300"></timer>
+    
+  </layers>
+  
+  <div left="0" top="24" width="40" height="1">
+    <row>[Z]=Haut [S]=Bas</row>
+  </div>
+  
+  <script>
+    var paddleY = 10;
+    var ballX = 20;
+    var ballY = 10;
+    var ballDX = 1;
+    var ballDY = 1;
+
+    function getLayers() {
+      return _currentLayers;
+    }
+
+    function domReady() {
+      var layers = getLayers();
+      if (layers != null) {
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.show(0);
+          paddle.move(2, paddleY);
+        }
+        
+        var ball = layers.getSprite("ball");
+        if (ball != null) {
+          ball.show(0);
+          ball.move(ballX, ballY);
+        }
+      }
+    }
+
+    function moveUp() {
+      var layers = getLayers();
+      if (layers != null && paddleY > 1) {
+        paddleY--;
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.move(2, paddleY);
+        }
+      }
+    }
+
+    function moveDown() {
+      var layers = getLayers();
+      if (layers != null && paddleY < 16) {
+        paddleY++;
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.move(2, paddleY);
+        }
+      }
+    }
+
+    function moveBall() {
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      ballX = ballX + ballDX;
+      ballY = ballY + ballDY;
+      
+      // Rebond murs haut/bas
+      if (ballY <= 1 || ballY >= 19) {
+        ballDY = -ballDY;
+      }
+      
+      // Rebond mur droit
+      if (ballX >= 38) {
+        ballDX = -ballDX;
+      }
+      
+      // Rebond raquette ou perdu
+      if (ballX <= 3) {
+        if (ballY >= paddleY && ballY < paddleY + 4) {
+          ballDX = -ballDX;
+        } else if (ballX <= 1) {
+          // Reset au centre
+          ballX = 20;
+          ballY = 10;
+          ballDX = 1;
+        }
+      }
+      
+      var ball = layers.getSprite("ball");
+      if (ball != null) {
+        ball.move(ballX, ballY);
+      }
+    }
+  </script>
+  
+</minitel>
+```
+
+---
+
+### API JavaScript pour les jeux
+
+#### Variable globale
+
+| Variable          | Description                                      |
+|-------------------|--------------------------------------------------|
+| `_currentLayers`  | Référence au VTMLLayersComponent courant         |
+
+#### Fonction spéciale
+
+| Fonction     | Description                                           |
+|--------------|-------------------------------------------------------|
+| `domReady()` | Appelée automatiquement après le chargement de la page |
+| `debug(msg)` | Affiche un message dans la console Java               |
+
+#### API Sprite
+
+```javascript
+// Récupérer le layers courant
+var layers = _currentLayers;
+
+// Récupérer un sprite par son id
+var sprite = layers.getSprite("player");
+
+// Afficher le sprite (frame 0)
+sprite.show(0);
+
+// Déplacer le sprite à la position (x, y)
+sprite.move(10, 5);
+
+// Cacher le sprite
+sprite.hide();
+```
+
+#### Exemple de fonction de déplacement
+
+```javascript
+var playerX = 10;
+var playerY = 5;
+
+function moveRight() {
+  var layers = _currentLayers;
+  if (layers != null && playerX < 38) {
+    playerX++;
+    var player = layers.getSprite("player");
+    if (player != null) {
+      player.move(playerX, playerY);
+    }
+  }
+}
+```
+
+---
+
 ### `<script>`
 
 Exécute du JavaScript côté serveur. Permet de générer du contenu dynamique.

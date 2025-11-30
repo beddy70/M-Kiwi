@@ -14,6 +14,7 @@ import java.util.Map;
 import org.somanybits.minitel.components.MComponent;
 import org.somanybits.minitel.components.ModelMComponent;
 import org.somanybits.minitel.components.vtml.VTMLFormComponent;
+import org.somanybits.minitel.components.vtml.VTMLLayersComponent;
 import org.somanybits.minitel.components.vtml.VTMLStatusComponent;
 
 /**
@@ -215,6 +216,31 @@ public class Page {
      */
     public boolean hasStatus() {
         return status != null;
+    }
+
+    // ========== ZONE LAYERS (JEUX) ==========
+    
+    private VTMLLayersComponent layers = null;
+    
+    /**
+     * Définit le layers de la page
+     */
+    public void setLayers(VTMLLayersComponent layers) {
+        this.layers = layers;
+    }
+    
+    /**
+     * Retourne le layers de la page (ou null si non défini)
+     */
+    public VTMLLayersComponent getLayers() {
+        return layers;
+    }
+    
+    /**
+     * Vérifie si la page a un layers
+     */
+    public boolean hasLayers() {
+        return layers != null;
     }
 
     // ========== LISTE DES COMPOSANTS ==========

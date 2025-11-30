@@ -29,10 +29,10 @@ public class StaticFileServer {
     
     public static void main(String[] args) throws Exception {
         
-        Path docRoot = Paths.get(Kernel.getIntance().getConfig().path.root_path).toAbsolutePath().normalize();
-        int port = Kernel.getIntance().getConfig().server.port;
+        Path docRoot = Paths.get(Kernel.getInstance().getConfig().path.root_path).toAbsolutePath().normalize();
+        int port = Kernel.getInstance().getConfig().server.port;
         
-        logmgr = Kernel.getIntance().getLogManager();
+        logmgr = Kernel.getInstance().getLogManager();
         logmgr.setPrefix("> ");
         
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -43,7 +43,7 @@ public class StaticFileServer {
         logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "Minitel Page Server version " + VERSION);
         logmgr.addLog(LogManager.ANSI_WHITE + "Serving " + docRoot + " on http://localhost:" + port + "/");
         
-        Kernel.getIntance().getMModulesManager().loadAllMModulePlugins();
+        Kernel.getInstance().getMModulesManager().loadAllMModulePlugins();
         
     }
     
@@ -91,7 +91,7 @@ public class StaticFileServer {
         if ("mod".equals(rawPath.substring(rawPath.lastIndexOf(".") + 1))) {
 
             //System.out.println("load mmodule " + rawPath.substring(rawPath.lastIndexOf("/") + 1));
-            MModulesManager mmodmgr = Kernel.getIntance().getMModulesManager();
+            MModulesManager mmodmgr = Kernel.getInstance().getMModulesManager();
             
             String mmodname = rawPath.substring(rawPath.lastIndexOf("/") + 1).substring(0, rawPath.lastIndexOf(".") - 1);
             String response = mmodmgr.loadMModules(mmodname, ex, docRoot, paramlist);
@@ -100,7 +100,7 @@ public class StaticFileServer {
                 response = "<minitel><div><row>MModule " + mmodname + " not found :(</row></div></minitel>";
             }
             
-            ex.getResponseHeaders().set("Content-Type", "text/plain; charset=" + Kernel.getIntance().getConfig().server.defaultCharset);
+            ex.getResponseHeaders().set("Content-Type", "text/plain; charset=" + Kernel.getInstance().getConfig().server.defaultCharset);
             ex.sendResponseHeaders(200, response.length());
             
             byte[] respBytes = response.getBytes(StandardCharsets.UTF_8);
@@ -183,7 +183,7 @@ public class StaticFileServer {
     
     private static void respondText(HttpExchange ex, int code, String text) throws IOException {
         byte[] body = text.getBytes(StandardCharsets.UTF_8);
-        ex.getResponseHeaders().set("Content-Type", "text/plain; charset=" + Kernel.getIntance().getConfig().server.defaultCharset);
+        ex.getResponseHeaders().set("Content-Type", "text/plain; charset=" + Kernel.getInstance().getConfig().server.defaultCharset);
         ex.sendResponseHeaders(code, body.length);
         try (OutputStream os = ex.getResponseBody()) {
             os.write(body);

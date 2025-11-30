@@ -17,6 +17,7 @@ import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 import org.somanybits.log.LogManager;
 import org.somanybits.minitel.kernel.Kernel;
+import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.components.MComponent;
 import org.somanybits.minitel.components.ModelMComponent;
 import org.somanybits.minitel.components.vtml.*;
@@ -111,11 +112,11 @@ public class MinitelPageReader {
         // Générer les données Minitel à partir de l'arbre de composants
         if (rootComponent != null) {
             // Afficher l'arbre des composants sur la console
-           
+            System.out.println("=== ARBRE DES COMPOSANTS ===");
+            printComponentTree(rootComponent, 0);
+            System.out.println("============================");
             
             renderComponentTree(rootComponent);
-
-            // printComponentTree(rootComponent, 0);
             System.out.println();
         }
 
@@ -160,7 +161,7 @@ public class MinitelPageReader {
      */
     private void buildComponentFromElement(String tagname, int depth, Map<String, String> attrs, String textContent) {
         try {
-            LogManager logmgr = Kernel.getIntance().getLogManager();
+            LogManager logmgr = Kernel.getInstance().getLogManager();
             logmgr.addLog(LogManager.ANSI_BOLD_WHITE + depth + ">" + LogManager.ANSI_YELLOW + 
                          "  ".repeat(depth - MINITEL_TAG_DEPTH) + "<" + tagname + ">");
 
@@ -215,7 +216,11 @@ public class MinitelPageReader {
         return component instanceof VTMLMinitelComponent
             || component instanceof VTMLDivComponent
             || component instanceof VTMLMenuComponent
-            || component instanceof VTMLFormComponent;
+            || component instanceof VTMLFormComponent
+            || component instanceof VTMLLayersComponent
+            || component instanceof VTMLMapComponent
+            || component instanceof VTMLSpriteDefComponent
+            || component instanceof VTMLSpriteComponent;
     }
 
     /**
@@ -237,7 +242,11 @@ public class MinitelPageReader {
         return "minitel".equals(tagname)
             || "div".equals(tagname)
             || "menu".equals(tagname)
-            || "form".equals(tagname);
+            || "form".equals(tagname)
+            || "layers".equals(tagname)
+            || "map".equals(tagname)
+            || "spritedef".equals(tagname)
+            || "sprite".equals(tagname);
     }
 
     /**
@@ -263,7 +272,24 @@ public class MinitelPageReader {
             }
             
             case "row" -> {
+                // Si le parent est une map, ajouter la ligne
+                if (currentComponent instanceof VTMLMapComponent area) {
+                    System.out.println("📝 Map row: '" + textContent + "'");
+                    area.addRow(textContent);
+                    return null;
+                }
                 return new VTMLRowComponent(textContent);
+            }
+            
+            case "line" -> {
+                // Si le parent est un sprite, ajouter la ligne
+                System.out.println("📝 Data tag - currentComponent=" + currentComponent.getClass().getSimpleName() + ", text='" + textContent + "'");
+                if (currentComponent instanceof VTMLSpriteComponent sprite) {
+                    System.out.println("📝 Sprite data added: '" + textContent + "'");
+                    sprite.addLine(textContent);
+                    return null;
+                }
+                return null;
             }
             
             case "br" -> {
@@ -393,6 +419,96 @@ public class MinitelPageReader {
                 return status;
             }
             
+            // ========== TAGS LAYERS (JEUX) ==========
+            
+            case "layers" -> {
+                int left = parseInt(attrs.get("left"), 0);
+                int top = parseInt(attrs.get("top"), 0);
+                int width = parseInt(attrs.get("width"), 40);
+                int height = parseInt(attrs.get("height"), 24);
+                VTMLLayersComponent layers = new VTMLLayersComponent(left, top, width, height);
+                // Enregistrer le layers dans la page
+                page.setLayers(layers);
+                return layers;
+            }
+            
+            case "map" -> {
+                String typeStr = attrs.get("type");
+                VTMLMapComponent.MapType mapType = "bitmap".equals(typeStr) ? 
+                    VTMLMapComponent.MapType.BITMAP : VTMLMapComponent.MapType.CHAR;
+                VTMLMapComponent map = new VTMLMapComponent(mapType);
+                // Ajouter au layers parent
+                if (currentComponent instanceof VTMLLayersComponent layers) {
+                    layers.addArea(map);
+                }
+                return map;
+            }
+            
+            case "spritedef" -> {
+                String id = attrs.get("id");
+                int width = parseInt(attrs.get("width"), 8);
+                int height = parseInt(attrs.get("height"), 8);
+                String typeStr = attrs.get("type");
+                VTMLSpriteDefComponent.SpriteType spriteType = "bitmap".equals(typeStr) ? 
+                    VTMLSpriteDefComponent.SpriteType.BITMAP : VTMLSpriteDefComponent.SpriteType.CHAR;
+                VTMLSpriteDefComponent spriteDef = new VTMLSpriteDefComponent(width, height, spriteType);
+                spriteDef.setId(id); // Définir l'id AVANT d'ajouter au layers
+                // Ajouter au layers parent
+                if (currentComponent instanceof VTMLLayersComponent layers) {
+                    layers.addSpriteDef(spriteDef);
+                    System.out.println("🎮 SpriteDef ajouté: id=" + id);
+                }
+                return spriteDef;
+            }
+            
+            case "sprite" -> {
+                VTMLSpriteComponent sprite = new VTMLSpriteComponent();
+                System.out.println("🎮 Sprite frame créé, parent=" + currentComponent.getClass().getSimpleName());
+                // Ajouter au spritedef parent
+                if (currentComponent instanceof VTMLSpriteDefComponent spriteDef) {
+                    spriteDef.addFrame(sprite);
+                    System.out.println("🎮 Sprite frame ajouté au spriteDef");
+                }
+                return sprite;
+            }
+            
+            case "keypad" -> {
+                String action = attrs.get("action");
+                String keyStr = attrs.get("key");
+                String event = attrs.get("event");
+                char key = (keyStr != null && !keyStr.isEmpty()) ? keyStr.charAt(0) : ' ';
+                VTMLKeypadComponent keypad = new VTMLKeypadComponent(action, key, event);
+                System.out.println("🎮 Keypad: action=" + action + ", key=" + key + ", event=" + event);
+                // Chercher le layers parent (peut être plus haut dans l'arbre)
+                MComponent parent = currentComponent;
+                while (parent != null) {
+                    if (parent instanceof VTMLLayersComponent layers) {
+                        layers.addKeypad(keypad);
+                        System.out.println("🎮 Keypad ajouté au layers");
+                        break;
+                    }
+                    parent = (parent instanceof ModelMComponent m) ? m.getParent() : null;
+                }
+                return keypad;
+            }
+            
+            case "timer" -> {
+                String event = attrs.get("event");
+                int interval = parseInt(attrs.get("interval"), 200);
+                System.out.println("🎮 Timer: event=" + event + ", interval=" + interval + "ms");
+                // Chercher le layers parent
+                MComponent parent = currentComponent;
+                while (parent != null) {
+                    if (parent instanceof VTMLLayersComponent layers) {
+                        layers.setTickFunction(event, interval);
+                        System.out.println("🎮 Timer configuré sur layers");
+                        break;
+                    }
+                    parent = (parent instanceof ModelMComponent m) ? m.getParent() : null;
+                }
+                return null;  // Pas de composant visuel
+            }
+            
             default -> {
                 // Tag non reconnu
                 System.out.println("⚠️ Tag VTML non reconnu: " + tagname);
@@ -406,14 +522,71 @@ public class MinitelPageReader {
      * Note: Les composants gèrent eux-mêmes le rendu de leurs enfants via getString()
      */
     private void renderComponentTree(MComponent component) throws IOException {
-        // Générer les données du composant racine (qui inclut ses enfants)
+        // 1. D'abord exécuter tous les scripts pour définir les fonctions
+        executeAllScripts(component);
+        
+        // 2. Trouver le layers et le passer au JavaScript
+        VTMLLayersComponent layers = findLayers(component);
+        if (layers != null) {
+            VTMLScriptEngine.getInstance().setCurrentLayers(layers);
+        }
+        
+        // 3. Appeler domReady() pour initialiser les sprites
+        VTMLScriptEngine.getInstance().callDomReady();
+        
+        // 4. Générer les données du composant racine (qui inclut ses enfants)
         byte[] data = component.getBytes();
         if (data != null && data.length > 0) {
             page.addData(data);
         }
         
+        // 5. Si on a un layers (mode jeu), positionner le curseur en (4,0) pour l'écho des touches
+        if (layers != null) {
+            page.addData(GetTeletelCode.setCursor(4, 0));
+        }
+        
         // Enregistrer les menus pour la navigation
         registerAllMenuItems(component);
+    }
+    
+    /**
+     * Trouve le premier VTMLLayersComponent dans l'arbre
+     */
+    private VTMLLayersComponent findLayers(MComponent component) {
+        if (component instanceof VTMLLayersComponent layers) {
+            return layers;
+        }
+        if (component instanceof ModelMComponent modelComponent) {
+            for (MComponent child : modelComponent.getChilds()) {
+                VTMLLayersComponent found = findLayers(child);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Parcourt l'arbre pour exécuter tous les scripts
+     */
+    private void executeAllScripts(MComponent component) {
+        if (component instanceof VTMLScriptComponent script) {
+            String content = script.getScriptContent();
+            if (content != null && !content.trim().isEmpty()) {
+                try {
+                    VTMLScriptEngine.getInstance().execute(content);
+                    System.out.println("📜 Script exécuté");
+                } catch (Exception e) {
+                    System.err.println("Erreur script: " + e.getMessage());
+                }
+            }
+        }
+        
+        // Parcourir les enfants
+        if (component instanceof ModelMComponent modelComponent) {
+            for (MComponent child : modelComponent.getChilds()) {
+                executeAllScripts(child);
+            }
+        }
     }
     
     /**

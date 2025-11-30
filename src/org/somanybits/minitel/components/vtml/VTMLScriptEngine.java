@@ -73,6 +73,9 @@ public class VTMLScriptEngine {
                 "var Teletel = Packages.org.somanybits.minitel.Teletel;\n" +
                 "var Config = Packages.org.somanybits.minitel.kernel.Config;\n" +
                 "\n" +
+                "// Variable globale pour le layers courant\n" +
+                "var _currentLayers = null;\n" +
+                "\n" +
                 "// Helper pour importer une classe\n" +
                 "function importClass(className) {\n" +
                 "  return Packages[className];\n" +
@@ -80,7 +83,12 @@ public class VTMLScriptEngine {
                 "\n" +
                 "// Helper pour obtenir la config\n" +
                 "function getConfig() {\n" +
-                "  return Kernel.getIntance().getConfig();\n" +
+                "  return Kernel.getInstance().getConfig();\n" +
+                "}\n" +
+                "\n" +
+                "// Fonction debug pour afficher dans la console Java\n" +
+                "function debug(msg) {\n" +
+                "  java.lang.System.out.println('🔧 JS: ' + msg);\n" +
                 "}\n";
             
             cx.evaluateString(scope, initScript, "init", 1, null);
@@ -170,6 +178,65 @@ public class VTMLScriptEngine {
         Context cx = Context.enter();
         try {
             scope = cx.initStandardObjects();
+        } finally {
+            Context.exit();
+        }
+    }
+    
+    /**
+     * Définit le layers courant pour le JavaScript
+     */
+    public void setCurrentLayers(Object layers) {
+        setVariable("_currentLayers", layers);
+        System.out.println("🎮 _currentLayers défini: " + layers);
+    }
+    
+    /**
+     * Appelle la fonction domReady() si elle est définie
+     * À appeler après le rendu complet de la page
+     */
+    public void callDomReady() {
+        if (!available) return;
+        
+        try {
+            // Vérifier si domReady existe
+            Object domReady = getVariable("domReady");
+            if (domReady != null) {
+                System.out.println("🎮 Appel de domReady()...");
+                execute("domReady()");
+                System.out.println("✅ domReady() terminé");
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur appel domReady: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Appelle une fonction JavaScript par son nom
+     */
+    public Object callFunction(String functionName, Object... args) throws Exception {
+        if (!available) {
+            throw new Exception("Moteur JavaScript non disponible");
+        }
+        
+        Context cx = Context.enter();
+        try {
+            // Construire l'appel de fonction
+            StringBuilder call = new StringBuilder(functionName);
+            call.append("(");
+            for (int i = 0; i < args.length; i++) {
+                if (i > 0) call.append(", ");
+                if (args[i] instanceof String) {
+                    call.append("\"").append(args[i]).append("\"");
+                } else {
+                    call.append(args[i]);
+                }
+            }
+            call.append(")");
+            
+            Object result = cx.evaluateString(scope, call.toString(), "call", 1, null);
+            return Context.jsToJava(result, Object.class);
         } finally {
             Context.exit();
         }

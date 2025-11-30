@@ -85,7 +85,7 @@ public class VTMLImgComponent extends ModelMComponent {
             base = baseUrl;
         } else {
             // Récupérer le port depuis la configuration
-            Config cfg = Kernel.getIntance().getConfig();
+            Config cfg = Kernel.getInstance().getConfig();
             base = "http://localhost:" + cfg.server.port;
         }
         
