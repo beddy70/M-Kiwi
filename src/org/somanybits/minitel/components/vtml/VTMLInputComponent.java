@@ -22,6 +22,7 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
     private String value = "";
     private String label;
     private String placeholder;
+    public static final char DEFAULT_FILL_CHAR = '.';
 
     public VTMLInputComponent() {
         super();
@@ -99,7 +100,7 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
             inputdata.write(GetTeletelCode.setCursor(absX, absY));
 
             // Zone de saisie : fond inversé pour la rendre visible
-            inputdata.write(GetTeletelCode.setInverse(true));
+            //inputdata.write(GetTeletelCode.setInverse(true));
             
             // Afficher le placeholder ou des espaces pour la zone de saisie
             String displayText;
@@ -114,7 +115,7 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
             // Remplir la zone avec des espaces jusqu'à la largeur
             StringBuilder field = new StringBuilder(displayText);
             while (field.length() < getWidth()) {
-                field.append(" ");
+                field.append(DEFAULT_FILL_CHAR);
             }
             if (field.length() > getWidth()) {
                 field.setLength(getWidth());
@@ -231,7 +232,7 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
         if (value != null && value.length() > 0) {
             value = value.substring(0, value.length() - 1);
             // Reculer, écrire un espace, reculer
-            return new byte[] { 0x08, ' ', 0x08 };
+            return new byte[] { 0x08, DEFAULT_FILL_CHAR, 0x08 };
         }
         return new byte[0];
     }
@@ -249,8 +250,8 @@ public class VTMLInputComponent extends ModelMComponent implements Focusable {
             out.write(GetTeletelCode.setCursor(getAbsoluteX(), getAbsoluteY()));
             
             // Réafficher la zone vide en inverse
-            out.write(GetTeletelCode.setInverse(true));
-            out.write(" ".repeat(getWidth()).getBytes("ISO-8859-1"));
+            //out.write(GetTeletelCode.setInverse(true));
+            out.write((DEFAULT_FILL_CHAR + "").repeat(getWidth()).getBytes("ISO-8859-1"));
             out.write(GetTeletelCode.setInverse(false));
             
             return out.toByteArray();

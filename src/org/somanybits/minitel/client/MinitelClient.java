@@ -242,6 +242,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             keyvalue = "SUITE";
                             break;
                         case KeyPressedEvent.KEY_ENVOI:
+                            // Soumettre le formulaire si présent
+                            if (currentForm != null && currentForm.hasInputs()) {
+                                String actionUrl = currentForm.buildActionUrl();
+                                System.out.println("📤 ENVOI -> " + actionUrl);
+                                pmgr.navigate(actionUrl);
+                                mc.writeBytes(pmgr.getCurrentPage().getData());
+                                updateCurrentForm(pmgr.getCurrentPage());
+                            }
                             keyvalue = "ENVOI";
                             break;
                         case KeyPressedEvent.KEY_TELEPHONE:
@@ -303,6 +311,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                     mc.writeBytes(firstInput.onFocusGained());
                                     showStatusMessage(">> " + firstInput.getFocusLabel() + " <<");
                                 }
+                               
                                 System.out.println("🔄 Focus -> FORM (input 0)");
                             }
                         }
