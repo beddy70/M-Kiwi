@@ -418,6 +418,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
      * Par défaut, le focus commence sur le menu (formHasFocus = false)
      */
     private void updateCurrentForm(Page page) {
+        // Arrêter le game loop précédent avant de changer de page
+        stopGameLoop();
+        
         currentForm = page.getForm();
         currentStatus = page.getStatus();
         currentLayers = page.getLayers();
@@ -443,9 +446,6 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 startGameLoop();
             }
             return;
-        } else {
-            // Arrêter le game loop si on quitte le mode jeu
-            stopGameLoop();
         }
         
         layersHasFocus = false;

@@ -265,7 +265,16 @@ Définition d'un sprite avec ses frames d'animation.
 | `id`     | string | -      | Identifiant unique du sprite          |
 | `width`  | int    | 8      | Largeur du sprite                     |
 | `height` | int    | 8      | Hauteur du sprite                     |
-| `type`   | string | `char` | Type : `char` ou `bitmap`             |
+| `type`   | string | `char` | Type de rendu (voir ci-dessous)       |
+
+#### Types de sprites
+
+| Type     | Description                                                    |
+|----------|----------------------------------------------------------------|
+| `char`   | Caractères texte affichés tels quels                           |
+| `bitmap` | Mode semi-graphique : `#` = pixel allumé, ` ` (espace) = pixel éteint |
+
+**Mode `char`** : Chaque caractère est affiché directement. Idéal pour les sprites textuels.
 
 ```xml
 <spritedef id="player" width="3" height="2" type="char">
@@ -273,12 +282,28 @@ Définition d'un sprite avec ses frames d'animation.
     <line> O </line>
     <line>/|\</line>
   </sprite>
+</spritedef>
+```
+
+**Mode `bitmap`** : Utilise les caractères semi-graphiques Minitel (mosaïque 2×3).
+- `#` = pixel allumé (1)
+- ` ` (espace) = pixel éteint (0)
+
+```xml
+<!-- Sprite bitmap 6x6 pixels (2 caractères × 2 caractères) -->
+<spritedef id="ball" width="2" height="2" type="bitmap">
   <sprite>
-    <line> O </line>
-    <line>\|/</line>
+    <line> #### </line>
+    <line>######</line>
+    <line>######</line>
+    <line>######</line>
+    <line>######</line>
+    <line> #### </line>
   </sprite>
 </spritedef>
 ```
+
+**Note** : En mode `bitmap`, la largeur/hauteur sont en **caractères** (1 caractère = 2×3 pixels semi-graphiques).
 
 ---
 
