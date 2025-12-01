@@ -1,6 +1,4 @@
 <minitel>
-  <status>Demo Animation - Balle rebondissante</status>
-  
   <layers id="game" left="0" top="1" width="40" height="24">
     
     <!-- Décor : sol -->
@@ -176,8 +174,8 @@
       
     </spritedef>
     
-    <!-- Timer pour l'animation - plus lent -->
-    <timer event="gameLoop" interval="80"/>
+    <!-- Timer pour l'animation -->
+    <timer event="gameLoop" interval="50"/>
     
   </layers>
   
@@ -189,14 +187,14 @@
     var x = 17;
     var y = 0;
     var velocityY = 0;
-    var gravity = 0.15;  // Gravité réduite
-    var groundY = 13;
-    var bounceFactor = 0.8;
+    var gravity = 0.3;
+    var groundY = 13;  // Position du sol
+    var bounceFactor = 0.75;
     var directionX = 1;
-    var velocityX = 0.3;  // Vitesse horizontale réduite
+    var velocityX = 0.5;
     
     // État animation
-    var state = "falling";
+    var state = "falling";  // falling, squash, rising
     var squashFrame = 0;
     
     // Initialisation
@@ -210,18 +208,11 @@
         velocityY = velocityY + gravity;
         y = y + velocityY;
         
-        // Frame selon vitesse (plus de nuances)
-        if (velocityY > 1.5) {
-          ball.show(2);  // Très étirée
-        } else if (velocityY > 0.8) {
-          ball.show(1);  // Légèrement étirée
+        // Frame selon vitesse
+        if (velocityY > 2) {
+          ball.show(1);  // Étirée descente
         } else {
           ball.show(0);  // Ronde
-        }
-        
-        // Approche du sol
-        if (y >= groundY - 1 && velocityY > 1) {
-          ball.show(3);  // Approche
         }
         
         // Contact sol
@@ -232,28 +223,22 @@
         }
         
       } else if (state == "squash") {
-        // Animation écrasement fluide
+        // Animation écrasement
         squashFrame = squashFrame + 1;
         
         if (squashFrame == 1) {
-          ball.show(4);  // Contact
+          ball.show(2);  // Début écrasement
         } else if (squashFrame == 2) {
-          ball.show(5);  // Écrasée légère
+          ball.show(3);  // Écrasée max
         } else if (squashFrame == 3) {
-          ball.show(6);  // Écrasée max
-        } else if (squashFrame == 4) {
-          ball.show(6);  // Maintien écrasée
-        } else if (squashFrame == 5) {
-          ball.show(7);  // Décompression
-        } else if (squashFrame == 6) {
-          ball.show(8);  // Rebond
-        } else if (squashFrame >= 7) {
+          ball.show(4);  // Décompression
+        } else if (squashFrame >= 4) {
           // Rebond
           velocityY = -velocityY * bounceFactor;
           
-          // Relancer si trop faible
-          if (velocityY > -0.8) {
-            velocityY = -3.5;
+          // Arrêter si trop faible
+          if (velocityY > -1) {
+            velocityY = -5;  // Relancer
           }
           
           state = "rising";
@@ -265,12 +250,10 @@
         y = y + velocityY;
         
         // Frame selon vitesse
-        if (velocityY < -1.5) {
-          ball.show(9);  // Très étirée montée
-        } else if (velocityY < -0.5) {
-          ball.show(1);  // Légèrement étirée
+        if (velocityY < -2) {
+          ball.show(5);  // Étirée montée
         } else {
-          ball.show(0);  // Ronde (sommet)
+          ball.show(0);  // Ronde
         }
         
         // Transition vers descente

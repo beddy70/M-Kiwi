@@ -1,6 +1,4 @@
 <minitel>
-  <status>Demo Animation - Runner</status>
-  
   <layers id="game" left="0" top="1" width="40" height="24">
     
     <!-- Décor : sol -->

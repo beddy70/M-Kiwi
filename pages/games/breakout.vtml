@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <minitel>
-  <div left="0" top="0" width="40" height="1">
-    <color ink="cyan">         CASSE-BRIQUES</color>
-  </div>
-  
   <layers id="game" left="0" top="1" width="40" height="22">
     
     <!-- Map 0: Bordures -->
