@@ -26,6 +26,7 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 ### Jeux (Layers)
 - [`<layers>`](#layers) - Zone de jeu
 - [`<map>`](#map) - Fond de jeu
+- [`<colormap>`](#colormap) - Couleurs de texte d'une map
 - [`<spritedef>`](#spritedef) - Définition de sprite
 - [`<sprite>`](#sprite) - Frame d'animation
 - [`<line>`](#line) - Ligne de sprite
@@ -291,6 +292,57 @@ Les caractères espace dans les maps supérieures sont transparents.
   <row>########################################</row>
 </map>
 ```
+
+---
+
+### `<colormap>`
+
+Définit les couleurs de texte (ink) pour chaque caractère d'une `<map>`. Doit être enfant direct de `<map>`.
+
+| Code | Couleur |
+|------|---------|
+| `0` | Noir |
+| `1` | Rouge |
+| `2` | Vert |
+| `3` | Jaune |
+| `4` | Bleu |
+| `5` | Magenta |
+| `6` | Cyan |
+| `7` ou espace | Blanc |
+
+```xml
+<map type="char">
+  <row>########################################</row>
+  <row>#                                      #</row>
+  <row>########################################</row>
+  <colormap>
+    <row>1111111111111111111111111111111111111111</row>
+    <row>7                                      7</row>
+    <row>2222222222222222222222222222222222222222</row>
+  </colormap>
+</map>
+```
+
+Dans cet exemple :
+- La première ligne de `#` sera en **rouge** (1)
+- Les bordures de la deuxième ligne seront en **blanc** (7)
+- La dernière ligne sera en **vert** (2)
+
+**Modification dynamique en JavaScript** :
+
+```javascript
+// Lire la couleur à une position
+var color = layers.getMapColor(mapIndex, x, y);
+
+// Modifier la couleur à une position
+layers.setMapColor(mapIndex, x, y, 1);  // 1 = rouge
+
+// Exemple : placer un bloc coloré
+layers.setMapChar(0, x, y, '#');
+layers.setMapColor(0, x, y, 3);  // Jaune
+```
+
+**Note** : Les fonctions `clearMapLine()` et `shiftMapDown()` gèrent automatiquement les couleurs.
 
 ---
 
