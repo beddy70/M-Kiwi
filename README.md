@@ -350,14 +350,6 @@ graphtel.generateCenteredVisualQR("MINITEL 2024", 3);
 - **Facteurs d'échelle** : 1x à 4x (recommandé : 2x ou 3x)
 - **Encodage** : Texte simple, URLs, données courtes
 
-### Composants de Mise en Page
-
-- **`MFrame`** : Cadres avec bordures
-- **`MText`** : Zones de texte formaté
-- **`MList`** : Listes d'éléments
-- **`MTitle`** : Titres stylisés
-- **`PageManager`** : Gestionnaire de composants
-
 ## 🔗 Navigation et Événements
 
 ### Gestion des Touches
