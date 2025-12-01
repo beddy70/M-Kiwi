@@ -247,6 +247,8 @@ Génère un QR code affichable sur Minitel.
 
 Le système de layers permet de créer des jeux interactifs sur Minitel avec des zones de fond (maps) et des sprites animés.
 
+> 🎮 **Guide complet pour créer des jeux** : [GAMES.md](GAMES.md)
+
 ### `<layers>`
 
 Conteneur principal pour un jeu. Définit une zone de jeu avec des maps et des sprites.

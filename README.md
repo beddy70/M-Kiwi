@@ -173,6 +173,8 @@ java -jar Minitel.jar localhost 8080
 
 VTML est un langage de markup spécialement conçu pour les contraintes du Minitel (40×25 caractères).
 
+> 📖 **Documentation complète** : [docs/VTML.md](docs/VTML.md)
+
 ### Structure de Base
 
 **Fichier : `root/index.vtml`**
