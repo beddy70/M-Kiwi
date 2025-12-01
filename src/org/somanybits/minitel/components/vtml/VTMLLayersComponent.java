@@ -41,11 +41,14 @@ public class VTMLLayersComponent extends ModelMComponent {
     // Instances de sprites actifs (position, visibilité, frame courante)
     private Map<String, SpriteInstance> spriteInstances = new HashMap<>();
     
-    // Mapping des touches
+    // Mapping des touches (action -> keypad)
     private Map<String, VTMLKeypadComponent> keypads = new HashMap<>();
     
-    // Callbacks JavaScript pour les événements
+    // Callbacks JavaScript pour les événements (action -> event)
     private Map<String, String> keypadEvents = new HashMap<>();
+    
+    // Mapping direct des touches (key -> event) pour les touches sans action
+    private Map<Character, String> directKeyEvents = new HashMap<>();
     
     // Labels de texte dynamique
     private Map<String, VTMLLabelComponent> labels = new HashMap<>();
@@ -336,9 +339,17 @@ public class VTMLLayersComponent extends ModelMComponent {
     // ========== GESTION DES KEYPADS ==========
     
     public void addKeypad(VTMLKeypadComponent keypad) {
-        keypads.put(keypad.getAction(), keypad);
-        if (keypad.getEvent() != null) {
-            keypadEvents.put(keypad.getAction(), keypad.getEvent());
+        if (keypad.hasAction()) {
+            // Mode classique : action de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
+            keypads.put(keypad.getAction(), keypad);
+            if (keypad.getEvent() != null) {
+                keypadEvents.put(keypad.getAction(), keypad.getEvent());
+            }
+        } else if (keypad.isDirectKey()) {
+            // Mode direct : touche -> event (sans action de jeu)
+            char key = Character.toUpperCase(keypad.getKey());
+            directKeyEvents.put(key, keypad.getEvent());
+            System.out.println("🎮 Keypad direct: '" + key + "' -> " + keypad.getEvent() + "()");
         }
     }
     
@@ -351,7 +362,19 @@ public class VTMLLayersComponent extends ModelMComponent {
     }
     
     /**
-     * Trouve l'action associée à une touche
+     * Trouve l'event direct associé à une touche (sans action de jeu)
+     */
+    public String getDirectKeyEvent(char key) {
+        // Chercher en majuscule et minuscule
+        String event = directKeyEvents.get(Character.toUpperCase(key));
+        if (event == null) {
+            event = directKeyEvents.get(Character.toLowerCase(key));
+        }
+        return event;
+    }
+    
+    /**
+     * Trouve l'action associée à une touche (pour les keypads avec action)
      */
     public String getActionForKey(char key) {
         for (VTMLKeypadComponent keypad : keypads.values()) {

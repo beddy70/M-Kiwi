@@ -347,6 +347,21 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     
                     // Si focus sur layers : capturer les touches pour le jeu
                     if (layersHasFocus && currentLayers != null) {
+                        // 1. Vérifier d'abord les touches directes (sans action de jeu)
+                        String directEvent = currentLayers.getDirectKeyEvent(car);
+                        if (directEvent != null) {
+                            System.out.println("🎮 Touche directe: '" + car + "' -> " + directEvent + "()");
+                            try {
+                                VTMLScriptEngine.getInstance().execute(directEvent + "()");
+                                byte[] update = currentLayers.getDifferentialBytes();
+                                mc.writeBytes(update);
+                            } catch (Exception e) {
+                                System.err.println("Erreur JS: " + e.getMessage());
+                            }
+                            break;
+                        }
+                        
+                        // 2. Sinon, vérifier les actions de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
                         String action = currentLayers.getActionForKey(car);
                         if (action != null) {
                             String eventFunc = currentLayers.getKeypadEvent(action);

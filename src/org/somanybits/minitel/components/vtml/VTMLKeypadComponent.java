@@ -5,7 +5,14 @@ import org.somanybits.minitel.components.ModelMComponent;
 /**
  * Composant Keypad pour mapper les touches du clavier aux actions de jeu.
  * 
- * Actions supportées : LEFT, RIGHT, UP, DOWN, ACTION1, ACTION2
+ * Deux modes d'utilisation :
+ * 1. Avec action : <keypad action="UP" key="Z" event="moveUp"/>
+ *    - Mappe une touche vers une action de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
+ *    - L'action peut aussi être déclenchée par le joystick
+ * 
+ * 2. Sans action : <keypad key="1" event="doSomething"/>
+ *    - Mappe directement une touche vers une fonction JavaScript
+ *    - Non accessible via joystick
  * 
  * @author eddy
  */
@@ -53,7 +60,7 @@ public class VTMLKeypadComponent extends ModelMComponent {
     }
     
     /**
-     * Vérifie si l'action est valide
+     * Vérifie si l'action est valide (action de jeu prédéfinie)
      */
     public static boolean isValidAction(String action) {
         if (action == null) return false;
@@ -64,6 +71,20 @@ public class VTMLKeypadComponent extends ModelMComponent {
                ACTION_DOWN.equals(upper) || 
                ACTION_ACTION1.equals(upper) || 
                ACTION_ACTION2.equals(upper);
+    }
+    
+    /**
+     * Vérifie si ce keypad a une action de jeu (vs touche directe)
+     */
+    public boolean hasAction() {
+        return action != null && !action.isEmpty();
+    }
+    
+    /**
+     * Vérifie si ce keypad est une touche directe (sans action de jeu)
+     */
+    public boolean isDirectKey() {
+        return !hasAction() && event != null;
     }
     
     @Override

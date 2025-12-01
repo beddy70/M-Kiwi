@@ -4,9 +4,9 @@
         <title>Test Joystick</title>
     </head>
     <body>
-        <layers>
+        <layers id="joytest" left="0" top="1" width="40" height="22">
             <!-- Fond -->
-            <map>
+            <map >
                 <row>########################################</row>
                 <row>#     TEST JOYSTICK USB - VTML 1.0     #</row>
                 <row>########################################</row>
@@ -30,7 +30,7 @@
             </map>
             
             <!-- Sprites pour les flèches directionnelles -->
-            <spritedef id="arrow_up" width="5" height="6" type="bitmap">
+            <spritedef id="arrow_up" width="3" height="2" type="bitmap">
                 <sprite>
                     <line>  #  </line>
                     <line> ### </line>
@@ -41,7 +41,7 @@
                 </sprite>
             </spritedef>
             
-            <spritedef id="arrow_down" width="5" height="6" type="bitmap">
+            <spritedef id="arrow_down" width="3" height="2" type="bitmap">
                 <sprite>
                     <line>  #  </line>
                     <line>  #  </line>
@@ -52,7 +52,7 @@
                 </sprite>
             </spritedef>
             
-            <spritedef id="arrow_left" width="6" height="5" type="bitmap">
+            <spritedef id="arrow_left" width="3" height="2" type="bitmap">
                 <sprite>
                     <line>  #   </line>
                     <line> ##   </line>
@@ -62,13 +62,13 @@
                 </sprite>
             </spritedef>
             
-            <spritedef id="arrow_right" width="6" height="5" type="bitmap">
+            <spritedef id="arrow_right" width="3" height="2" type="bitmap">
                 <sprite>
-                    <line>#     </line>
-                    <line>##    </line>
+                    <line>   #  </line>
+                    <line>   ## </line>
                     <line>######</line>
-                    <line>##    </line>
-                    <line>#     </line>
+                    <line>   ## </line>
+                    <line>   #  </line>
                 </sprite>
             </spritedef>
             
@@ -105,202 +105,202 @@
             <!-- Pas de timer nécessaire, les événements joystick suffisent -->
             
             <script>
-// Variables d'état
-var lastDirection = "";
+                // Variables d'état
+                var lastDirection = "";
 
-// Mode configuration
-var configMode = false;
-var configStep = 0;
-var configActions = ["ACTION1", "ACTION2"];
+                // Mode configuration
+                var configMode = false;
+                var configStep = 0;
+                var configActions = ["ACTION1", "ACTION2"];
 
-function domReady() {
-    debug("Page test joystick chargee");
-}
+                function domReady() {
+                    debug("Page test joystick chargee");
+                }
 
-// Fonctions appelées par le joystick/clavier
-function onUp() {
-    showDirection("UP");
-}
+                // Fonctions appelées par le joystick/clavier
+                function onUp() {
+                    showDirection("UP");
+                }
 
-function onDown() {
-    showDirection("DOWN");
-}
+                function onDown() {
+                    showDirection("DOWN");
+                }
 
-function onLeft() {
-    showDirection("LEFT");
-}
+                function onLeft() {
+                    showDirection("LEFT");
+                }
 
-function onRight() {
-    showDirection("RIGHT");
-}
+                function onRight() {
+                    showDirection("RIGHT");
+                }
 
-function onAction1() {
-    var l = getLayers();
-    if (l == null) return;
-    l.setText("status", "ACTION1 declenche!");
-    l.beep();
-}
+                function onAction1() {
+                    var l = getLayers();
+                    if (l == null) return;
+                    l.setText("status", "ACTION1 declenche!");
+                    l.beep();
+                }
 
-function onAction2() {
-    var l = getLayers();
-    if (l == null) return;
-    l.setText("status", "ACTION2 declenche!");
-    l.beep();
-}
+                function onAction2() {
+                    var l = getLayers();
+                    if (l == null) return;
+                    l.setText("status", "ACTION2 declenche!");
+                    l.beep();
+                }
 
-function showDirection(dir) {
-    var l = getLayers();
-    if (l == null) {
-        debug("getLayers() retourne null!");
-        return;
-    }
-    
-    lastDirection = dir;
-    l.setText("status", "Direction: " + dir);
-    
-    // Cacher toutes les flèches
-    l.hideSprite("arrow_up");
-    l.hideSprite("arrow_down");
-    l.hideSprite("arrow_left");
-    l.hideSprite("arrow_right");
-    
-    // Afficher la flèche correspondante avec position
-    if (dir == "UP") { l.showSprite("arrow_up", 0); l.moveSprite("arrow_up", 6, 4); }
-    if (dir == "DOWN") { l.showSprite("arrow_down", 0); l.moveSprite("arrow_down", 6, 4); }
-    if (dir == "LEFT") { l.showSprite("arrow_left", 0); l.moveSprite("arrow_left", 5, 5); }
-    if (dir == "RIGHT") { l.showSprite("arrow_right", 0); l.moveSprite("arrow_right", 11, 5); }
-}
+                function showDirection(dir) {
+                    var l = getLayers();
+                    if (l == null) {
+                        debug("getLayers() retourne null!");
+                        return;
+                    }
+                    
+                    lastDirection = dir;
+                    l.setText("status", "Direction: " + dir);
+                    
+                    // Cacher toutes les flèches
+                    l.hideSprite("arrow_up");
+                    l.hideSprite("arrow_down");
+                    l.hideSprite("arrow_left");
+                    l.hideSprite("arrow_right");
+                    
+                    // Afficher la flèche correspondante avec position
+                    if (dir == "UP") { l.showSprite("arrow_up", 0); l.moveSprite("arrow_up", 6, 4); }
+                    if (dir == "DOWN") { l.showSprite("arrow_down", 0); l.moveSprite("arrow_down", 6, 6); }
+                    if (dir == "LEFT") { l.showSprite("arrow_left", 0); l.moveSprite("arrow_left", 5, 5); }
+                    if (dir == "RIGHT") { l.showSprite("arrow_right", 0); l.moveSprite("arrow_right", 7, 5); }
+                }
 
-// Configuration presets
-function setInvertedAxes() {
-    var l = getLayers();
-    if (l == null) return;
-    
-    joystick.mapAxis("0+", "LEFT");
-    joystick.mapAxis("0-", "RIGHT");
-    joystick.mapAxis("1+", "UP");
-    joystick.mapAxis("1-", "DOWN");
-    
-    l.setText("mapAxis0n", "RIGHT");
-    l.setText("mapAxis0p", "LEFT");
-    l.setText("mapAxis1n", "DOWN");
-    l.setText("mapAxis1p", "UP");
-    l.setText("status", "Axes inverses!");
-    l.beep();
-}
+                // Configuration presets
+                function setInvertedAxes() {
+                    var l = getLayers();
+                    if (l == null) return;
+                    
+                    joystick.mapAxis("0+", "LEFT");
+                    joystick.mapAxis("0-", "RIGHT");
+                    joystick.mapAxis("1+", "UP");
+                    joystick.mapAxis("1-", "DOWN");
+                    
+                    l.setText("mapAxis0n", "RIGHT");
+                    l.setText("mapAxis0p", "LEFT");
+                    l.setText("mapAxis1n", "DOWN");
+                    l.setText("mapAxis1p", "UP");
+                    l.setText("status", "Axes inverses!");
+                    l.beep();
+                }
 
-function resetMapping() {
-    var l = getLayers();
-    if (l == null) return;
-    
-    joystick.resetMapping();
-    
-    l.setText("mapAxis0n", "LEFT");
-    l.setText("mapAxis0p", "RIGHT");
-    l.setText("mapAxis1n", "UP");
-    l.setText("mapAxis1p", "DOWN");
-    l.setText("mapBtn0", "ACTION1");
-    l.setText("mapBtn1", "ACTION2");
-    l.setText("mapBtn2", "ACTION1");
-    l.setText("mapBtn3", "ACTION2");
-    l.setText("status", "Mapping reinitialise!");
-    l.beep();
-}
+                function resetMapping() {
+                    var l = getLayers();
+                    if (l == null) return;
+                    
+                    joystick.resetMapping();
+                    
+                    l.setText("mapAxis0n", "LEFT");
+                    l.setText("mapAxis0p", "RIGHT");
+                    l.setText("mapAxis1n", "UP");
+                    l.setText("mapAxis1p", "DOWN");
+                    l.setText("mapBtn0", "ACTION1");
+                    l.setText("mapBtn1", "ACTION2");
+                    l.setText("mapBtn2", "ACTION1");
+                    l.setText("mapBtn3", "ACTION2");
+                    l.setText("status", "Mapping reinitialise!");
+                    l.beep();
+                }
 
-function setArcadeMode() {
-    var l = getLayers();
-    if (l == null) return;
-    
-    // Mode arcade: boutons pour tirer et sauter
-    joystick.mapButton(0, "ACTION1");  // Tir
-    joystick.mapButton(1, "ACTION2");  // Saut
-    joystick.mapButton(2, "ACTION1");
-    joystick.mapButton(3, "ACTION2");
-    
-    l.setText("mapBtn0", "TIR");
-    l.setText("mapBtn1", "SAUT");
-    l.setText("mapBtn2", "TIR");
-    l.setText("mapBtn3", "SAUT");
-    l.setText("status", "Mode ARCADE active!");
-    l.beep();
-}
+                function setArcadeMode() {
+                    var l = getLayers();
+                    if (l == null) return;
+                    
+                    // Mode arcade: boutons pour tirer et sauter
+                    joystick.mapButton(0, "ACTION1");  // Tir
+                    joystick.mapButton(1, "ACTION2");  // Saut
+                    joystick.mapButton(2, "ACTION1");
+                    joystick.mapButton(3, "ACTION2");
+                    
+                    l.setText("mapBtn0", "TIR");
+                    l.setText("mapBtn1", "SAUT");
+                    l.setText("mapBtn2", "TIR");
+                    l.setText("mapBtn3", "SAUT");
+                    l.setText("status", "Mode ARCADE active!");
+                    l.beep();
+                }
 
-function setFlightMode() {
-    var l = getLayers();
-    if (l == null) return;
-    
-    // Mode flight: axes inversés, boutons pour accélérer/freiner
-    joystick.mapAxis("1+", "UP");    // Pousser = monter
-    joystick.mapAxis("1-", "DOWN");  // Tirer = descendre
-    joystick.mapButton(0, "ACTION1");  // Accélérer
-    joystick.mapButton(1, "ACTION2");  // Freiner
-    
-    l.setText("mapAxis1n", "DESC");
-    l.setText("mapAxis1p", "MONTE");
-    l.setText("mapBtn0", "ACCEL");
-    l.setText("mapBtn1", "FREIN");
-    l.setText("status", "Mode FLIGHT active!");
-    l.beep();
-}
+                function setFlightMode() {
+                    var l = getLayers();
+                    if (l == null) return;
+                    
+                    // Mode flight: axes inversés, boutons pour accélérer/freiner
+                    joystick.mapAxis("1+", "UP");    // Pousser = monter
+                    joystick.mapAxis("1-", "DOWN");  // Tirer = descendre
+                    joystick.mapButton(0, "ACTION1");  // Accélérer
+                    joystick.mapButton(1, "ACTION2");  // Freiner
+                    
+                    l.setText("mapAxis1n", "DESC");
+                    l.setText("mapAxis1p", "MONTE");
+                    l.setText("mapBtn0", "ACCEL");
+                    l.setText("mapBtn1", "FREIN");
+                    l.setText("status", "Mode FLIGHT active!");
+                    l.beep();
+                }
 
-// Mode configuration des boutons
-function startConfigMode() {
-    var l = getLayers();
-    if (l == null) return;
-    
-    configMode = true;
-    configStep = 0;
-    l.setText("status", "Appuyez sur bouton pour ACTION1");
-    l.beep();
-}
+                // Mode configuration des boutons
+                function startConfigMode() {
+                    var l = getLayers();
+                    if (l == null) return;
+                    
+                    configMode = true;
+                    configStep = 0;
+                    l.setText("status", "Appuyez sur bouton pour ACTION1");
+                    l.beep();
+                }
 
-function configButton(buttonNum) {
-    var l = getLayers();
-    if (l == null) return;
-    
-    if (!configMode) return;
-    
-    var action = configActions[configStep];
-    joystick.mapButton(buttonNum, action);
-    
-    // Mettre à jour l'affichage
-    if (buttonNum == 0) l.setText("mapBtn0", action);
-    if (buttonNum == 1) l.setText("mapBtn1", action);
-    if (buttonNum == 2) l.setText("mapBtn2", action);
-    if (buttonNum == 3) l.setText("mapBtn3", action);
-    
-    l.beep();
-    
-    configStep++;
-    if (configStep >= configActions.length) {
-        configMode = false;
-        l.setText("status", "Configuration terminee!");
-    } else {
-        l.setText("status", "Appuyez sur bouton pour " + configActions[configStep]);
-    }
-}
+                function configButton(buttonNum) {
+                    var l = getLayers();
+                    if (l == null) return;
+                    
+                    if (!configMode) return;
+                    
+                    var action = configActions[configStep];
+                    joystick.mapButton(buttonNum, action);
+                    
+                    // Mettre à jour l'affichage
+                    if (buttonNum == 0) l.setText("mapBtn0", action);
+                    if (buttonNum == 1) l.setText("mapBtn1", action);
+                    if (buttonNum == 2) l.setText("mapBtn2", action);
+                    if (buttonNum == 3) l.setText("mapBtn3", action);
+                    
+                    l.beep();
+                    
+                    configStep++;
+                    if (configStep >= configActions.length) {
+                        configMode = false;
+                        l.setText("status", "Configuration terminee!");
+                    } else {
+                        l.setText("status", "Appuyez sur bouton pour " + configActions[configStep]);
+                    }
+                }
 
-// Fonctions pour mapper chaque bouton manuellement
-function mapBtn0Action1() {
-    var l = getLayers();
-    joystick.mapButton(0, "ACTION1");
-    if (l) { l.setText("mapBtn0", "ACTION1"); l.setText("status", "Btn 0 = ACTION1"); l.beep(); }
-}
-function mapBtn0Action2() {
-    var l = getLayers();
-    joystick.mapButton(0, "ACTION2");
-    if (l) { l.setText("mapBtn0", "ACTION2"); l.setText("status", "Btn 0 = ACTION2"); l.beep(); }
-}
-function mapBtn1Action1() {
-    var l = getLayers();
-    joystick.mapButton(1, "ACTION1");
-    if (l) { l.setText("mapBtn1", "ACTION1"); l.setText("status", "Btn 1 = ACTION1"); l.beep(); }
-}
-function mapBtn1Action2() {
-    var l = getLayers();
-    joystick.mapButton(1, "ACTION2");
-    if (l) { l.setText("mapBtn1", "ACTION2"); l.setText("status", "Btn 1 = ACTION2"); l.beep(); }
-}
+                // Fonctions pour mapper chaque bouton manuellement
+                function mapBtn0Action1() {
+                    var l = getLayers();
+                    joystick.mapButton(0, "ACTION1");
+                    if (l) { l.setText("mapBtn0", "ACTION1"); l.setText("status", "Btn 0 = ACTION1"); l.beep(); }
+                }
+                function mapBtn0Action2() {
+                    var l = getLayers();
+                    joystick.mapButton(0, "ACTION2");
+                    if (l) { l.setText("mapBtn0", "ACTION2"); l.setText("status", "Btn 0 = ACTION2"); l.beep(); }
+                }
+                function mapBtn1Action1() {
+                    var l = getLayers();
+                    joystick.mapButton(1, "ACTION1");
+                    if (l) { l.setText("mapBtn1", "ACTION1"); l.setText("status", "Btn 1 = ACTION1"); l.beep(); }
+                }
+                function mapBtn1Action2() {
+                    var l = getLayers();
+                    joystick.mapButton(1, "ACTION2");
+                    if (l) { l.setText("mapBtn1", "ACTION2"); l.setText("status", "Btn 1 = ACTION2"); l.beep(); }
+                }
             </script>
             
             <!-- Raccourcis clavier pour configuration -->

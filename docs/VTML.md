@@ -417,7 +417,9 @@ layers.setText("score", "Score: 42");
 
 ### `<keypad>`
 
-Associe une touche du clavier à une action de jeu.
+Associe une touche du clavier à une fonction JavaScript. Deux modes d'utilisation :
+
+#### Mode action (avec joystick)
 
 | Attribut | Type   | Défaut | Description                           |
 |----------|--------|--------|---------------------------------------|
@@ -434,7 +436,28 @@ Associe une touche du clavier à une action de jeu.
 <keypad action="ACTION2" key="E" event="action"/>
 ```
 
-**Note** : L'attribut `event` contient le nom de la fonction sans les parenthèses.
+Ces actions peuvent aussi être déclenchées par un joystick USB.
+
+#### Mode touche directe (sans action)
+
+Pour mapper une touche arbitraire (chiffres, lettres, etc.) directement vers une fonction :
+
+| Attribut | Type   | Défaut | Description                           |
+|----------|--------|--------|---------------------------------------|
+| `key`    | string | -      | Touche du clavier                     |
+| `event`  | string | -      | Nom de la fonction JavaScript à appeler |
+
+```xml
+<!-- Touches numériques pour des raccourcis -->
+<keypad key="1" event="selectOption1"/>
+<keypad key="2" event="selectOption2"/>
+<keypad key="P" event="pauseGame"/>
+<keypad key="R" event="resetGame"/>
+```
+
+**Note** : Les touches directes ne sont pas accessibles via joystick.
+
+**Important** : L'attribut `event` contient le nom de la fonction sans les parenthèses.
 
 ---
 

@@ -321,9 +321,9 @@ function stop() {
 
 ## Contrôles clavier
 
-Le `<keypad>` associe des touches à des fonctions JavaScript.
+Le `<keypad>` associe des touches à des fonctions JavaScript. Deux modes sont disponibles.
 
-### Syntaxe
+### Mode action (avec joystick)
 
 ```xml
 <keypad action="UP"    key="Z" event="moveUp"/>
@@ -332,6 +332,8 @@ Le `<keypad>` associe des touches à des fonctions JavaScript.
 <keypad action="RIGHT" key="D" event="moveRight"/>
 <keypad action="ACTION1" key=" " event="fire"/>
 ```
+
+Ces actions sont aussi déclenchées automatiquement par un joystick USB.
 
 ### Actions disponibles
 
@@ -344,6 +346,23 @@ Le `<keypad>` associe des touches à des fonctions JavaScript.
 | `ACTION1` | Action principale (tir, saut...) |
 | `ACTION2` | Action secondaire |
 
+### Mode touche directe
+
+Pour des raccourcis clavier personnalisés (sans joystick) :
+
+```xml
+<!-- Touches numériques -->
+<keypad key="1" event="selectWeapon1"/>
+<keypad key="2" event="selectWeapon2"/>
+
+<!-- Touches de contrôle -->
+<keypad key="P" event="pauseGame"/>
+<keypad key="R" event="resetGame"/>
+<keypad key="M" event="toggleMusic"/>
+```
+
+**Note** : Les touches directes ne sont pas accessibles via joystick.
+
 ### Fonctions JavaScript
 
 ```javascript
@@ -355,6 +374,11 @@ function moveUp() {
 function moveDown() {
   playerY++;
   updatePlayer();
+}
+
+function pauseGame() {
+  gamePaused = !gamePaused;
+  layers.setText("status", gamePaused ? "PAUSE" : "");
 }
 
 function fire() {
