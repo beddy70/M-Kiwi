@@ -221,7 +221,8 @@ public class MinitelPageReader {
             || component instanceof VTMLMapComponent
             || component instanceof VTMLSpriteDefComponent
             || component instanceof VTMLSpriteComponent
-            || component instanceof VTMLColormapComponent;
+            || component instanceof VTMLColormapComponent
+            || component instanceof VTMLColorspriteComponent;
     }
 
     /**
@@ -235,6 +236,17 @@ public class MinitelPageReader {
                 if (parent instanceof VTMLMapComponent map) {
                     map.setParsingColormap(false);
                     System.out.println("🎨 Colormap fermée");
+                }
+            }
+        }
+        
+        // Désactiver le mode colorsprite quand on ferme le tag colorsprite
+        if ("colorsprite".equals(tagname)) {
+            if (currentComponent instanceof VTMLColorspriteComponent) {
+                MComponent parent = currentComponent.getParent();
+                if (parent instanceof VTMLSpriteComponent sprite) {
+                    sprite.setParsingColorsprite(false);
+                    System.out.println("🎨 Colorsprite fermée");
                 }
             }
         }
@@ -259,7 +271,8 @@ public class MinitelPageReader {
             || "map".equals(tagname)
             || "spritedef".equals(tagname)
             || "sprite".equals(tagname)
-            || "colormap".equals(tagname);
+            || "colormap".equals(tagname)
+            || "colorsprite".equals(tagname);
     }
 
     /**
@@ -313,9 +326,28 @@ public class MinitelPageReader {
                 return new VTMLColormapComponent();
             }
             
+            case "colorsprite" -> {
+                // Activer le mode colorsprite sur le sprite parent
+                if (currentComponent instanceof VTMLSpriteComponent sprite) {
+                    sprite.setParsingColorsprite(true);
+                    System.out.println("🎨 Colorsprite détectée");
+                }
+                return new VTMLColorspriteComponent();
+            }
+            
             case "line" -> {
-                // Si le parent est un sprite, ajouter la ligne
+                // Si le parent est une colorsprite, ajouter la ligne de couleur
                 System.out.println("📝 Data tag - currentComponent=" + currentComponent.getClass().getSimpleName() + ", text='" + textContent + "'");
+                if (currentComponent instanceof VTMLColorspriteComponent) {
+                    // Remonter au sprite parent
+                    MComponent parent = currentComponent.getParent();
+                    if (parent instanceof VTMLSpriteComponent sprite) {
+                        System.out.println("🎨 Colorsprite line: '" + textContent + "'");
+                        sprite.addLine(textContent);  // addLine gère le mode colorsprite
+                        return null;
+                    }
+                }
+                // Si le parent est un sprite, ajouter la ligne
                 if (currentComponent instanceof VTMLSpriteComponent sprite) {
                     System.out.println("📝 Sprite data added: '" + textContent + "'");
                     sprite.addLine(textContent);

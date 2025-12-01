@@ -29,6 +29,7 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 - [`<colormap>`](#colormap) - Couleurs de texte d'une map
 - [`<spritedef>`](#spritedef) - Définition de sprite
 - [`<sprite>`](#sprite) - Frame d'animation
+- [`<colorsprite>`](#colorsprite) - Couleurs de texte d'un sprite
 - [`<line>`](#line) - Ligne de sprite
 - [`<label>`](#label) - Texte dynamique
 - [`<keypad>`](#keypad) - Mapping clavier
@@ -434,9 +435,46 @@ player.show(2);  // Affiche la frame 2 (bras à droite)
 
 ---
 
+### `<colorsprite>`
+
+Définit les couleurs de texte (ink) pour chaque caractère d'un `<sprite>`. Doit être enfant direct de `<sprite>`.
+Fonctionne de manière similaire à `<colormap>` pour les maps.
+
+| Code | Couleur |
+|------|---------|
+| `0` | Noir |
+| `1` | Rouge |
+| `2` | Vert |
+| `3` | Jaune |
+| `4` | Bleu |
+| `5` | Magenta |
+| `6` | Cyan |
+| `7` ou espace | Blanc (ou couleur par défaut du sprite) |
+
+```xml
+<spritedef id="alien" width="3" height="2" type="char">
+  <sprite>
+    <line>/O\</line>
+    <line>\_/</line>
+    <colorsprite>
+      <line>121</line>
+      <line>333</line>
+    </colorsprite>
+  </sprite>
+</spritedef>
+```
+
+Dans cet exemple, le sprite "alien" aura :
+- `/` en rouge (1), `O` en vert (2), `\` en rouge (1)
+- `\_/` tout en jaune (3)
+
+**Note** : Si un caractère de `<colorsprite>` est un espace ou non défini, la couleur par défaut du sprite (définie via `sprite.setColor()`) sera utilisée.
+
+---
+
 ### `<line>`
 
-Ligne de données dans un `<sprite>`. Définit une ligne de l'apparence du sprite.
+Ligne de données dans un `<sprite>` ou `<colorsprite>`. Définit une ligne de l'apparence ou des couleurs du sprite.
 
 ```xml
 <line>###</line>

@@ -9,6 +9,7 @@ Ce guide explique comment créer des jeux interactifs pour Minitel en utilisant 
 3. [Les Maps (décors)](#les-maps-décors)
    - [Colormap (couleurs)](#colormap-couleurs-de-texte)
 4. [Les Sprites](#les-sprites)
+   - [Colorsprite (couleurs)](#colorsprite-couleurs-par-caractère)
 5. [Animations de sprites](#animations-de-sprites)
 6. [Contrôles clavier](#contrôles-clavier)
 7. [Joystick USB](#joystick-usb)
@@ -326,6 +327,62 @@ piece.setColor(6);  // Cyan pour la pièce I
 piece.show(0);
 piece.move(x, y);
 ```
+
+### Colorsprite (couleurs par caractère)
+
+Chaque sprite peut avoir des couleurs différentes pour chaque caractère grâce à `<colorsprite>`.
+Fonctionne de manière similaire à `<colormap>` pour les maps.
+
+#### Syntaxe VTML
+
+```xml
+<spritedef id="alien" width="3" height="2" type="char">
+  <sprite>
+    <line>/O\</line>
+    <line>\_/</line>
+    <colorsprite>
+      <line>121</line>
+      <line>333</line>
+    </colorsprite>
+  </sprite>
+</spritedef>
+```
+
+Dans cet exemple :
+- `/` en **rouge** (1), `O` en **vert** (2), `\` en **rouge** (1)
+- `\_/` tout en **jaune** (3)
+
+#### Codes couleur
+
+| Caractère | Couleur |
+|-----------|---------|
+| `0` | Noir |
+| `1` | Rouge |
+| `2` | Vert |
+| `3` | Jaune |
+| `4` | Bleu |
+| `5` | Magenta |
+| `6` | Cyan |
+| `7` ou espace | Couleur par défaut du sprite |
+
+#### Exemple : Envahisseur multicolore
+
+```xml
+<spritedef id="invader" width="5" height="3" type="char">
+  <sprite>
+    <line> /_\ </line>
+    <line>|o o|</line>
+    <line> \_/ </line>
+    <colorsprite>
+      <line> 111 </line>
+      <line>52225</line>
+      <line> 333 </line>
+    </colorsprite>
+  </sprite>
+</spritedef>
+```
+
+**Note** : Si un caractère de `<colorsprite>` est un espace ou non défini, la couleur par défaut du sprite (définie via `sprite.setColor()`) sera utilisée.
 
 ---
 

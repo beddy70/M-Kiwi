@@ -580,13 +580,17 @@ public class VTMLLayersComponent extends ModelMComponent {
     
     private void drawSprite(SpriteInstance instance) {
         VTMLSpriteDefComponent def = instance.getDefinition();
-        char[][] spriteData = def.getFrameData(instance.getCurrentFrame());
+        int frameIndex = instance.getCurrentFrame();
+        char[][] spriteData = def.getFrameData(frameIndex);
         if (spriteData == null) return;
         
         int sx = instance.getX();
         int sy = instance.getY();
         int spriteColor = instance.getColor();
         boolean isBitmap = def.getType() == VTMLSpriteDefComponent.SpriteType.BITMAP;
+        
+        // Récupérer les couleurs personnalisées si disponibles
+        int[][] spriteColorData = def.getFrameColorData(frameIndex);
         
         for (int y = 0; y < spriteData.length; y++) {
             int bufY = sy + y;
@@ -600,7 +604,16 @@ public class VTMLLayersComponent extends ModelMComponent {
                 // Pour les sprites, espace = transparent
                 if (c != ' ') {
                     buffer[bufY][bufX] = c;
-                    colorBuffer[bufY][bufX] = spriteColor;
+                    
+                    // Utiliser la couleur personnalisée si définie, sinon la couleur du sprite
+                    int charColor = spriteColor;
+                    if (spriteColorData != null && y < spriteColorData.length && x < spriteColorData[y].length) {
+                        int customColor = spriteColorData[y][x];
+                        if (customColor >= 0) {
+                            charColor = customColor;
+                        }
+                    }
+                    colorBuffer[bufY][bufX] = charColor;
                     mosaicMode[bufY][bufX] = isBitmap;
                 }
             }

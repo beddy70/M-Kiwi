@@ -32,13 +32,13 @@
       <row>                                        </row>
     </map>
     
-    <!-- Vaisseau du joueur: 5x3 pixels en bitmap -->
+    <!-- Vaisseau du joueur: 5x3 pixels en bitmap avec couleurs -->
     <spritedef id="ship" width="5" height="3" type="bitmap">
       <sprite>
         <line>  #  </line>
         <line> ### </line>
         <line>#####</line>
-      </sprite>
+       </sprite>
     </spritedef>
     
     <!-- Tir du joueur -->

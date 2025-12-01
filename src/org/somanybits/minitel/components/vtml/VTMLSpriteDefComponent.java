@@ -64,6 +64,64 @@ public class VTMLSpriteDefComponent extends ModelMComponent {
     }
     
     /**
+     * Vérifie si une frame a des couleurs personnalisées
+     */
+    public boolean hasFrameColorData(int frameIndex) {
+        VTMLSpriteComponent frame = getFrame(frameIndex);
+        return frame != null && frame.hasColorData();
+    }
+    
+    /**
+     * Retourne les données de couleur d'une frame sous forme de tableau 2D
+     * @param frameIndex Index de la frame
+     * @return tableau de codes couleur (0-7), -1 = couleur par défaut du sprite
+     */
+    public int[][] getFrameColorData(int frameIndex) {
+        VTMLSpriteComponent frame = getFrame(frameIndex);
+        if (frame == null || !frame.hasColorData()) return null;
+        
+        int[][] rawColorData = frame.getColorData();
+        
+        if (type == SpriteType.CHAR) {
+            return rawColorData;
+        }
+        
+        // Mode BITMAP : adapter les couleurs aux caractères semi-graphiques
+        // Chaque caractère semi-graphique = 2×3 pixels
+        int pixelHeight = rawColorData.length;
+        int pixelWidth = rawColorData.length > 0 ? rawColorData[0].length : 0;
+        
+        // Calculer les dimensions en caractères
+        int charHeight = (pixelHeight + 2) / 3;
+        int charWidth = (pixelWidth + 1) / 2;
+        
+        int[][] result = new int[charHeight][charWidth];
+        
+        // Pour chaque bloc 2×3, prendre la couleur dominante (ou la première non-default)
+        for (int cy = 0; cy < charHeight; cy++) {
+            for (int cx = 0; cx < charWidth; cx++) {
+                int px = cx * 2;
+                int py = cy * 3;
+                
+                // Chercher la première couleur définie dans le bloc
+                int color = -1;
+                for (int dy = 0; dy < 3 && color < 0; dy++) {
+                    for (int dx = 0; dx < 2 && color < 0; dx++) {
+                        int y = py + dy;
+                        int x = px + dx;
+                        if (y < pixelHeight && x < pixelWidth && rawColorData[y][x] >= 0) {
+                            color = rawColorData[y][x];
+                        }
+                    }
+                }
+                result[cy][cx] = color;
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
      * Retourne les données d'une frame sous forme de tableau 2D
      * En mode BITMAP, convertit les # et espaces en caractères semi-graphiques
      */
