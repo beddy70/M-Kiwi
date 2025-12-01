@@ -261,7 +261,7 @@ Conteneur principal pour un jeu. Définit une zone de jeu avec des maps et des s
 
 **Limites** :
 - Maximum 3 `<map>`
-- Maximum 8 `<spritedef>`
+- Maximum 16 `<spritedef>`
 
 ```xml
 <layers id="game" left="0" top="1" width="40" height="20">
@@ -647,21 +647,31 @@ if (collision) {
   // Réagir à la collision
 }
 
-// Vérifier collision sprite/map (retourne le caractère touché ou '\0')
+// Vérifier collision sprite/map (retourne le code ASCII du caractère touché ou 0)
+// Note: En JavaScript, les caractères sont convertis en codes ASCII (int)
 var hitChar = layers.checkMapCollision("player");
-if (hitChar != '\0') {
+if (hitChar != 0) {
   // Le sprite touche un caractère non-vide
-  if (hitChar == '#') {
+  if (hitChar == 35) {  // 35 = '#'
     // Collision avec un mur
   }
 }
 
 // Tester collision AVANT de déplacer (prévisualisation)
 var wouldHit = layers.checkMapCollisionAt("player", newX, newY);
-if (wouldHit == '\0') {
+if (wouldHit == 0 || wouldHit == 32) {  // 0 = pas de collision, 32 = espace
   // Pas d'obstacle, on peut déplacer
   player.move(newX, newY);
 }
+
+// Modifier un caractère dans une map
+layers.setMapChar(mapIndex, x, y, '#');
+
+// Effacer une ligne d'une map (utile pour Tetris)
+layers.clearMapLine(mapIndex, y);
+
+// Décaler les lignes vers le bas (utile pour Tetris)
+layers.shiftMapDown(mapIndex, fromY, toY);
 
 // Émettre un bip sonore
 layers.beep();

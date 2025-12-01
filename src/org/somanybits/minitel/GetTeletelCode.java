@@ -311,4 +311,11 @@ public final class GetTeletelCode {
             (byte) (show ? 0x11 : 0x14)  // CON : COFF
         };
     }
+    
+    /**
+     * Génère le code pour émettre un bip sonore (BEL)
+     */
+    public static byte[] beep() {
+        return new byte[] { (byte) 0x07 };  // BEL
+    }
 }

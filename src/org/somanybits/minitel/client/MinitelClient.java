@@ -22,6 +22,10 @@ import org.somanybits.minitel.events.CodeSequenceListener;
 import org.somanybits.minitel.events.CodeSequenceSentEvent;
 import org.somanybits.minitel.events.KeyPressedEvent;
 import org.somanybits.minitel.events.KeyPressedListener;
+import org.somanybits.minitel.input.JoystickListener;
+import org.somanybits.minitel.input.JoystickMapping;
+import org.somanybits.minitel.input.JoystickReader;
+import org.somanybits.minitel.kernel.Config;
 import org.somanybits.minitel.kernel.Kernel;
 
 /**
@@ -51,6 +55,11 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     // Game loop
     private Thread gameLoopThread = null;
     private volatile boolean gameLoopRunning = false;
+    
+    // Joystick USB
+    private JoystickReader joystick = null;
+    private JoystickMapping joystickMapping = new JoystickMapping();
+    private String[] lastAxisAction = new String[8];  // Pour éviter les répétitions d'axes
 
     public static void main(String[] args) throws Exception {
 
@@ -73,7 +82,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     public MinitelClient(String server, int port) throws IOException, InterruptedException {
 
         PageManager pmgr = Kernel.getInstance().getPageManager();
-        mc = new MinitelConnection("/dev/serial0", MinitelConnection.BAUD_9600);
+        Config cfg = Kernel.getInstance().getConfig();
+        
+        // Utiliser la config pour le port série
+        String serialPort = cfg.client.serial_port;
+        int serialBaud = cfg.client.serial_baud;
+        System.out.println("📋 Config: Serial " + serialPort + " @ " + serialBaud + " baud");
+        
+        mc = new MinitelConnection(serialPort, serialBaud);
 
         mc.open();
 
@@ -146,6 +162,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         
         // Initialiser le système de focus pour la première page
         updateCurrentForm(pmgr.getCurrentPage());
+        
+        // Initialiser le joystick USB si disponible
+        initJoystick();
 
 //            ReadNews rnews = new ReadNews(URL_NEWS); 
 //
@@ -536,6 +555,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                         }
                     }
                     
+                    // Gérer le beep si demandé
+                    if (currentLayers.consumeBeep()) {
+                        synchronized (mc) {
+                            mc.writeBytes(GetTeletelCode.beep());
+                        }
+                    }
+                    
                     Thread.sleep(interval);
                 } catch (InterruptedException e) {
                     break;
@@ -556,6 +582,133 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 gameLoopThread = null;
             }
             System.out.println("🎮 Arrêt game loop demandé");
+        }
+    }
+    
+    // ========== JOYSTICK USB ==========
+    
+    private void initJoystick() {
+        Config cfg;
+        try {
+            cfg = Kernel.getInstance().getConfig();
+        } catch (IOException e) {
+            System.err.println("🎮 Joystick: erreur config - " + e.getMessage());
+            return;
+        }
+        
+        // Vérifier si le joystick est activé dans la config
+        if (!cfg.client.joystick_enabled) {
+            System.out.println("🎮 Joystick: désactivé dans la config");
+            return;
+        }
+        
+        String device = cfg.client.joystick_device;
+        
+        // Vérifier si le périphérique existe
+        if (!JoystickReader.isAvailable(device)) {
+            System.out.println("🎮 Joystick: périphérique " + device + " non disponible");
+            return;
+        }
+        
+        // Charger le mapping depuis la config
+        joystickMapping.loadFromConfig(cfg.client.joystick_mapping);
+        
+        // Exposer le mapping au JavaScript
+        VTMLScriptEngine.getInstance().setVariable("_joystickMapping", joystickMapping);
+        
+        System.out.println("🎮 Joystick: utilisation de " + device);
+        
+        joystick = new JoystickReader(device);
+        joystick.addListener(new JoystickListener() {
+            @Override
+            public void onButton(int button, boolean pressed) {
+                System.out.println("🎮 Bouton " + button + " = " + pressed);
+                if (!pressed) return;  // Seulement sur appui
+                handleJoystickButton(button);
+            }
+            
+            @Override
+            public void onAxis(int axis, int value) {
+                // Debug uniquement si valeur significative
+                if (Math.abs(value) > 10000) {
+                    System.out.println("🎮 Axe " + axis + " = " + value);
+                }
+                handleJoystickAxis(axis, value);
+            }
+        });
+        
+        joystick.start();
+        System.out.println("🎮 Joystick: thread démarré");
+    }
+    
+    private void handleJoystickButton(int button) {
+        if (!layersHasFocus || currentLayers == null) return;
+        
+        // Utiliser le mapping configurable
+        String action = joystickMapping.getButtonAction(button);
+        if (action == null) return;
+        
+        triggerJoystickAction(action);
+    }
+    
+    private void handleJoystickAxis(int axis, int value) {
+        if (!layersHasFocus || currentLayers == null) return;
+        if (axis < 0 || axis >= lastAxisAction.length) return;
+        
+        // Utiliser le mapping configurable
+        String action = joystickMapping.getAxisAction(axis, value);
+        
+        // Éviter les répétitions: ne déclencher que si l'action change
+        String lastAction = lastAxisAction[axis];
+        if (action == null) {
+            // Retour à la zone morte
+            lastAxisAction[axis] = null;
+            return;
+        }
+        
+        if (action.equals(lastAction)) {
+            // Même action, ne pas répéter
+            return;
+        }
+        
+        lastAxisAction[axis] = action;
+        triggerJoystickAction(action);
+    }
+    
+    private void triggerJoystickAction(String action) {
+        String event = currentLayers.getKeypadEvent(action);
+        if (event != null) {
+            try {
+                VTMLScriptEngine.getInstance().execute(event + "()");
+                refreshLayersDisplay();
+            } catch (Exception e) {
+                System.err.println("Erreur joystick event: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Obtenir le mapping joystick pour modification via JavaScript
+     */
+    public JoystickMapping getJoystickMapping() {
+        return joystickMapping;
+    }
+    
+    private void refreshLayersDisplay() {
+        if (currentLayers == null) return;
+        try {
+            byte[] update = currentLayers.getDifferentialBytes();
+            if (update.length > 0) {
+                synchronized (mc) {
+                    mc.writeBytes(update);
+                }
+            }
+            // Gérer le beep si demandé
+            if (currentLayers.consumeBeep()) {
+                mc.writeBytes(GetTeletelCode.beep());
+            }
+        } catch (IOException e) {
+            System.err.println("Erreur refresh display: " + e.getMessage());
         }
     }
 

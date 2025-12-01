@@ -10,10 +10,11 @@ Ce guide explique comment créer des jeux interactifs pour Minitel en utilisant 
 4. [Les Sprites](#les-sprites)
 5. [Animations de sprites](#animations-de-sprites)
 6. [Contrôles clavier](#contrôles-clavier)
-7. [Game Loop](#game-loop)
-8. [Collisions](#collisions)
-9. [Interface utilisateur](#interface-utilisateur)
-10. [Exemples complets](#exemples-complets)
+7. [Joystick USB](#joystick-usb)
+8. [Game Loop](#game-loop)
+9. [Collisions](#collisions)
+10. [Interface utilisateur](#interface-utilisateur)
+11. [Exemples complets](#exemples-complets)
 
 ---
 
@@ -148,14 +149,18 @@ Vous pouvez modifier les caractères d'une map en JavaScript :
 
 ```javascript
 // Placer un caractère
+// mapIndex: 0 = première map, 1 = deuxième, etc.
 layers.setMapChar(mapIndex, x, y, '#');
 
-// Effacer une ligne
+// Effacer une ligne entière (remplace par des espaces)
 layers.clearMapLine(mapIndex, y);
 
 // Décaler les lignes vers le bas (pour Tetris)
+// Décale les lignes de fromY à toY, vide la ligne fromY
 layers.shiftMapDown(mapIndex, fromY, toY);
 ```
+
+**Note** : L'index de map correspond à l'ordre de déclaration dans le VTML (0 = première `<map>`).
 
 ---
 
@@ -218,6 +223,14 @@ player.move(x, y);
 
 // Cacher le sprite
 player.hide();
+
+// Obtenir les dimensions du sprite
+var w = player.getWidth();
+var h = player.getHeight();
+
+// Obtenir la position actuelle
+var x = player.getX();
+var y = player.getY();
 ```
 
 ---
@@ -351,6 +364,122 @@ function fire() {
 
 ---
 
+## Joystick USB
+
+Sur Raspberry Pi, un joystick USB est automatiquement détecté et utilisable.
+
+### Fonctionnement
+
+Le système lit `/dev/input/js0` (ou autre joystick disponible) et traduit les événements en appels aux mêmes fonctions que le `<keypad>`.
+
+**Aucune configuration nécessaire** : si vous avez défini des `<keypad>` pour UP/DOWN/LEFT/RIGHT et ACTION1/ACTION2, le joystick les déclenchera automatiquement.
+
+### Mapping par défaut
+
+| Joystick | Action VTML |
+|----------|-------------|
+| Axe X gauche | `LEFT` |
+| Axe X droite | `RIGHT` |
+| Axe Y haut | `UP` |
+| Axe Y bas | `DOWN` |
+| Bouton 0 (A/X) | `ACTION1` |
+| Bouton 1 (B/O) | `ACTION2` |
+| Bouton 2 | `ACTION1` |
+| Bouton 3 | `ACTION2` |
+
+### Exemple
+
+Avec cette configuration clavier :
+
+```xml
+<keypad action="UP" key="Z" event="moveUp"/>
+<keypad action="DOWN" key="S" event="moveDown"/>
+<keypad action="ACTION1" key=" " event="fire"/>
+```
+
+Le joystick appellera automatiquement :
+- `moveUp()` quand on pousse le stick vers le haut
+- `moveDown()` quand on pousse vers le bas
+- `fire()` quand on appuie sur le bouton A
+
+### Configuration via config.json
+
+Le mapping peut être personnalisé dans `config.json` :
+
+```json
+{
+  "client": {
+    "joystick_device": "/dev/input/js0",
+    "joystick_enabled": true,
+    "joystick_mapping": {
+      "buttons": {
+        "0": "ACTION1",
+        "1": "ACTION2",
+        "2": "UP",
+        "3": "DOWN"
+      },
+      "axes": {
+        "0+": "RIGHT",
+        "0-": "LEFT",
+        "1+": "DOWN",
+        "1-": "UP"
+      },
+      "axis_threshold": 16000
+    }
+  }
+}
+```
+
+**Format des axes** : `"axe+direction"` où direction est `+` (positif) ou `-` (négatif).
+
+### Configuration via JavaScript
+
+Le mapping peut aussi être modifié dynamiquement en JavaScript :
+
+```javascript
+function domReady() {
+  // Remapper le bouton 0 sur UP
+  joystick.mapButton(0, "UP");
+  
+  // Remapper l'axe 0 positif sur ACTION1
+  joystick.mapAxis("0+", "ACTION1");
+  
+  // Changer le seuil de détection des axes
+  joystick.setThreshold(20000);
+  
+  // Afficher le mapping actuel (debug)
+  joystick.printMapping();
+  
+  // Réinitialiser le mapping par défaut
+  joystick.resetMapping();
+}
+```
+
+**API JavaScript disponible** :
+
+| Méthode | Description |
+|---------|-------------|
+| `joystick.mapButton(button, action)` | Mapper un bouton vers une action |
+| `joystick.mapAxis(axis, action)` | Mapper un axe vers une action |
+| `joystick.setThreshold(value)` | Définir le seuil des axes (0-32767) |
+| `joystick.printMapping()` | Afficher le mapping actuel |
+| `joystick.resetMapping()` | Réinitialiser le mapping par défaut |
+
+### Vérification
+
+Au démarrage, le serveur affiche :
+```
+🎮 Joystick mapping chargé: 4 boutons, 4 axes
+🎮 Joystick: utilisation de /dev/input/js0
+```
+
+Si aucun joystick n'est branché :
+```
+🎮 Joystick: périphérique /dev/input/js0 non disponible
+```
+
+---
+
 ## Game Loop
 
 Le `<timer>` appelle une fonction à intervalle régulier.
@@ -415,15 +544,31 @@ if (layers.checkCollision("ball", "paddle")) {
 
 ```javascript
 // Vérifier si le sprite touche un caractère non-vide
-if (layers.checkMapCollision("player")) {
+// Retourne le code ASCII du caractère touché (0 = pas de collision)
+var hit = layers.checkMapCollision("player");
+if (hit != 0 && hit != 32) {  // 32 = espace
   // Collision avec le décor
 }
 
-// Vérifier une position spécifique
+// Vérifier une position spécifique AVANT de déplacer
 var char = layers.checkMapCollisionAt("player", newX, newY);
 if (char == 35) {  // 35 = '#'
   // Collision avec un mur
 }
+```
+
+### Modification dynamique des maps
+
+```javascript
+// Modifier un caractère dans une map
+layers.setMapChar(mapIndex, x, y, '#');
+
+// Effacer une ligne entière (pour Tetris)
+layers.clearMapLine(mapIndex, y);
+
+// Décaler les lignes vers le bas (pour Tetris)
+// Décale les lignes de fromY à toY d'une position vers le bas
+layers.shiftMapDown(mapIndex, fromY, toY);
 ```
 
 ### Codes de caractères courants
@@ -619,10 +764,10 @@ layers.beep();
 
 ## Limitations
 
-- **16 sprites maximum** par layers
+- **16 sprites maximum** par layers (définis avec `<spritedef>`)
 - **3 maps maximum** empilées
-- **Pas de son complexe** : Seulement le bip Minitel
-- **40x24 caractères** : Résolution fixe du Minitel
+- **Pas de son complexe** : Seulement le bip Minitel (`layers.beep()`)
+- **40x25 caractères** : Résolution fixe du Minitel (ligne 0 = ligne d'info)
 
 ---
 

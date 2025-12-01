@@ -89,7 +89,34 @@ public class VTMLScriptEngine {
                 "// Fonction debug pour afficher dans la console Java\n" +
                 "function debug(msg) {\n" +
                 "  java.lang.System.out.println('🔧 JS: ' + msg);\n" +
-                "}\n";
+                "}\n" +
+                "\n" +
+                "// Variable globale pour le mapping joystick\n" +
+                "var _joystickMapping = null;\n" +
+                "\n" +
+                "// API Joystick\n" +
+                "var joystick = {\n" +
+                "  // Mapper un bouton vers une action\n" +
+                "  mapButton: function(button, action) {\n" +
+                "    if (_joystickMapping) _joystickMapping.mapButton(button, action);\n" +
+                "  },\n" +
+                "  // Mapper un axe vers une action (ex: '0+' pour axe 0 positif)\n" +
+                "  mapAxis: function(axis, action) {\n" +
+                "    if (_joystickMapping) _joystickMapping.mapAxis(axis, action);\n" +
+                "  },\n" +
+                "  // Définir le seuil des axes (0-32767)\n" +
+                "  setThreshold: function(threshold) {\n" +
+                "    if (_joystickMapping) _joystickMapping.setAxisThreshold(threshold);\n" +
+                "  },\n" +
+                "  // Afficher le mapping actuel\n" +
+                "  printMapping: function() {\n" +
+                "    if (_joystickMapping) _joystickMapping.printMapping();\n" +
+                "  },\n" +
+                "  // Réinitialiser le mapping par défaut\n" +
+                "  resetMapping: function() {\n" +
+                "    if (_joystickMapping) _joystickMapping.setDefaultMapping();\n" +
+                "  }\n" +
+                "};\n";
             
             cx.evaluateString(scope, initScript, "init", 1, null);
             

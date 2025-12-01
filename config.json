@@ -2,11 +2,30 @@
   "server": {
     "port": 8080,
     "defaultCharset": "utf-8"
- 
   },
   "path": {
-    "root_path":"./root/",
-    "plugins_path":"./plugins/"
+    "root_path": "./root/",
+    "plugins_path": "./plugins/"
+  },
+  "client": {
+    "serial_port": "/dev/serial0",
+    "serial_baud": 9600,
+    "joystick_device": "/dev/input/js0",
+    "joystick_enabled": true,
+    "joystick_mapping": {
+      "buttons": {
+        "0": "ACTION1",
+        "1": "ACTION2",
+        "2": "ACTION1",
+        "3": "ACTION2"
+      },
+      "axes": {
+        "0+": "RIGHT",
+        "0-": "LEFT",
+        "1+": "DOWN",
+        "1-": "UP"
+      },
+      "axis_threshold": 16000
+    }
   }
-
 }
