@@ -15,6 +15,9 @@ Ce guide explique comment créer des jeux interactifs pour Minitel en utilisant 
 9. [Collisions](#collisions)
 10. [Interface utilisateur](#interface-utilisateur)
 11. [Exemples complets](#exemples-complets)
+12. [Conseils de performance](#conseils-de-performance)
+13. [Limitations](#limitations)
+14. [Ressources](#ressources)
 
 ---
 
