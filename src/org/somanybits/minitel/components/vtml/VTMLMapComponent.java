@@ -22,24 +22,49 @@ import org.somanybits.minitel.components.ModelMComponent;
  *   <li>{@link MapType#BITMAP} - Mode semi-graphique (# = pixel allumé)</li>
  * </ul>
  * 
+ * <h2>Colormap</h2>
+ * <p>
+ * Chaque map peut avoir une colormap associée qui définit la couleur du texte (ink)
+ * pour chaque caractère. La colormap est définie avec le tag {@code <colormap>}.
+ * Les couleurs sont représentées par des caractères :
+ * </p>
+ * <ul>
+ *   <li>' ' (espace) = blanc (7)</li>
+ *   <li>'0' = noir</li>
+ *   <li>'1' = rouge</li>
+ *   <li>'2' = vert</li>
+ *   <li>'3' = jaune</li>
+ *   <li>'4' = bleu</li>
+ *   <li>'5' = magenta</li>
+ *   <li>'6' = cyan</li>
+ *   <li>'7' = blanc</li>
+ * </ul>
+ * 
  * <h2>Exemple VTML</h2>
  * <pre>{@code
  * <map type="char">
  *   <row>########################################</row>
  *   <row>#                                      #</row>
  *   <row>########################################</row>
+ *   <colormap>
+ *     <row>1111111111111111111111111111111111111111</row>
+ *     <row>7                                      7</row>
+ *     <row>2222222222222222222222222222222222222222</row>
+ *   </colormap>
  * </map>
  * }</pre>
  * 
  * <h2>Modification dynamique</h2>
  * <pre>{@code
- * layers.setMapChar(0, x, y, '#');  // Modifier un caractère
- * layers.clearMapLine(0, y);        // Effacer une ligne
- * layers.shiftMapDown(0, 0, 10);    // Décaler vers le bas
+ * layers.setMapChar(0, x, y, '#');   // Modifier un caractère
+ * layers.setMapColor(0, x, y, 1);    // Modifier la couleur (1=rouge)
+ * layers.getMapColor(0, x, y);       // Lire la couleur
+ * layers.clearMapLine(0, y);         // Effacer une ligne
+ * layers.shiftMapDown(0, 0, 10);     // Décaler vers le bas
  * }</pre>
  * 
  * @author Eddy Briere
- * @version 0.3
+ * @version 0.4
  * @see VTMLLayersComponent
  */
 public class VTMLMapComponent extends ModelMComponent {
@@ -51,7 +76,10 @@ public class VTMLMapComponent extends ModelMComponent {
     
     private MapType type = MapType.CHAR;
     private List<String> rows = new ArrayList<>();
+    private List<String> colorRows = new ArrayList<>();
     private char[][] data;
+    private int[][] colorData;  // Couleur du texte (ink) pour chaque caractère
+    private boolean parsingColormap = false;  // Flag pour savoir si on parse une colormap
     
     public VTMLMapComponent(MapType type) {
         this.type = type;
@@ -69,8 +97,27 @@ public class VTMLMapComponent extends ModelMComponent {
      * Ajoute une ligne de contenu
      */
     public void addRow(String row) {
-        rows.add(row);
+        if (parsingColormap) {
+            colorRows.add(row);
+        } else {
+            rows.add(row);
+        }
         data = null; // Invalider le cache
+        colorData = null;
+    }
+    
+    /**
+     * Active/désactive le mode parsing colormap
+     */
+    public void setParsingColormap(boolean parsing) {
+        this.parsingColormap = parsing;
+    }
+    
+    /**
+     * Vérifie si on parse actuellement une colormap
+     */
+    public boolean isParsingColormap() {
+        return parsingColormap;
     }
     
     /**
@@ -83,9 +130,21 @@ public class VTMLMapComponent extends ModelMComponent {
         return data;
     }
     
+    /**
+     * Retourne les données de couleur sous forme de tableau 2D
+     * Les valeurs sont les codes couleur Minitel (0-7)
+     */
+    public int[][] getColorData() {
+        if (colorData == null) {
+            buildData();
+        }
+        return colorData;
+    }
+    
     private void buildData() {
         if (rows.isEmpty()) {
             data = new char[0][0];
+            colorData = new int[0][0];
             return;
         }
         
@@ -98,6 +157,7 @@ public class VTMLMapComponent extends ModelMComponent {
         }
         
         data = new char[rows.size()][maxWidth];
+        colorData = new int[rows.size()][maxWidth];
         
         for (int y = 0; y < rows.size(); y++) {
             String row = rows.get(y);
@@ -107,8 +167,30 @@ public class VTMLMapComponent extends ModelMComponent {
                 } else {
                     data[y][x] = ' ';
                 }
+                // -1 = pas de couleur définie (sera ignoré au rendu)
+                colorData[y][x] = -1;
             }
         }
+        
+        // Appliquer les couleurs de la colormap si définie
+        for (int y = 0; y < colorRows.size() && y < colorData.length; y++) {
+            String colorRow = colorRows.get(y);
+            for (int x = 0; x < colorRow.length() && x < colorData[y].length; x++) {
+                colorData[y][x] = parseColorChar(colorRow.charAt(x));
+            }
+        }
+    }
+    
+    /**
+     * Convertit un caractère de colormap en code couleur Minitel
+     * @return Code couleur 0-7, ou -1 si espace (pas de couleur)
+     */
+    private int parseColorChar(char c) {
+        if (c >= '0' && c <= '7') {
+            return c - '0';
+        }
+        // Espace = pas de couleur définie
+        return -1;
     }
     
     /**
@@ -134,6 +216,74 @@ public class VTMLMapComponent extends ModelMComponent {
             return data[y][x];
         }
         return ' ';
+    }
+    
+    /**
+     * Modifie la couleur du texte à une position donnée
+     * @param x Position X
+     * @param y Position Y
+     * @param color Code couleur Minitel (0-7)
+     */
+    public void setColor(int x, int y, int color) {
+        if (colorData == null) {
+            buildData();
+        }
+        if (y >= 0 && y < colorData.length && x >= 0 && x < colorData[y].length) {
+            colorData[y][x] = color & 0x07;  // Limiter à 0-7
+        }
+    }
+    
+    /**
+     * Récupère la couleur du texte à une position donnée
+     * @param x Position X
+     * @param y Position Y
+     * @return Code couleur Minitel (0-7), 7 (blanc) par défaut
+     */
+    public int getColor(int x, int y) {
+        if (colorData == null) {
+            buildData();
+        }
+        if (y >= 0 && y < colorData.length && x >= 0 && x < colorData[y].length) {
+            return colorData[y][x];
+        }
+        return 7;  // Blanc par défaut
+    }
+    
+    /**
+     * Efface une ligne (caractères et couleurs)
+     */
+    public void clearLine(int y) {
+        if (data == null) {
+            buildData();
+        }
+        if (y >= 0 && y < data.length) {
+            for (int x = 0; x < data[y].length; x++) {
+                data[y][x] = ' ';
+                colorData[y][x] = -1;  // Pas de couleur
+            }
+        }
+    }
+    
+    /**
+     * Décale les lignes vers le bas (caractères et couleurs)
+     */
+    public void shiftDown(int fromY, int toY) {
+        if (data == null) {
+            buildData();
+        }
+        for (int y = toY; y > fromY; y--) {
+            if (y >= 0 && y < data.length && y-1 >= 0) {
+                System.arraycopy(data[y-1], 0, data[y], 0, data[y].length);
+                System.arraycopy(colorData[y-1], 0, colorData[y], 0, colorData[y].length);
+            }
+        }
+        // Vider la ligne du haut
+        if (fromY >= 0 && fromY < data.length) {
+            for (int x = 0; x < data[fromY].length; x++) {
+                data[fromY][x] = ' ';
+                colorData[fromY][x] = -1;  // Pas de couleur
+            }
+        }
     }
     
     @Override

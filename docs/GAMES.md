@@ -7,6 +7,7 @@ Ce guide explique comment créer des jeux interactifs pour Minitel en utilisant 
 1. [Architecture d'un jeu](#architecture-dun-jeu)
 2. [Le composant Layers](#le-composant-layers)
 3. [Les Maps (décors)](#les-maps-décors)
+   - [Colormap (couleurs)](#colormap-couleurs-de-texte)
 4. [Les Sprites](#les-sprites)
 5. [Animations de sprites](#animations-de-sprites)
 6. [Contrôles clavier](#contrôles-clavier)
@@ -165,6 +166,59 @@ layers.shiftMapDown(mapIndex, fromY, toY);
 
 **Note** : L'index de map correspond à l'ordre de déclaration dans le VTML (0 = première `<map>`).
 
+### Colormap (couleurs de texte)
+
+Chaque map peut avoir une **colormap** associée qui définit la couleur du texte (ink) pour chaque caractère. La colormap fonctionne en mode différentiel : seules les couleurs définies sont appliquées.
+
+#### Codes couleur
+
+| Caractère | Couleur | Code |
+|-----------|---------|------|
+| `0` | Noir | 0 |
+| `1` | Rouge | 1 |
+| `2` | Vert | 2 |
+| `3` | Jaune | 3 |
+| `4` | Bleu | 4 |
+| `5` | Magenta | 5 |
+| `6` | Cyan | 6 |
+| `7` ou espace | Blanc | 7 |
+
+#### Syntaxe VTML
+
+```xml
+<map type="char">
+  <row>########################################</row>
+  <row>#                                      #</row>
+  <row>########################################</row>
+  <colormap>
+    <row>1111111111111111111111111111111111111111</row>
+    <row>7                                      7</row>
+    <row>2222222222222222222222222222222222222222</row>
+  </colormap>
+</map>
+```
+
+Dans cet exemple :
+- La première ligne de `#` sera en **rouge** (1)
+- Les bordures de la deuxième ligne seront en **blanc** (7)
+- La dernière ligne sera en **vert** (2)
+
+#### Modification dynamique des couleurs
+
+```javascript
+// Lire la couleur à une position
+var color = layers.getMapColor(mapIndex, x, y);
+
+// Modifier la couleur à une position
+layers.setMapColor(mapIndex, x, y, 1);  // 1 = rouge
+
+// Exemple : placer un bloc coloré
+layers.setMapChar(0, x, y, '#');
+layers.setMapColor(0, x, y, 3);  // Jaune
+```
+
+**Note** : Les fonctions `clearMapLine()` et `shiftMapDown()` gèrent automatiquement les couleurs (remise à blanc pour les lignes effacées, décalage des couleurs avec les caractères).
+
 ---
 
 ## Les Sprites
@@ -227,6 +281,15 @@ player.move(x, y);
 // Cacher le sprite
 player.hide();
 
+// Définir la couleur du sprite (0-7)
+player.setColor(1);  // 1 = rouge
+
+// Obtenir la couleur actuelle
+var color = player.getColor();
+
+// Afficher avec une couleur spécifique
+player.show(0, 6);  // Frame 0, couleur cyan
+
 // Obtenir les dimensions du sprite
 var w = player.getWidth();
 var h = player.getHeight();
@@ -234,6 +297,29 @@ var h = player.getHeight();
 // Obtenir la position actuelle
 var x = player.getX();
 var y = player.getY();
+```
+
+### Couleurs des sprites
+
+Chaque sprite peut avoir sa propre couleur de texte (ink) :
+
+| Code | Couleur |
+|------|---------|
+| 0 | Noir |
+| 1 | Rouge |
+| 2 | Vert |
+| 3 | Jaune |
+| 4 | Bleu |
+| 5 | Magenta |
+| 6 | Cyan |
+| 7 | Blanc (défaut) |
+
+```javascript
+// Exemple : pièces de Tetris colorées
+var piece = layers.getSprite("block");
+piece.setColor(6);  // Cyan pour la pièce I
+piece.show(0);
+piece.move(x, y);
 ```
 
 ---
@@ -590,13 +676,31 @@ if (char == 35) {  // 35 = '#'
 // Modifier un caractère dans une map
 layers.setMapChar(mapIndex, x, y, '#');
 
-// Effacer une ligne entière (pour Tetris)
+// Modifier la couleur du texte (ink) à une position
+layers.setMapColor(mapIndex, x, y, 1);  // 1 = rouge
+
+// Lire la couleur à une position
+var color = layers.getMapColor(mapIndex, x, y);
+
+// Effacer une ligne entière (pour Tetris) - efface aussi les couleurs
 layers.clearMapLine(mapIndex, y);
 
-// Décaler les lignes vers le bas (pour Tetris)
-// Décale les lignes de fromY à toY d'une position vers le bas
+// Décaler les lignes vers le bas (pour Tetris) - décale aussi les couleurs
 layers.shiftMapDown(mapIndex, fromY, toY);
 ```
+
+### Codes couleur
+
+| Code | Couleur |
+|------|---------|
+| 0 | Noir |
+| 1 | Rouge |
+| 2 | Vert |
+| 3 | Jaune |
+| 4 | Bleu |
+| 5 | Magenta |
+| 6 | Cyan |
+| 7 | Blanc |
 
 ### Codes de caractères courants
 

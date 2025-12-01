@@ -220,13 +220,25 @@ public class MinitelPageReader {
             || component instanceof VTMLLayersComponent
             || component instanceof VTMLMapComponent
             || component instanceof VTMLSpriteDefComponent
-            || component instanceof VTMLSpriteComponent;
+            || component instanceof VTMLSpriteComponent
+            || component instanceof VTMLColormapComponent;
     }
 
     /**
      * Remonte au composant parent seulement si le tag fermé était un conteneur
      */
     private void closeCurrentComponent(String tagname) {
+        // Désactiver le mode colormap quand on ferme le tag colormap
+        if ("colormap".equals(tagname)) {
+            if (currentComponent instanceof VTMLColormapComponent) {
+                MComponent parent = currentComponent.getParent();
+                if (parent instanceof VTMLMapComponent map) {
+                    map.setParsingColormap(false);
+                    System.out.println("🎨 Colormap fermée");
+                }
+            }
+        }
+        
         // Ne remonter que si c'était un tag conteneur
         if (isContainerTag(tagname)) {
             if (currentComponent != null && currentComponent.getParent() != null) {
@@ -246,7 +258,8 @@ public class MinitelPageReader {
             || "layers".equals(tagname)
             || "map".equals(tagname)
             || "spritedef".equals(tagname)
-            || "sprite".equals(tagname);
+            || "sprite".equals(tagname)
+            || "colormap".equals(tagname);
     }
 
     /**
@@ -272,6 +285,16 @@ public class MinitelPageReader {
             }
             
             case "row" -> {
+                // Si le parent est une colormap, ajouter la ligne à la map parente
+                if (currentComponent instanceof VTMLColormapComponent) {
+                    // Remonter à la map parente
+                    MComponent parent = currentComponent.getParent();
+                    if (parent instanceof VTMLMapComponent map) {
+                        System.out.println("🎨 Colormap row: '" + textContent + "'");
+                        map.addRow(textContent);  // addRow gère le mode colormap
+                        return null;
+                    }
+                }
                 // Si le parent est une map, ajouter la ligne
                 if (currentComponent instanceof VTMLMapComponent area) {
                     System.out.println("📝 Map row: '" + textContent + "'");
@@ -279,6 +302,15 @@ public class MinitelPageReader {
                     return null;
                 }
                 return new VTMLRowComponent(textContent);
+            }
+            
+            case "colormap" -> {
+                // Activer le mode colormap sur la map parente
+                if (currentComponent instanceof VTMLMapComponent map) {
+                    map.setParsingColormap(true);
+                    System.out.println("🎨 Colormap détectée");
+                }
+                return new VTMLColormapComponent();
             }
             
             case "line" -> {

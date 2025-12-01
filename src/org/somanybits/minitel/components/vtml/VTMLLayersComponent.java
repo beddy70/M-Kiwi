@@ -80,6 +80,8 @@ public class VTMLLayersComponent extends ModelMComponent {
     // Buffer interne pour le rendu
     private char[][] buffer;
     private char[][] previousBuffer;
+    private int[][] colorBuffer;      // Couleur du texte (ink) pour chaque caractère
+    private int[][] previousColorBuffer;
     private boolean[][] mosaicMode;  // true = caractère semi-graphique
     private boolean[][] previousMosaicMode;
     
@@ -118,6 +120,8 @@ public class VTMLLayersComponent extends ModelMComponent {
         this.height = height;
         this.buffer = new char[height][width];
         this.previousBuffer = new char[height][width];
+        this.colorBuffer = new int[height][width];
+        this.previousColorBuffer = new int[height][width];
         this.mosaicMode = new boolean[height][width];
         this.previousMosaicMode = new boolean[height][width];
         clearBuffer();
@@ -128,6 +132,8 @@ public class VTMLLayersComponent extends ModelMComponent {
             for (int x = 0; x < width; x++) {
                 buffer[y][x] = ' ';
                 previousBuffer[y][x] = ' ';
+                colorBuffer[y][x] = -1;  // -1 = pas de couleur
+                previousColorBuffer[y][x] = -1;
             }
         }
     }
@@ -291,6 +297,24 @@ public class VTMLLayersComponent extends ModelMComponent {
     }
     
     /**
+     * Récupère un caractère dans une map (appelable depuis JavaScript)
+     * @param areaIndex Index de la map (0 = première map)
+     * @param x Position X dans la map
+     * @param y Position Y dans la map
+     * @return Le caractère à cette position, ou 0 si hors limites
+     */
+    public int getMapChar(int areaIndex, int x, int y) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            VTMLMapComponent area = areas.get(areaIndex);
+            char[][] data = area.getData();
+            if (data != null && y >= 0 && y < data.length && x >= 0 && x < data[y].length) {
+                return (int) data[y][x];
+            }
+        }
+        return 0;
+    }
+    
+    /**
      * Modifie un caractère dans une map (appelable depuis JavaScript)
      * @param areaIndex Index de la map (0 = première map)
      * @param x Position X dans la map
@@ -309,39 +333,52 @@ public class VTMLLayersComponent extends ModelMComponent {
     
     /**
      * Efface une ligne entière d'une map (pour Tetris)
+     * Efface aussi les couleurs (remet à blanc)
      */
     public void clearMapLine(int areaIndex, int y) {
         if (areaIndex >= 0 && areaIndex < areas.size()) {
             VTMLMapComponent area = areas.get(areaIndex);
-            char[][] data = area.getData();
-            if (data != null && y >= 0 && y < data.length) {
-                for (int x = 0; x < data[y].length; x++) {
-                    data[y][x] = ' ';
-                }
-            }
+            area.clearLine(y);  // Utilise la nouvelle méthode qui gère aussi les couleurs
         }
     }
     
     /**
      * Décale les lignes d'une map vers le bas (pour Tetris)
+     * Décale aussi les couleurs
      */
     public void shiftMapDown(int areaIndex, int fromY, int toY) {
         if (areaIndex >= 0 && areaIndex < areas.size()) {
             VTMLMapComponent area = areas.get(areaIndex);
-            char[][] data = area.getData();
-            if (data != null) {
-                for (int y = toY; y > fromY; y--) {
-                    if (y >= 0 && y < data.length && y-1 >= 0) {
-                        System.arraycopy(data[y-1], 0, data[y], 0, data[y].length);
-                    }
-                }
-                // Vider la ligne du haut
-                if (fromY >= 0 && fromY < data.length) {
-                    for (int x = 0; x < data[fromY].length; x++) {
-                        data[fromY][x] = ' ';
-                    }
-                }
-            }
+            area.shiftDown(fromY, toY);  // Utilise la nouvelle méthode qui gère aussi les couleurs
+        }
+    }
+    
+    /**
+     * Récupère la couleur du texte à une position dans une map (appelable depuis JavaScript)
+     * @param areaIndex Index de la map (0 = première map)
+     * @param x Position X dans la map
+     * @param y Position Y dans la map
+     * @return Code couleur Minitel (0-7), 7 (blanc) par défaut
+     */
+    public int getMapColor(int areaIndex, int x, int y) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            VTMLMapComponent area = areas.get(areaIndex);
+            return area.getColor(x, y);
+        }
+        return 7;  // Blanc par défaut
+    }
+    
+    /**
+     * Modifie la couleur du texte à une position dans une map (appelable depuis JavaScript)
+     * @param areaIndex Index de la map (0 = première map)
+     * @param x Position X dans la map
+     * @param y Position Y dans la map
+     * @param color Code couleur Minitel (0-7)
+     */
+    public void setMapColor(int areaIndex, int x, int y, int color) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            VTMLMapComponent area = areas.get(areaIndex);
+            area.setColor(x, y, color);
         }
     }
     
@@ -445,10 +482,11 @@ public class VTMLLayersComponent extends ModelMComponent {
     public synchronized void compose() {
         // NE PAS sauvegarder ici - c'est getDifferentialBytes() qui gère previousBuffer
         
-        // Effacer le buffer et le mode mosaïque
+        // Effacer le buffer, les couleurs et le mode mosaïque
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 buffer[y][x] = ' ';
+                colorBuffer[y][x] = -1;  // -1 = pas de couleur (espace)
                 mosaicMode[y][x] = false;
             }
         }
@@ -481,6 +519,7 @@ public class VTMLLayersComponent extends ModelMComponent {
             int bufX = lx + i;
             if (bufX >= 0 && bufX < width && ly >= 0 && ly < height) {
                 buffer[ly][bufX] = text.charAt(i);
+                colorBuffer[ly][bufX] = 7;  // Labels en blanc
                 mosaicMode[ly][bufX] = false;  // Les labels sont toujours en mode texte
             }
         }
@@ -488,6 +527,7 @@ public class VTMLLayersComponent extends ModelMComponent {
     
     private void drawArea(VTMLMapComponent area) {
         char[][] areaData = area.getData();
+        int[][] areaColorData = area.getColorData();
         if (areaData == null) return;
         
         for (int y = 0; y < areaData.length && y < height; y++) {
@@ -496,6 +536,13 @@ public class VTMLLayersComponent extends ModelMComponent {
                 // Ne dessiner que si non-transparent (espace = transparent pour les areas supérieures)
                 if (c != ' ' || areas.indexOf(area) == 0) {
                     buffer[y][x] = c;
+                    // Copier la couleur seulement si c'est un caractère non-espace et couleur définie
+                    if (c != ' ' && areaColorData != null && y < areaColorData.length && x < areaColorData[y].length) {
+                        int areaColor = areaColorData[y][x];
+                        if (areaColor >= 0) {
+                            colorBuffer[y][x] = areaColor;
+                        }
+                    }
                 }
             }
         }
@@ -508,6 +555,7 @@ public class VTMLLayersComponent extends ModelMComponent {
         
         int sx = instance.getX();
         int sy = instance.getY();
+        int spriteColor = instance.getColor();
         boolean isBitmap = def.getType() == VTMLSpriteDefComponent.SpriteType.BITMAP;
         
         for (int y = 0; y < spriteData.length; y++) {
@@ -522,6 +570,7 @@ public class VTMLLayersComponent extends ModelMComponent {
                 // Pour les sprites, espace = transparent
                 if (c != ' ') {
                     buffer[bufY][bufX] = c;
+                    colorBuffer[bufY][bufX] = spriteColor;
                     mosaicMode[bufY][bufX] = isBitmap;
                 }
             }
@@ -546,11 +595,19 @@ public class VTMLLayersComponent extends ModelMComponent {
         
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
+            int currentColor = 7;  // Couleur courante (blanc par défaut)
             
             for (int y = 0; y < height; y++) {
                 out.write(GetTeletelCode.setCursor(left, top + y));
                 
                 for (int x = 0; x < width; x++) {
+                    // Changer la couleur si nécessaire (ignorer -1 = pas de couleur)
+                    int cellColor = colorBuffer[y][x];
+                    if (cellColor >= 0 && cellColor != currentColor) {
+                        currentColor = cellColor;
+                        out.write(GetTeletelCode.setTextColor(currentColor));
+                    }
+                    
                     // Pour le rendu initial, on envoie le code de mode avant chaque caractère mosaïque
                     if (mosaicMode[y][x]) {
                         out.write(0x0E);  // Mode semi-graphique
@@ -565,6 +622,7 @@ public class VTMLLayersComponent extends ModelMComponent {
             // Copier les buffers pour la prochaine comparaison
             for (int y = 0; y < height; y++) {
                 System.arraycopy(buffer[y], 0, previousBuffer[y], 0, width);
+                System.arraycopy(colorBuffer[y], 0, previousColorBuffer[y], 0, width);
                 System.arraycopy(mosaicMode[y], 0, previousMosaicMode[y], 0, width);
             }
             
@@ -586,17 +644,30 @@ public class VTMLLayersComponent extends ModelMComponent {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             
             int lastX = -1, lastY = -1;
+            int currentColor = -1;  // Couleur courante inconnue au départ
             
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    // Redessiner si le caractère OU le mode a changé
+                    // Redessiner si le caractère, la couleur OU le mode a changé
                     boolean needsRedraw = buffer[y][x] != previousBuffer[y][x] 
+                                       || colorBuffer[y][x] != previousColorBuffer[y][x]
                                        || mosaicMode[y][x] != previousMosaicMode[y][x];
                     
                     if (needsRedraw) {
                         // Positionner le curseur si nécessaire
                         if (lastY != y || lastX != x - 1) {
                             out.write(GetTeletelCode.setCursor(left + x, top + y));
+                        }
+                        
+                        // Changer la couleur si nécessaire (ignorer -1 = pas de couleur)
+                        int cellColor = colorBuffer[y][x];
+                        if (cellColor >= 0) {
+                            // Toujours envoyer le code couleur pour les caractères colorés
+                            // car on ne peut pas savoir l'état réel du Minitel après un espace
+                            if (cellColor != currentColor || previousColorBuffer[y][x] < 0) {
+                                currentColor = cellColor;
+                                out.write(GetTeletelCode.setTextColor(currentColor));
+                            }
                         }
                         
                         // Pour chaque caractère mosaïque, envoyer mode avant/après
@@ -619,6 +690,7 @@ public class VTMLLayersComponent extends ModelMComponent {
             // Copier tout le buffer dans previousBuffer pour la prochaine comparaison
             for (int y = 0; y < height; y++) {
                 System.arraycopy(buffer[y], 0, previousBuffer[y], 0, width);
+                System.arraycopy(colorBuffer[y], 0, previousColorBuffer[y], 0, width);
                 System.arraycopy(mosaicMode[y], 0, previousMosaicMode[y], 0, width);
             }
             
@@ -662,6 +734,7 @@ public class VTMLLayersComponent extends ModelMComponent {
         private int y = 0;
         private int currentFrame = 0;
         private boolean visible = false;
+        private int color = 7;  // Couleur du sprite (7 = blanc par défaut)
         
         public SpriteInstance(VTMLSpriteDefComponent definition) {
             this.definition = definition;
@@ -686,8 +759,28 @@ public class VTMLLayersComponent extends ModelMComponent {
         public boolean isVisible() { return visible; }
         public void setVisible(boolean visible) { this.visible = visible; }
         
+        /**
+         * Retourne la couleur du sprite (code Minitel 0-7)
+         */
+        public int getColor() { return color; }
+        
+        /**
+         * Définit la couleur du sprite (code Minitel 0-7)
+         * @param color 0=noir, 1=rouge, 2=vert, 3=jaune, 4=bleu, 5=magenta, 6=cyan, 7=blanc
+         */
+        public void setColor(int color) { this.color = color & 0x07; }
+        
         public void show(int frameIndex) {
             this.currentFrame = frameIndex;
+            this.visible = true;
+        }
+        
+        /**
+         * Affiche le sprite avec une couleur spécifique
+         */
+        public void show(int frameIndex, int color) {
+            this.currentFrame = frameIndex;
+            this.color = color & 0x07;
             this.visible = true;
         }
         
