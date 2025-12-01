@@ -1,0 +1,197 @@
+<!-- Sprite animé : personnage qui court (7 frames) -->
+<!-- Taille : 6x10 caractères (12x20 pixels en semi-graphique) -->
+
+<spritedef id="runner" type="bitmap" width="6" height="10">
+  
+  <!-- Frame 0 : Course - jambe gauche avant, bras droit avant -->
+  <sprite>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ########  </line>
+    <line>  ########  </line>
+    <line>####  ####  </line>
+    <line>####  ####  </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>##      ##  </line>
+    <line>##      ##  </line>
+    <line>##        ##</line>
+    <line>##        ##</line>
+    <line>##          </line>
+    <line>##          </line>
+  </sprite>
+  
+  <!-- Frame 1 : Course - transition -->
+  <sprite>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ########  </line>
+    <line>  ########  </line>
+    <line>  ##  ####  </line>
+    <line>  ##  ####  </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>##      ##  </line>
+    <line>##      ##  </line>
+    <line>          ##</line>
+    <line>          ##</line>
+  </sprite>
+  
+  <!-- Frame 2 : Course - jambes rapprochées -->
+  <sprite>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ######  </line>
+    <line>    ######  </line>
+    <line>  ##  ####  </line>
+    <line>  ##  ####  </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>        ##  </line>
+    <line>        ##  </line>
+  </sprite>
+  
+  <!-- Frame 3 : Debout - position neutre -->
+  <sprite>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ########  </line>
+    <line>  ########  </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+  </sprite>
+  
+  <!-- Frame 4 : Course - jambes croisées -->
+  <sprite>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ######    </line>
+    <line>  ######    </line>
+    <line>  ####  ##  </line>
+    <line>  ####  ##  </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##        </line>
+    <line>  ##        </line>
+  </sprite>
+  
+  <!-- Frame 5 : Course - transition inverse -->
+  <sprite>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ########  </line>
+    <line>  ########  </line>
+    <line>  ####  ##  </line>
+    <line>  ####  ##  </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##      ##</line>
+    <line>  ##      ##</line>
+    <line>##          </line>
+    <line>##          </line>
+  </sprite>
+  
+  <!-- Frame 6 : Course - jambe droite avant, bras gauche avant -->
+  <sprite>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ########  </line>
+    <line>  ########  </line>
+    <line>  ####  ####</line>
+    <line>  ####  ####</line>
+    <line>    ####    </line>
+    <line>    ####    </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>  ##    ##  </line>
+    <line>##      ##  </line>
+    <line>##      ##  </line>
+    <line>        ##  </line>
+    <line>        ##  </line>
+    <line>        ##  </line>
+    <line>        ##  </line>
+  </sprite>
+  
+</spritedef>
+
+<!-- 
+Utilisation dans un jeu :
+
+<layers id="game" left="0" top="1" width="40" height="24">
+  <include src="sprites/runner.vtml"/>
+  
+  <script>
+    var runner = layers.getSprite("runner");
+    var frame = 0;
+    
+    runner.show(0);
+    runner.move(10, 10);
+    
+    function animate() {
+      frame = (frame + 1) % 7;
+      runner.show(frame);
+    }
+    
+    layers.setTickFunction("animate");
+  </script>
+</layers>
+-->
