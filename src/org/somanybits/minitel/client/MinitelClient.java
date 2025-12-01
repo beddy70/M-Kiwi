@@ -1,6 +1,6 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
  */
 package org.somanybits.minitel.client;
 
@@ -29,8 +29,32 @@ import org.somanybits.minitel.kernel.Config;
 import org.somanybits.minitel.kernel.Kernel;
 
 /**
- *
- * @author eddy
+ * Client Minitel principal.
+ * <p>
+ * Cette classe gère l'interface entre le terminal Minitel physique et le serveur.
+ * Elle implémente les listeners pour les événements clavier et les séquences de contrôle.
+ * </p>
+ * 
+ * <h2>Fonctionnalités principales</h2>
+ * <ul>
+ *   <li>Connexion série au Minitel (1200/4800/9600 bauds)</li>
+ *   <li>Gestion des touches fonction (SOMMAIRE, RETOUR, ENVOI, etc.)</li>
+ *   <li>Navigation entre pages VTML</li>
+ *   <li>Gestion des formulaires et saisie utilisateur</li>
+ *   <li>Support des jeux avec layers, sprites et game loop</li>
+ *   <li>Support joystick USB pour les jeux</li>
+ * </ul>
+ * 
+ * <h2>Utilisation</h2>
+ * <pre>{@code
+ * java -jar Minitel.jar localhost 8080
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see MinitelConnection
+ * @see MinitelPageReader
+ * @see VTMLLayersComponent
  */
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 

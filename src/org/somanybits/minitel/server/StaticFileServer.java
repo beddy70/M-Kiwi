@@ -1,6 +1,6 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
  */
 package org.somanybits.minitel.server;
 
@@ -19,6 +19,32 @@ import org.somanybits.log.LogManager;
 import org.somanybits.minitel.kernel.Kernel;
 import org.somanybits.minitel.VTMLContants;
 
+/**
+ * Serveur HTTP pour pages VTML.
+ * <p>
+ * Ce serveur sert les fichiers statiques VTML et exécute les MModules dynamiques.
+ * Il écoute sur le port configuré dans {@code config.json} et sert les fichiers
+ * depuis le répertoire {@code root_path}.
+ * </p>
+ * 
+ * <h2>Fonctionnalités</h2>
+ * <ul>
+ *   <li>Servir des fichiers VTML statiques</li>
+ *   <li>Exécuter des MModules dynamiques (*.mod)</li>
+ *   <li>Gérer les paramètres GET</li>
+ *   <li>Redirection automatique vers index.vtml</li>
+ * </ul>
+ * 
+ * <h2>Utilisation</h2>
+ * <pre>{@code
+ * java -cp Minitel.jar org.somanybits.minitel.server.StaticFileServer
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see MModulesManager
+ * @see MModule
+ */
 public class StaticFileServer {
     
     public static final String PAGE_INDEX = "index." + VTMLContants.VTML_EXTENSION;

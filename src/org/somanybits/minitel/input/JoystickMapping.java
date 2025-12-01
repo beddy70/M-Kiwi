@@ -1,11 +1,42 @@
+/*
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
+ */
 package org.somanybits.minitel.input;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Gère le mapping des boutons/axes du joystick vers les actions VTML.
- * Peut être modifié dynamiquement via JavaScript.
+ * Mapping des boutons et axes du joystick vers les actions VTML.
+ * <p>
+ * Cette classe gère la correspondance entre les entrées physiques du joystick
+ * et les actions de jeu VTML (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2).
+ * Le mapping peut être modifié dynamiquement via JavaScript.
+ * </p>
+ * 
+ * <h2>Configuration</h2>
+ * <p>Le mapping peut être configuré dans {@code config.json} :</p>
+ * <pre>{@code
+ * "joystick_mapping": {
+ *   "buttons": { "0": "ACTION1", "1": "ACTION2" },
+ *   "axes": { "0+": "RIGHT", "0-": "LEFT", "1+": "DOWN", "1-": "UP" },
+ *   "axis_threshold": 16000
+ * }
+ * }</pre>
+ * 
+ * <h2>API JavaScript</h2>
+ * <pre>{@code
+ * joystick.mapButton(0, "ACTION1");
+ * joystick.mapAxis("0+", "RIGHT");
+ * joystick.setAxisThreshold(20000);
+ * joystick.resetMapping();
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see JoystickReader
+ * @see JoystickListener
  */
 public class JoystickMapping {
     

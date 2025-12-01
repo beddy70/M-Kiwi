@@ -1,3 +1,7 @@
+/*
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
+ */
 package org.somanybits.minitel.components.vtml;
 
 import java.io.ByteArrayOutputStream;
@@ -11,14 +15,61 @@ import org.somanybits.minitel.components.MComponent;
 import org.somanybits.minitel.components.ModelMComponent;
 
 /**
- * Composant Layers pour créer des jeux Minitel.
- * Gère des zones (areas) empilées et des sprites animés.
+ * Composant Layers pour créer des jeux interactifs sur Minitel.
+ * <p>
+ * Ce composant est le cœur du système de jeu VTML. Il gère :
+ * </p>
+ * <ul>
+ *   <li>Les maps (décors) empilées avec transparence</li>
+ *   <li>Les sprites animés avec détection de collision</li>
+ *   <li>Les contrôles clavier via {@link VTMLKeypadComponent}</li>
+ *   <li>La game loop avec timer configurable</li>
+ *   <li>Le rendu différentiel optimisé pour le Minitel</li>
+ * </ul>
  * 
- * @author eddy
+ * <h2>Limites</h2>
+ * <ul>
+ *   <li>Maximum {@value #MAX_AREAS} maps empilées</li>
+ *   <li>Maximum {@value #MAX_SPRITES} sprites simultanés</li>
+ * </ul>
+ * 
+ * <h2>Exemple VTML</h2>
+ * <pre>{@code
+ * <layers id="game" left="0" top="1" width="40" height="22">
+ *   <map type="char">
+ *     <row>########################################</row>
+ *     <row>#                                      #</row>
+ *     <row>########################################</row>
+ *   </map>
+ *   <spritedef id="player" width="1" height="1">
+ *     <sprite><line>@</line></sprite>
+ *   </spritedef>
+ *   <keypad action="UP" key="Z" event="moveUp"/>
+ *   <timer event="gameLoop" interval="100"/>
+ * </layers>
+ * }</pre>
+ * 
+ * <h2>API JavaScript</h2>
+ * <pre>{@code
+ * var layers = _currentLayers;
+ * var player = layers.getSprite("player");
+ * player.show(0);
+ * player.move(10, 5);
+ * layers.checkCollision("player", "enemy");
+ * layers.beep();
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see VTMLMapComponent
+ * @see VTMLSpriteDefComponent
+ * @see VTMLKeypadComponent
  */
 public class VTMLLayersComponent extends ModelMComponent {
     
+    /** Nombre maximum de maps empilées */
     public static final int MAX_AREAS = 3;
+    /** Nombre maximum de sprites simultanés */
     public static final int MAX_SPRITES = 16;
     
     private int left;

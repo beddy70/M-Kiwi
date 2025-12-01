@@ -1,6 +1,6 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
  */
 package org.somanybits.minitel;
 
@@ -22,14 +22,42 @@ import org.somanybits.minitel.events.KeyPressedEvent;
 import org.somanybits.minitel.events.KeyPressedListener;
 
 /**
- *
- * @author eddy
+ * Connexion série vers un terminal Minitel.
+ * <p>
+ * Cette classe gère la communication bas niveau avec le Minitel via le port série.
+ * Elle configure automatiquement le port en mode 7E1 (7 bits, parité paire, 1 stop bit)
+ * conformément au protocole Videotex.
+ * </p>
+ * 
+ * <h2>Vitesses supportées</h2>
+ * <ul>
+ *   <li>{@link #BAUD_1200} - Minitel 1 standard</li>
+ *   <li>{@link #BAUD_4800} - Minitel 2 vitesse moyenne</li>
+ *   <li>{@link #BAUD_9600} - Minitel 2 haute vitesse</li>
+ * </ul>
+ * 
+ * <h2>Exemple d'utilisation</h2>
+ * <pre>{@code
+ * MinitelConnection mc = new MinitelConnection("/dev/serial0", MinitelConnection.BAUD_9600);
+ * mc.open();
+ * mc.addKeyPressedListener(myListener);
+ * mc.writeBytes(GetTeletelCode.clearScreen());
+ * mc.close();
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see Teletel
+ * @see KeyPressedListener
  */
 public class MinitelConnection implements Closeable {
 
-    public static int BAUD_1200 = 1200;
-    public static int BAUD_4800 = 4800;
-    public static int BAUD_9600 = 9600;
+    /** Vitesse standard Minitel 1 : 1200 bauds */
+    public static final int BAUD_1200 = 1200;
+    /** Vitesse moyenne Minitel 2 : 4800 bauds */
+    public static final int BAUD_4800 = 4800;
+    /** Haute vitesse Minitel 2 : 9600 bauds */
+    public static final int BAUD_9600 = 9600;
 
     private String device = "/dev/serial0";
     private int baud = BAUD_1200;

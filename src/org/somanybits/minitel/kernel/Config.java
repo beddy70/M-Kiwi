@@ -1,12 +1,39 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
  */
 package org.somanybits.minitel.kernel;
 
 /**
- *
- * @author eddy
+ * Configuration de l'application Minitel-Serveur.
+ * <p>
+ * Cette classe représente la structure du fichier {@code config.json}.
+ * Elle est désérialisée automatiquement par {@link ConfigLoader}.
+ * </p>
+ * 
+ * <h2>Structure du fichier config.json</h2>
+ * <pre>{@code
+ * {
+ *   "server": {
+ *     "port": 8080,
+ *     "defaultCharset": "utf-8"
+ *   },
+ *   "path": {
+ *     "root_path": "./root/",
+ *     "plugins_path": "./plugins/"
+ *   },
+ *   "client": {
+ *     "serial_port": "/dev/serial0",
+ *     "serial_baud": 9600,
+ *     "joystick_enabled": true
+ *   }
+ * }
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see ConfigLoader
+ * @see Kernel
  */
 public class Config {
 
@@ -15,9 +42,13 @@ public class Config {
     public SSLCfg ssl = new SSLCfg();
     public ClientCfg client = new ClientCfg();
 
+    /**
+     * Configuration du serveur HTTP.
+     */
     public static class Server {
-
+        /** Port d'écoute du serveur HTTP (défaut: 8080) */
         public int port = 8080;
+        /** Encodage par défaut des pages (défaut: utf-8) */
         public String defaultCharset = "utf-8";
     }
     
@@ -26,33 +57,61 @@ public class Config {
         public boolean trustAllCertificates = true;
     }
 
+    /**
+     * Configuration des chemins de fichiers.
+     */
     public static class PathsCfg {
-
+        /** Répertoire racine des pages VTML */
         public String root_path = "./root/";
+        /** Répertoire des plugins MModules */
         public String plugins_path = "./plugins/";
     }
     
+    /**
+     * Configuration du client Minitel.
+     * <p>
+     * Définit les paramètres de connexion série et le support joystick.
+     * </p>
+     */
     public static class ClientCfg {
-        /** Port série pour la connexion Minitel */
+        /** Port série pour la connexion Minitel (ex: /dev/serial0, /dev/ttyUSB0) */
         public String serial_port = "/dev/serial0";
-        /** Vitesse du port série */
+        /** Vitesse du port série en bauds (1200, 4800 ou 9600) */
         public int serial_baud = 9600;
-        /** Périphérique joystick */
+        /** Périphérique joystick Linux (ex: /dev/input/js0) */
         public String joystick_device = "/dev/input/js0";
-        /** Activer le support joystick */
+        /** Activer le support joystick USB pour les jeux */
         public boolean joystick_enabled = true;
-        /** Mapping des boutons joystick vers actions VTML */
+        /** Mapping des boutons et axes joystick vers actions VTML */
         public JoystickMapping joystick_mapping = new JoystickMapping();
     }
     
+    /**
+     * Configuration du mapping joystick.
+     * <p>
+     * Permet de mapper les boutons et axes du joystick vers les actions
+     * de jeu VTML : UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2.
+     * </p>
+     * 
+     * <h3>Format des axes</h3>
+     * <ul>
+     *   <li>{@code "0+"} - Axe 0, direction positive (droite)</li>
+     *   <li>{@code "0-"} - Axe 0, direction négative (gauche)</li>
+     *   <li>{@code "1+"} - Axe 1, direction positive (bas)</li>
+     *   <li>{@code "1-"} - Axe 1, direction négative (haut)</li>
+     * </ul>
+     */
     public static class JoystickMapping {
-        /** Mapping bouton -> action (ex: "0": "ACTION1") */
+        /** Mapping bouton -> action (clé: numéro du bouton, valeur: action) */
         public java.util.Map<String, String> buttons = new java.util.HashMap<>();
-        /** Mapping axe/direction -> action (ex: "0+": "RIGHT", "0-": "LEFT") */
+        /** Mapping axe/direction -> action (clé: "axe+/-", valeur: action) */
         public java.util.Map<String, String> axes = new java.util.HashMap<>();
-        /** Seuil pour les axes (0-32767) */
+        /** Seuil de déclenchement pour les axes analogiques (0-32767, défaut: 16000) */
         public int axis_threshold = 16000;
         
+        /**
+         * Crée un mapping par défaut pour un gamepad standard.
+         */
         public JoystickMapping() {
             // Mapping par défaut
             buttons.put("0", "ACTION1");  // Bouton A

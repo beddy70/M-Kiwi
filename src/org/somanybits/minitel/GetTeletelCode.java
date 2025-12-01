@@ -1,7 +1,6 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
  */
 package org.somanybits.minitel;
 
@@ -11,10 +10,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Classe utilitaire statique - génère les codes Teletel sous forme de byte[]
- * au lieu de les écrire directement sur une connexion
+ * Générateur de codes Videotex.
+ * <p>
+ * Classe utilitaire statique qui génère les séquences d'échappement Videotex
+ * sous forme de tableaux de bytes. Ces codes peuvent ensuite être envoyés
+ * au Minitel via {@link MinitelConnection}.
+ * </p>
  * 
- * @author eddy
+ * <h2>Fonctions principales</h2>
+ * <ul>
+ *   <li>{@link #setCursor(int, int)} - Positionner le curseur</li>
+ *   <li>{@link #setTextColor(int)} - Couleur du texte</li>
+ *   <li>{@link #setBackgroundColor(int)} - Couleur de fond</li>
+ *   <li>{@link #clearScreen()} - Effacer l'écran</li>
+ *   <li>{@link #beep()} - Émettre un bip sonore</li>
+ * </ul>
+ * 
+ * <h2>Exemple d'utilisation</h2>
+ * <pre>{@code
+ * byte[] codes = GetTeletelCode.setCursor(10, 5);
+ * codes = concat(codes, GetTeletelCode.setTextColor(COLOR_RED));
+ * codes = concat(codes, GetTeletelCode.writeString("Bonjour!"));
+ * connection.writeBytes(codes);
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see Teletel
+ * @see MinitelConnection
  */
 public final class GetTeletelCode {
 

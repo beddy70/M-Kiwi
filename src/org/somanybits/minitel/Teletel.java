@@ -1,20 +1,44 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
  */
 package org.somanybits.minitel;
 
 import java.io.IOException;
 
 /**
- *
- * @author eddy
+ * API haut niveau pour contrôler l'affichage Videotex.
+ * <p>
+ * Cette classe fournit des méthodes pour manipuler l'affichage du Minitel :
+ * positionnement du curseur, couleurs, modes graphiques, etc.
+ * </p>
+ * 
+ * <h2>Constantes d'écran</h2>
+ * <ul>
+ *   <li>{@link #PAGE_WIDTH} - Largeur de l'écran : 40 caractères</li>
+ *   <li>{@link #PAGE_HEIGHT} - Hauteur de l'écran : 24 lignes</li>
+ * </ul>
+ * 
+ * <h2>Couleurs disponibles</h2>
+ * <p>8 couleurs : noir, rouge, vert, jaune, bleu, magenta, cyan, blanc</p>
+ * 
+ * <h2>Modes d'affichage</h2>
+ * <ul>
+ *   <li>{@link #MODE_TEXT} - Mode texte normal</li>
+ *   <li>{@link #MODE_SEMI_GRAPH} - Mode semi-graphique (mosaïque)</li>
+ * </ul>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see MinitelConnection
+ * @see GetTeletelCode
  */
 public class Teletel {
 
-    static public final int PAGE_WIDTH = 40;
-    static public final int PAGE_HEIGHT = 24;
+    /** Largeur de l'écran Minitel en caractères */
+    public static final int PAGE_WIDTH = 40;
+    /** Hauteur de l'écran Minitel en lignes */
+    public static final int PAGE_HEIGHT = 24;
 
     static public final int COLOR_BLACK = 0x00;
     static public final int COLOR_RED = 0x01;

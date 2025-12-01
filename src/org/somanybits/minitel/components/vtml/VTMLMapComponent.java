@@ -1,3 +1,7 @@
+/*
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
+ */
 package org.somanybits.minitel.components.vtml;
 
 import java.util.ArrayList;
@@ -5,10 +9,38 @@ import java.util.List;
 import org.somanybits.minitel.components.ModelMComponent;
 
 /**
- * Composant Map pour les layers.
- * Représente une zone de fond avec du contenu texte ou bitmap.
+ * Composant Map pour les décors de jeu.
+ * <p>
+ * Représente une couche de fond dans un {@link VTMLLayersComponent}.
+ * Les maps sont empilées et les caractères espace sont transparents,
+ * permettant de voir les couches inférieures.
+ * </p>
  * 
- * @author eddy
+ * <h2>Types de map</h2>
+ * <ul>
+ *   <li>{@link MapType#CHAR} - Caractères normaux affichés tels quels</li>
+ *   <li>{@link MapType#BITMAP} - Mode semi-graphique (# = pixel allumé)</li>
+ * </ul>
+ * 
+ * <h2>Exemple VTML</h2>
+ * <pre>{@code
+ * <map type="char">
+ *   <row>########################################</row>
+ *   <row>#                                      #</row>
+ *   <row>########################################</row>
+ * </map>
+ * }</pre>
+ * 
+ * <h2>Modification dynamique</h2>
+ * <pre>{@code
+ * layers.setMapChar(0, x, y, '#');  // Modifier un caractère
+ * layers.clearMapLine(0, y);        // Effacer une ligne
+ * layers.shiftMapDown(0, 0, 10);    // Décaler vers le bas
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see VTMLLayersComponent
  */
 public class VTMLMapComponent extends ModelMComponent {
     

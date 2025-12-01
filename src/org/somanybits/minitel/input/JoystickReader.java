@@ -1,3 +1,7 @@
+/*
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
+ */
 package org.somanybits.minitel.input;
 
 import java.io.FileInputStream;
@@ -8,12 +12,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Lecteur de joystick USB via /dev/input/jsX (Linux)
- * Format des événements : 8 octets
- * - 4 octets : timestamp (ms)
- * - 2 octets : valeur (-32767 à 32767 pour axes, 0/1 pour boutons)
- * - 1 octet  : type (1=bouton, 2=axe)
- * - 1 octet  : numéro (index du bouton ou de l'axe)
+ * Lecteur de joystick USB via /dev/input/jsX (Linux).
+ * <p>
+ * Cette classe lit les événements joystick depuis le périphérique Linux
+ * et les transmet aux listeners enregistrés.
+ * </p>
+ * 
+ * <h2>Format des événements</h2>
+ * <p>Chaque événement fait 8 octets :</p>
+ * <ul>
+ *   <li>4 octets : timestamp (ms)</li>
+ *   <li>2 octets : valeur (-32767 à 32767 pour axes, 0/1 pour boutons)</li>
+ *   <li>1 octet : type ({@link #TYPE_BUTTON}=1, {@link #TYPE_AXIS}=2)</li>
+ *   <li>1 octet : numéro (index du bouton ou de l'axe)</li>
+ * </ul>
+ * 
+ * <h2>Exemple d'utilisation</h2>
+ * <pre>{@code
+ * JoystickReader joystick = new JoystickReader("/dev/input/js0");
+ * joystick.addListener(new JoystickListener() {
+ *     public void onButton(int button, boolean pressed) {
+ *         System.out.println("Bouton " + button + " = " + pressed);
+ *     }
+ *     public void onAxis(int axis, int value) {
+ *         System.out.println("Axe " + axis + " = " + value);
+ *     }
+ * });
+ * joystick.start();
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see JoystickListener
+ * @see JoystickMapping
  */
 public class JoystickReader implements Runnable {
     

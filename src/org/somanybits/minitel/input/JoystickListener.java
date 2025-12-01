@@ -1,7 +1,19 @@
+/*
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
+ */
 package org.somanybits.minitel.input;
 
 /**
- * Interface pour recevoir les événements joystick
+ * Interface pour recevoir les événements joystick.
+ * <p>
+ * Implémentez cette interface pour réagir aux entrées du joystick USB.
+ * Les événements sont émis par {@link JoystickReader}.
+ * </p>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see JoystickReader
  */
 public interface JoystickListener {
     

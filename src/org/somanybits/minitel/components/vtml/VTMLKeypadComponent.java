@@ -1,20 +1,35 @@
+/*
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
+ */
 package org.somanybits.minitel.components.vtml;
 
 import org.somanybits.minitel.components.ModelMComponent;
 
 /**
  * Composant Keypad pour mapper les touches du clavier aux actions de jeu.
+ * <p>
+ * Ce composant permet d'associer des touches du clavier Minitel à des
+ * fonctions JavaScript. Il supporte deux modes d'utilisation :
+ * </p>
  * 
- * Deux modes d'utilisation :
- * 1. Avec action : <keypad action="UP" key="Z" event="moveUp"/>
- *    - Mappe une touche vers une action de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
- *    - L'action peut aussi être déclenchée par le joystick
+ * <h2>Mode action (compatible joystick)</h2>
+ * <pre>{@code
+ * <keypad action="UP" key="Z" event="moveUp"/>
+ * <keypad action="ACTION1" key=" " event="fire"/>
+ * }</pre>
+ * <p>Actions disponibles : UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2</p>
  * 
- * 2. Sans action : <keypad key="1" event="doSomething"/>
- *    - Mappe directement une touche vers une fonction JavaScript
- *    - Non accessible via joystick
+ * <h2>Mode touche directe</h2>
+ * <pre>{@code
+ * <keypad key="1" event="selectOption1"/>
+ * <keypad key="P" event="pauseGame"/>
+ * }</pre>
+ * <p>Note : Les touches directes ne sont pas accessibles via joystick.</p>
  * 
- * @author eddy
+ * @author Eddy Briere
+ * @version 0.3
+ * @see VTMLLayersComponent
  */
 public class VTMLKeypadComponent extends ModelMComponent {
     

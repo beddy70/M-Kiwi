@@ -1,6 +1,6 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
  */
 package org.somanybits.minitel.server;
 
@@ -19,8 +19,29 @@ import org.somanybits.log.LogManager;
 import org.somanybits.minitel.kernel.Kernel;
 
 /**
- *
- * @author eddy
+ * Gestionnaire de modules dynamiques (MModules).
+ * <p>
+ * Cette classe charge et exécute les plugins MModule depuis le répertoire
+ * {@code plugins/mmodules/}. Les MModules sont des fichiers JAR contenant
+ * des classes qui implémentent l'interface {@link MModule}.
+ * </p>
+ * 
+ * <h2>Fonctionnement</h2>
+ * <ol>
+ *   <li>Au démarrage, tous les JAR dans {@code plugins/mmodules/} sont chargés</li>
+ *   <li>Quand une URL {@code *.mod} est demandée, le module correspondant est instancié</li>
+ *   <li>La méthode {@link MModule#getResponse()} génère le contenu VTML</li>
+ * </ol>
+ * 
+ * <h2>Exemple d'URL</h2>
+ * <pre>{@code
+ * http://localhost:8080/ServerStatus.mod?param1=value1
+ * }</pre>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see MModule
+ * @see ModelMModule
  */
 public class MModulesManager {
 

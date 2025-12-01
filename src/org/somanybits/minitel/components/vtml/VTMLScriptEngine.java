@@ -1,3 +1,7 @@
+/*
+ * Minitel-Serveur - Serveur Minitel moderne
+ * Copyright (c) 2024 Eddy Briere
+ */
 package org.somanybits.minitel.components.vtml;
 
 import org.mozilla.javascript.ClassShutter;
@@ -6,10 +10,39 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
- * Moteur JavaScript pour l'exécution de scripts dans les pages VTML
- * Utilise directement l'API Mozilla Rhino
- *
- * @author eddy
+ * Moteur JavaScript pour l'exécution de scripts dans les pages VTML.
+ * <p>
+ * Ce moteur utilise Mozilla Rhino pour exécuter du JavaScript côté serveur.
+ * Il implémente le pattern Singleton et fournit un environnement sécurisé
+ * avec une liste blanche de classes Java accessibles.
+ * </p>
+ * 
+ * <h2>Sécurité</h2>
+ * <p>
+ * Seules les classes suivantes sont accessibles depuis JavaScript :
+ * </p>
+ * <ul>
+ *   <li>Classes Minitel : Kernel, Config, GetTeletelCode, Teletel</li>
+ *   <li>Classes Java de base : String, Integer, Double, Boolean, Math, Date</li>
+ * </ul>
+ * 
+ * <h2>Variables globales</h2>
+ * <ul>
+ *   <li>{@code _currentLayers} - Référence au VTMLLayersComponent courant</li>
+ *   <li>{@code _joystickMapping} - Configuration du joystick</li>
+ * </ul>
+ * 
+ * <h2>Fonctions spéciales</h2>
+ * <ul>
+ *   <li>{@code domReady()} - Appelée après le chargement de la page</li>
+ *   <li>{@code debug(msg)} - Affiche un message dans la console</li>
+ *   <li>{@code getLayers()} - Retourne le layers courant</li>
+ * </ul>
+ * 
+ * @author Eddy Briere
+ * @version 0.3
+ * @see VTMLScriptComponent
+ * @see VTMLLayersComponent
  */
 public class VTMLScriptEngine {
 

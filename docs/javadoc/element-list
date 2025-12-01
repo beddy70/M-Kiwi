@@ -1,0 +1,12 @@
+org.somanybits.log
+org.somanybits.minitel
+org.somanybits.minitel.client
+org.somanybits.minitel.components
+org.somanybits.minitel.components.qrcode
+org.somanybits.minitel.components.vtml
+org.somanybits.minitel.events
+org.somanybits.minitel.input
+org.somanybits.minitel.kernel
+org.somanybits.minitel.server
+org.somanybits.minitel.server.mmodules
+org.somanybits.minitel.util
