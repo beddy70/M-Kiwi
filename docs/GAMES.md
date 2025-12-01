@@ -20,6 +20,11 @@ Ce guide explique comment créer des jeux interactifs pour Minitel en utilisant 
 13. [Limitations](#limitations)
 14. [Ressources](#ressources)
 
+**Annexes**
+- [Annexe A : Référence des fonctions JavaScript](#annexe-a--référence-des-fonctions-javascript)
+- [Annexe B : Référence des attributs VTML](#annexe-b--référence-des-attributs-vtml)
+- [Annexe C : Codes de référence](#annexe-c--codes-de-référence)
+
 ---
 
 ## Architecture d'un jeu
@@ -950,3 +955,146 @@ layers.beep();
 - [Exemple Tetris Couleur](../pages/games/tetris_color.vtml) - Utilise les colormaps
 - [Exemple Breakout](../pages/games/breakout.vtml) - Casse-briques avec briques colorées
 - [Exemple Space Invaders](../pages/games/invaders.vtml) - Envahisseurs colorés avec tirs
+
+---
+
+## Annexe A : Référence des fonctions JavaScript
+
+### Fonctions globales
+
+| Fonction | Description |
+|----------|-------------|
+| `getLayers()` | Retourne l'objet `_currentLayers` (conteneur principal) |
+| `domReady()` | Callback appelé automatiquement quand la page est prête |
+
+### API Layers
+
+| Méthode | Paramètres | Retour | Description |
+|---------|------------|--------|-------------|
+| `getSprite(id)` | `id`: string | Sprite | Récupère un sprite par son ID |
+| `setText(id, text)` | `id`: string, `text`: string | void | Modifie le texte d'un label |
+| `showLabel(id)` | `id`: string | void | Affiche un label caché |
+| `hideLabel(id)` | `id`: string | void | Cache un label |
+| `isLabelVisible(id)` | `id`: string | boolean | Vérifie si un label est visible |
+| `beep()` | - | void | Émet un bip Minitel |
+| `checkCollision(id1, id2)` | `id1`: string, `id2`: string | boolean | Collision entre deux sprites |
+| `checkMapCollision(id)` | `id`: string | int | Collision sprite/map (retourne code ASCII) |
+| `checkMapCollisionAt(id, x, y)` | `id`: string, `x`: int, `y`: int | int | Collision à une position donnée |
+| `setMapChar(map, x, y, char)` | `map`: int, `x`: int, `y`: int, `char`: string | void | Place un caractère dans une map |
+| `getMapChar(map, x, y)` | `map`: int, `x`: int, `y`: int | int | Lit un caractère (code ASCII) |
+| `setMapColor(map, x, y, color)` | `map`: int, `x`: int, `y`: int, `color`: int | void | Définit la couleur à une position |
+| `getMapColor(map, x, y)` | `map`: int, `x`: int, `y`: int | int | Lit la couleur à une position |
+| `clearMapLine(map, y)` | `map`: int, `y`: int | void | Efface une ligne (caractères + couleurs) |
+| `shiftMapDown(map, from, to)` | `map`: int, `from`: int, `to`: int | void | Décale les lignes vers le bas |
+
+### API Sprite
+
+| Méthode | Paramètres | Retour | Description |
+|---------|------------|--------|-------------|
+| `show(frame)` | `frame`: int | void | Affiche le sprite à la frame donnée |
+| `show(frame, color)` | `frame`: int, `color`: int | void | Affiche avec une couleur spécifique |
+| `hide()` | - | void | Cache le sprite |
+| `move(x, y)` | `x`: int, `y`: int | void | Déplace le sprite |
+| `setColor(color)` | `color`: int (0-7) | void | Définit la couleur du sprite |
+| `getColor()` | - | int | Retourne la couleur actuelle |
+| `getX()` | - | int | Position X actuelle |
+| `getY()` | - | int | Position Y actuelle |
+| `getWidth()` | - | int | Largeur du sprite |
+| `getHeight()` | - | int | Hauteur du sprite |
+
+### API Joystick
+
+| Méthode | Paramètres | Retour | Description |
+|---------|------------|--------|-------------|
+| `joystick.mapButton(btn, action)` | `btn`: int, `action`: string | void | Mappe un bouton vers une action |
+| `joystick.mapAxis(axis, action)` | `axis`: string, `action`: string | void | Mappe un axe (ex: "0+", "1-") |
+| `joystick.setThreshold(value)` | `value`: int (0-32767) | void | Seuil de détection des axes |
+| `joystick.printMapping()` | - | void | Affiche le mapping actuel (debug) |
+| `joystick.resetMapping()` | - | void | Réinitialise le mapping par défaut |
+
+---
+
+## Annexe B : Référence des attributs VTML
+
+### Élément `<layers>`
+
+| Attribut | Type | Défaut | Description |
+|----------|------|--------|-------------|
+| `id` | string | - | Identifiant pour JavaScript |
+| `left` | int | 0 | Position X |
+| `top` | int | 0 | Position Y |
+| `width` | int | 40 | Largeur en caractères |
+| `height` | int | 24 | Hauteur en lignes |
+
+### Élément `<spritedef>`
+
+| Attribut | Type | Défaut | Description |
+|----------|------|--------|-------------|
+| `id` | string | - | Identifiant unique |
+| `width` | int | 1 | Largeur en caractères |
+| `height` | int | 1 | Hauteur en lignes |
+| `type` | string | "char" | `char` ou `bitmap` |
+
+### Élément `<label>`
+
+| Attribut | Type | Défaut | Description |
+|----------|------|--------|-------------|
+| `id` | string | - | Identifiant pour JavaScript |
+| `x` | int | 0 | Position X |
+| `y` | int | 0 | Position Y |
+| `width` | int | 10 | Largeur (texte tronqué ou paddé) |
+| `visibility` | string | `visible` | `visible` ou `hidden` |
+
+### Élément `<keypad>`
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `key` | string | Touche clavier associée |
+| `event` | string | Nom de la fonction JavaScript à appeler |
+| `action` | string | Action joystick : `UP`, `DOWN`, `LEFT`, `RIGHT`, `ACTION1`, `ACTION2` |
+
+### Élément `<timer>`
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `event` | string | Nom de la fonction JavaScript à appeler |
+| `interval` | int | Intervalle en millisecondes |
+
+---
+
+## Annexe C : Codes de référence
+
+### Codes couleur
+
+| Code | Couleur | Utilisation |
+|------|---------|-------------|
+| 0 | Noir | `setColor(0)`, `setMapColor(map, x, y, 0)` |
+| 1 | Rouge | `setColor(1)`, `setMapColor(map, x, y, 1)` |
+| 2 | Vert | `setColor(2)`, `setMapColor(map, x, y, 2)` |
+| 3 | Jaune | `setColor(3)`, `setMapColor(map, x, y, 3)` |
+| 4 | Bleu | `setColor(4)`, `setMapColor(map, x, y, 4)` |
+| 5 | Magenta | `setColor(5)`, `setMapColor(map, x, y, 5)` |
+| 6 | Cyan | `setColor(6)`, `setMapColor(map, x, y, 6)` |
+| 7 | Blanc | `setColor(7)`, `setMapColor(map, x, y, 7)` |
+
+### Codes ASCII courants
+
+| Caractère | Code | Utilisation |
+|-----------|------|-------------|
+| Espace | 32 | `if (char == 32)` → vide |
+| `#` | 35 | Murs, obstacles |
+| `*` | 42 | Étoiles, projectiles |
+| `@` | 64 | Joueur |
+| `O` | 79 | Balles |
+| `X` | 88 | Cibles, items |
+
+### Actions joystick
+
+| Action | Description | Mapping clavier typique |
+|--------|-------------|-------------------------|
+| `UP` | Direction haut | Z, W, ↑ |
+| `DOWN` | Direction bas | S, ↓ |
+| `LEFT` | Direction gauche | Q, A, ← |
+| `RIGHT` | Direction droite | D, → |
+| `ACTION1` | Action principale | Espace, Entrée |
+| `ACTION2` | Action secondaire | Shift, Ctrl |
