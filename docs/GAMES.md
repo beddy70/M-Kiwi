@@ -682,6 +682,12 @@ layers.setMapColor(mapIndex, x, y, 1);  // 1 = rouge
 // Lire la couleur à une position
 var color = layers.getMapColor(mapIndex, x, y);
 
+// Lire un caractère à une position (retourne le code ASCII)
+var charCode = layers.getMapChar(mapIndex, x, y);
+if (charCode != 0 && charCode != 32) {  // Pas vide ni espace
+  // Il y a quelque chose à cette position
+}
+
 // Effacer une ligne entière (pour Tetris) - efface aussi les couleurs
 layers.clearMapLine(mapIndex, y);
 
@@ -721,19 +727,52 @@ layers.shiftMapDown(mapIndex, fromY, toY);
 ```xml
 <label id="score" x="1" y="0" width="12">Score: 0</label>
 <label id="lives" x="30" y="0" width="10">Vies: 3</label>
+<!-- Label caché par défaut, affiché uniquement en fin de partie -->
+<label id="gameover" x="12" y="10" width="16" visibility="hidden">GAME OVER!</label>
 ```
 
-```javascript
-var score = 0;
+#### Attributs des labels
 
-function addPoints(points) {
-  score += points;
-  layers.setText("score", "Score: " + score);
+| Attribut | Type | Défaut | Description |
+|----------|------|--------|-------------|
+| `id` | string | - | Identifiant pour JavaScript |
+| `x` | int | 0 | Position X |
+| `y` | int | 0 | Position Y |
+| `width` | int | 10 | Largeur (texte tronqué ou paddé) |
+| `visibility` | string | `visible` | `visible` ou `hidden` |
+
+#### API JavaScript des labels
+
+```javascript
+// Modifier le texte d'un label
+layers.setText("score", "Score: " + score);
+
+// Afficher un label caché
+layers.showLabel("gameover");
+
+// Cacher un label
+layers.hideLabel("gameover");
+
+// Vérifier si un label est visible
+if (layers.isLabelVisible("gameover")) {
+  // ...
+}
+```
+
+#### Exemple : Message de fin de partie
+
+```javascript
+function gameOver() {
+  gameRunning = false;
+  layers.setText("gameover", "GAME OVER!");
+  layers.showLabel("gameover");  // Affiche le label caché
+  layers.beep();
 }
 
-function gameOver() {
-  layers.setText("score", "GAME OVER!");
-  layers.beep();
+function victory() {
+  gameRunning = false;
+  layers.setText("gameover", "VICTOIRE!");
+  layers.showLabel("gameover");
 }
 ```
 
@@ -908,3 +947,6 @@ layers.beep();
 - [Exemple Snake](../pages/games/snake.vtml)
 - [Exemple Pong](../pages/games/pong.vtml)
 - [Exemple Tetris](../pages/games/tetris.vtml)
+- [Exemple Tetris Couleur](../pages/games/tetris_color.vtml) - Utilise les colormaps
+- [Exemple Breakout](../pages/games/breakout.vtml) - Casse-briques avec briques colorées
+- [Exemple Space Invaders](../pages/games/invaders.vtml) - Envahisseurs colorés avec tirs

@@ -547,8 +547,12 @@ public class MinitelPageReader {
                 int y = parseInt(attrs.get("y"), 0);
                 int labelWidth = parseInt(attrs.get("width"), 10);
                 String text = textContent != null ? textContent.trim() : "";
+                String visibility = attrs.get("visibility");
                 VTMLLabelComponent label = new VTMLLabelComponent(id, x, y, labelWidth, text);
-                System.out.println("🏷️ Label: id=" + id + ", pos=(" + x + "," + y + "), width=" + labelWidth + ", text='" + text + "'");
+                if ("hidden".equals(visibility)) {
+                    label.setVisible(false);
+                }
+                System.out.println("🏷️ Label: id=" + id + ", pos=(" + x + "," + y + "), width=" + labelWidth + ", text='" + text + "'" + (label.isVisible() ? "" : ", hidden"));
                 // Chercher le layers parent
                 MComponent parent = currentComponent;
                 while (parent != null) {

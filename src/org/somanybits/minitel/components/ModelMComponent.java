@@ -19,6 +19,7 @@ public class ModelMComponent implements MComponent {
     private String textContent;
     private String id;
     private String name;
+    private boolean visible = true;  // Visibilité du composant (par défaut visible)
     protected MComponent parent;
     protected ArrayList<MComponent> childs = new ArrayList<MComponent>();
     
@@ -121,6 +122,20 @@ public class ModelMComponent implements MComponent {
     @Override
     public String getTextContent() {
         return textContent;
+    }
+    
+    /**
+     * Retourne la visibilité du composant
+     */
+    public boolean isVisible() {
+        return visible;
+    }
+    
+    /**
+     * Définit la visibilité du composant
+     */
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
 }

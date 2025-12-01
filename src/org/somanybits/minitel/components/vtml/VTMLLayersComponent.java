@@ -404,6 +404,34 @@ public class VTMLLayersComponent extends ModelMComponent {
         }
     }
     
+    /**
+     * Affiche un label (appelable depuis JavaScript)
+     */
+    public void showLabel(String id) {
+        VTMLLabelComponent label = labels.get(id);
+        if (label != null) {
+            label.setVisible(true);
+        }
+    }
+    
+    /**
+     * Cache un label (appelable depuis JavaScript)
+     */
+    public void hideLabel(String id) {
+        VTMLLabelComponent label = labels.get(id);
+        if (label != null) {
+            label.setVisible(false);
+        }
+    }
+    
+    /**
+     * Vérifie si un label est visible (appelable depuis JavaScript)
+     */
+    public boolean isLabelVisible(String id) {
+        VTMLLabelComponent label = labels.get(id);
+        return label != null && label.isVisible();
+    }
+    
     // ========== SONS ==========
     
     /**
@@ -504,9 +532,11 @@ public class VTMLLayersComponent extends ModelMComponent {
             }
         }
         
-        // Dessiner les labels par-dessus tout
+        // Dessiner les labels visibles par-dessus tout
         for (VTMLLabelComponent label : labels.values()) {
-            drawLabel(label);
+            if (label.isVisible()) {
+                drawLabel(label);
+            }
         }
     }
     
