@@ -4,6 +4,23 @@
 
 Minitel-Serveur est une plateforme Java innovante qui transforme un terminal Minitel en navigateur web moderne grâce au format **VTML** (Videotex Markup Language). Le projet crée un pont technologique entre le protocole Videotex historique et les services web contemporains.
 
+## Table des matières
+
+- [Fonctionnalités](#-fonctionnalités)
+- [Architecture](#%EF%B8%8F-architecture)
+- [Prérequis](#-prérequis)
+- [Installation et Configuration](#-installation-et-configuration)
+- [Démarrage Rapide](#-démarrage-rapide)
+- [Format VTML](#-format-vtml-videotex-markup-language)
+- [Modules Dynamiques (MModules)](#-modules-dynamiques-mmodules)
+- [Composants Graphiques](#-composants-graphiques)
+- [Navigation et Événements](#-navigation-et-événements)
+- [Développement et Debug](#%EF%B8%8F-développement-et-debug)
+- [Ressources Techniques](#-ressources-techniques)
+- [Contribution](#-contribution)
+
+---
+
 ## 🚀 Fonctionnalités
 
 - **🌐 Serveur HTTP** avec support du format VTML
@@ -79,9 +96,10 @@ chmod +x switchTo9600b.sh
 ./switchTo9600b.sh
 ```
 
-### 4. Configuration Serveur
+### 4. Fichier de Configuration
 
-Éditez `config.json` :
+Le fichier `config.json` contient toute la configuration du serveur et du client :
+
 ```json
 {
   "server": {
@@ -91,9 +109,43 @@ chmod +x switchTo9600b.sh
   "path": {
     "root_path": "./root/",
     "plugins_path": "./plugins/"
+  },
+  "client": {
+    "serial_port": "/dev/serial0",
+    "serial_baud": 9600,
+    "joystick_device": "/dev/input/js0",
+    "joystick_enabled": true,
+    "joystick_mapping": {
+      "buttons": {
+        "0": "ACTION1",
+        "1": "ACTION2"
+      },
+      "axes": {
+        "0+": "RIGHT",
+        "0-": "LEFT",
+        "1+": "DOWN",
+        "1-": "UP"
+      },
+      "axis_threshold": 16000
+    }
   }
 }
 ```
+
+#### Options de configuration
+
+| Section | Clé | Description |
+|---------|-----|-------------|
+| `server.port` | int | Port HTTP du serveur (défaut: 8080) |
+| `server.defaultCharset` | string | Encodage des pages (défaut: utf-8) |
+| `path.root_path` | string | Répertoire des pages VTML |
+| `path.plugins_path` | string | Répertoire des MModules |
+| `client.serial_port` | string | Port série du Minitel |
+| `client.serial_baud` | int | Vitesse: 1200, 4800 ou 9600 |
+| `client.joystick_enabled` | bool | Activer le support joystick USB |
+| `client.joystick_device` | string | Périphérique joystick Linux |
+| `client.joystick_mapping` | object | Mapping des boutons/axes |
+
 ## 🚀 Démarrage Rapide
 
 ### 1. Compilation
