@@ -333,7 +333,22 @@ piece.move(x, y);
 Chaque sprite peut avoir des couleurs différentes pour chaque caractère grâce à `<colorsprite>`.
 Fonctionne de manière similaire à `<colormap>` pour les maps.
 
-#### Syntaxe VTML
+#### Codes couleur
+
+| Caractère | Couleur |
+|-----------|---------|
+| `0` | Noir |
+| `1` | Rouge |
+| `2` | Vert |
+| `3` | Jaune |
+| `4` | Bleu |
+| `5` | Magenta |
+| `6` | Cyan |
+| `7` ou espace | Couleur par défaut du sprite |
+
+#### Mode `char`
+
+En mode `char`, la colorsprite a les mêmes dimensions que le sprite :
 
 ```xml
 <spritedef id="alien" width="3" height="2" type="char">
@@ -352,31 +367,31 @@ Dans cet exemple :
 - `/` en **rouge** (1), `O` en **vert** (2), `\` en **rouge** (1)
 - `\_/` tout en **jaune** (3)
 
-#### Codes couleur
+#### Mode `bitmap`
 
-| Caractère | Couleur |
-|-----------|---------|
-| `0` | Noir |
-| `1` | Rouge |
-| `2` | Vert |
-| `3` | Jaune |
-| `4` | Bleu |
-| `5` | Magenta |
-| `6` | Cyan |
-| `7` ou espace | Couleur par défaut du sprite |
+En mode `bitmap`, la colorsprite correspond aux **caractères semi-graphiques** (2×3 pixels), pas aux pixels.
 
-#### Exemple : Envahisseur multicolore
+| Pixels (largeur × hauteur) | Caractères colorsprite |
+|----------------------------|------------------------|
+| 10×1, 10×2, 10×3           | 5×1                    |
+| 10×4, 10×5, 10×6           | 5×2                    |
+| 11×4                       | 6×2                    |
+
+Formule : `largeur = ceil(pixels_largeur / 2)`, `hauteur = ceil(pixels_hauteur / 3)`
 
 ```xml
-<spritedef id="invader" width="5" height="3" type="char">
+<!-- Sprite bitmap 6×6 pixels = 3×2 caractères -->
+<spritedef id="ball" width="3" height="2" type="bitmap">
   <sprite>
-    <line> /_\ </line>
-    <line>|o o|</line>
-    <line> \_/ </line>
+    <line> #### </line>
+    <line>######</line>
+    <line>######</line>
+    <line>######</line>
+    <line>######</line>
+    <line> #### </line>
     <colorsprite>
-      <line> 111 </line>
-      <line>52225</line>
-      <line> 333 </line>
+      <line>666</line>
+      <line>666</line>
     </colorsprite>
   </sprite>
 </spritedef>
@@ -845,6 +860,8 @@ function victory() {
 layers.beep();
 ```
 
+**⚠️ Attention** : Le beep est **bloquant**. Pendant la durée du bip, les entrées clavier et joystick sont ignorées. Utilisez-le avec parcimonie pour ne pas gêner la jouabilité.
+
 ---
 
 ## Exemples complets
@@ -998,7 +1015,7 @@ layers.beep();
 
 - **16 sprites maximum** par layers (définis avec `<spritedef>`)
 - **3 maps maximum** empilées
-- **Pas de son complexe** : Seulement le bip Minitel (`layers.beep()`)
+- **Pas de son complexe** : Seulement le bip Minitel (`layers.beep()`), qui est bloquant
 - **40x25 caractères** : Résolution fixe du Minitel (ligne 0 = ligne d'info)
 
 ---
@@ -1033,7 +1050,7 @@ layers.beep();
 | `showLabel(id)` | `id`: string | void | Affiche un label caché |
 | `hideLabel(id)` | `id`: string | void | Cache un label |
 | `isLabelVisible(id)` | `id`: string | boolean | Vérifie si un label est visible |
-| `beep()` | - | void | Émet un bip Minitel |
+| `beep()` | - | void | Émet un bip Minitel (bloquant) |
 | `checkCollision(id1, id2)` | `id1`: string, `id2`: string | boolean | Collision entre deux sprites |
 | `checkMapCollision(id)` | `id`: string | int | Collision sprite/map (retourne code ASCII) |
 | `checkMapCollisionAt(id, x, y)` | `id`: string, `x`: int, `y`: int | int | Collision à une position donnée |

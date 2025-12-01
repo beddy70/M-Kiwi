@@ -86,6 +86,9 @@
     <spritedef id="paddle" width="10" height="1" type="bitmap">
       <sprite>
         <line>##########</line>
+        <colorsprite>
+          <line>17771</line>
+        </colorsprite>
       </sprite>
     </spritedef>
     

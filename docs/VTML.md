@@ -451,6 +451,10 @@ Fonctionne de manière similaire à `<colormap>` pour les maps.
 | `6` | Cyan |
 | `7` ou espace | Blanc (ou couleur par défaut du sprite) |
 
+#### Mode `char`
+
+En mode `char`, la colorsprite a les mêmes dimensions que le sprite :
+
 ```xml
 <spritedef id="alien" width="3" height="2" type="char">
   <sprite>
@@ -467,6 +471,36 @@ Fonctionne de manière similaire à `<colormap>` pour les maps.
 Dans cet exemple, le sprite "alien" aura :
 - `/` en rouge (1), `O` en vert (2), `\` en rouge (1)
 - `\_/` tout en jaune (3)
+
+#### Mode `bitmap`
+
+En mode `bitmap`, la colorsprite correspond aux **caractères semi-graphiques** (2×3 pixels chacun), pas aux pixels.
+
+| Pixels (largeur × hauteur) | Caractères colorsprite |
+|----------------------------|------------------------|
+| 10×1, 10×2, 10×3           | 5×1                    |
+| 10×4, 10×5, 10×6           | 5×2                    |
+| 11×4                       | 6×2                    |
+
+Formule : `largeur_couleur = ceil(largeur_pixels / 2)`, `hauteur_couleur = ceil(hauteur_pixels / 3)`
+
+```xml
+<!-- Sprite bitmap 6×6 pixels = 3×2 caractères -->
+<spritedef id="ball" width="3" height="2" type="bitmap">
+  <sprite>
+    <line> #### </line>
+    <line>######</line>
+    <line>######</line>
+    <line>######</line>
+    <line>######</line>
+    <line> #### </line>
+    <colorsprite>
+      <line>666</line>
+      <line>666</line>
+    </colorsprite>
+  </sprite>
+</spritedef>
+```
 
 **Note** : Si un caractère de `<colorsprite>` est un espace ou non défini, la couleur par défaut du sprite (définie via `sprite.setColor()`) sera utilisée.
 

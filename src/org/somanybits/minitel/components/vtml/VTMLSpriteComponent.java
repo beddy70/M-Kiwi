@@ -111,10 +111,14 @@ public class VTMLSpriteComponent extends ModelMComponent {
             return;
         }
         
-        // Utiliser les mêmes dimensions que les données
-        char[][] charData = getData();
-        int height = charData.length;
-        int width = height > 0 ? charData[0].length : 0;
+        // Trouver les dimensions de la colorsprite (indépendantes des pixels)
+        int height = colorRows.size();
+        int width = 0;
+        for (String row : colorRows) {
+            if (row.length() > width) {
+                width = row.length();
+            }
+        }
         
         colorData = new int[height][width];
         
@@ -126,9 +130,9 @@ public class VTMLSpriteComponent extends ModelMComponent {
         }
         
         // Remplir avec les couleurs définies
-        for (int y = 0; y < colorRows.size() && y < height; y++) {
+        for (int y = 0; y < colorRows.size(); y++) {
             String row = colorRows.get(y);
-            for (int x = 0; x < row.length() && x < width; x++) {
+            for (int x = 0; x < row.length(); x++) {
                 char c = row.charAt(x);
                 if (c >= '0' && c <= '7') {
                     colorData[y][x] = c - '0';
