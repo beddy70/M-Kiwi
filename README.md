@@ -445,5 +445,5 @@ Ce projet est ouvert aux contributions ! N'hésitez pas à :
 - Améliorer la documentation
 
 **Auteur** : Eddy BRIERE (peassembler@yahoo.fr)  
-**Version** : 0.4  
+**Version** : 0.5  
 **Licence** : Open Source
