@@ -114,7 +114,17 @@ Le client intègre un système d'**auto-négociation automatique** de la vitesse
 > ./switchTo9600b.sh
 > ```
 
-### 4. Fichier de Configuration
+### 4. Désactiver le mode ECHO
+
+Afin de réaliser le bon fonctionnement du client VTML, il est important de désactiver le mode ECHO du Minitel. Pour cela, réaliser la combinaison de touches suivante :
+
+```
+[Fnct] + [T]  puis  [E]
+```
+
+> **Note** : Cette manipulation doit être effectuée après chaque mise sous tension du Minitel.
+
+### 5. Fichier de Configuration
 
 Le fichier `config.json` contient toute la configuration du serveur et du client :
 
