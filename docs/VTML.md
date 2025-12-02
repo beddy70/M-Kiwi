@@ -37,7 +37,7 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 
 ### Scripting
 - [`<script>`](#script) - Code JavaScript
-  - [Variables globales](#variables-globales-1)
+  - [Variables globales](#variables-globales)
   - [API Storage](#api-storage-persistant-entre-pages)
   - [Création dynamique](#création-dynamique-déléments)
   - [Requêtes HTTP](#requêtes-http)
