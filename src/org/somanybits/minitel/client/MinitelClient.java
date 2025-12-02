@@ -51,7 +51,7 @@ import org.somanybits.minitel.kernel.Kernel;
  * }</pre>
  * 
  * @author Eddy Briere
- * @version 0.3
+ * @version 0.5
  * @see MinitelConnection
  * @see MinitelPageReader
  * @see VTMLLayersComponent
