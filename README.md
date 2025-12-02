@@ -121,7 +121,7 @@ Afin de réaliser le bon fonctionnement du client VTML, il est important de dés
 ```
 [Fnct] + [T]  puis  [E]
 ```
-Si lorsque vous tapé des touches au clavier elles apparaissent alors le mode ECHO (OFF) n'est pas activé. Recommencez la combinaison de touches ci-dessus. 
+Si lorsque vous tapé des touches au clavier et que ces dernières apparaissent, alors le mode ECHO (OFF) n'est pas activé. Recommencez la combinaison de touches ci-dessus. 
 
 > **Note** : Cette manipulation doit être effectuée après chaque mise sous tension du Minitel.
 
