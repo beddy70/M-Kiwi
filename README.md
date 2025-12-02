@@ -177,6 +177,22 @@ Le fichier `config.json` contient toute la configuration du serveur et du client
 
 ## 🚀 Démarrage Rapide
 
+### Déploiement
+
+Un script de déploiement est fourni pour copier les fichiers nécessaires vers un dossier cible (ex: Raspberry Pi) :
+
+```bash
+./deploy.sh
+```
+
+Le script copie :
+- Le JAR compilé (`dist/`)
+- Les pages VTML (`root/`)
+- Les librairies (`lib/`)
+- Les plugins (`plugins/`)
+- Les scripts de démarrage (`*.sh`)
+- Le fichier de configuration (`config.json`)
+
 ### 1. Compilation
 ```bash
 # Compiler le projet
