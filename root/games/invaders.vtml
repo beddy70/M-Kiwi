@@ -1,0 +1,572 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<minitel>
+  <layers id="game" left="0" top="1" width="40" height="22">
+    
+    <!-- Map 0: Envahisseurs (remplie par JS) -->
+    <map>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+    </map>
+    
+    <!-- Vaisseau du joueur: 5x3 pixels en bitmap avec couleurs -->
+    <spritedef id="ship" width="5" height="3" type="bitmap">
+      <sprite>
+        <line>  #  </line>
+        <line> ### </line>
+        <line>#####</line>
+       </sprite>
+    </spritedef>
+    
+    <!-- Tir du joueur -->
+    <spritedef id="bullet" width="1" height="2" type="bitmap">
+      <sprite>
+        <line>#</line>
+        <line>#</line>
+      </sprite>
+    </spritedef>
+    
+    <!-- Tirs ennemis (6 sprites pour permettre plusieurs tirs) -->
+    <spritedef id="ebullet0" width="1" height="2" type="bitmap">
+      <sprite>
+        <line>#</line>
+        <line>#</line>
+      </sprite>
+    </spritedef>
+    <spritedef id="ebullet1" width="1" height="2" type="bitmap">
+      <sprite>
+        <line>#</line>
+        <line>#</line>
+      </sprite>
+    </spritedef>
+    <spritedef id="ebullet2" width="1" height="2" type="bitmap">
+      <sprite>
+        <line>#</line>
+        <line>#</line>
+      </sprite>
+    </spritedef>
+    <spritedef id="ebullet3" width="1" height="2" type="bitmap">
+      <sprite>
+        <line>#</line>
+        <line>#</line>
+      </sprite>
+    </spritedef>
+    <spritedef id="ebullet4" width="1" height="2" type="bitmap">
+      <sprite>
+        <line>#</line>
+        <line>#</line>
+      </sprite>
+    </spritedef>
+    <spritedef id="ebullet5" width="1" height="2" type="bitmap">
+      <sprite>
+        <line>#</line>
+        <line>#</line>
+      </sprite>
+    </spritedef>
+    
+    <!-- Labels -->
+    <label id="score" x="1" y="0" width="14">Score: 0</label>
+    <label id="lives" x="28" y="0" width="10">Vies: 3</label>
+    <label id="gameover" x="12" y="10" width="16" visibility="hidden"></label>
+    
+    <!-- Contrôles -->
+    <keypad action="LEFT" key="Q" event="moveLeft"/>
+    <keypad action="RIGHT" key="D" event="moveRight"/>
+    <keypad action="UP" key="Z" event="fire"/>
+    <keypad action="ACTION1" event="fire"/>
+    <keypad action="ACTION2" event="fire"/>
+    
+    <!-- Game loop -->
+    <timer event="gameLoop" interval="100"></timer>
+    
+  </layers>
+  
+  <div left="0" top="23" width="40" height="1">
+    <row>   [Q] Gauche  [D] Droite  [Z] Tir     </row>
+  </div>
+  
+  <script>
+    // Dimensions
+    var FIELD_LEFT = 1;
+    var FIELD_RIGHT = 38;
+    var FIELD_TOP = 2;
+    var FIELD_BOTTOM = 20;
+    
+    // Map des envahisseurs
+    var INVADERS_MAP = 0;
+    
+    // Configuration des envahisseurs
+    var INVADER_ROWS = 4;
+    var INVADER_COLS = 8;
+    var INVADER_WIDTH = 3;  // Largeur d'un envahisseur + espace
+    var INVADER_START_X = 5;
+    var INVADER_START_Y = 3;
+    
+    // Caractères des envahisseurs par rangée (du haut vers le bas)
+    var INVADER_CHARS = ['W', 'M', 'X', 'V'];
+    // Couleurs par rangée: magenta, cyan, vert, jaune
+    var INVADER_COLORS = [5, 6, 2, 3];
+    // Points par rangée (plus haut = plus de points)
+    var INVADER_POINTS = [40, 30, 20, 10];
+    
+    // État du joueur
+    var shipX = 18;
+    var shipY = 19;
+    
+    // État du tir joueur
+    var bulletX = 0;
+    var bulletY = 0;
+    var bulletActive = false;
+    
+    // État des tirs ennemis (6 tirs max)
+    var enemyBullets = [
+      {x: 0, y: 0, active: false},
+      {x: 0, y: 0, active: false},
+      {x: 0, y: 0, active: false},
+      {x: 0, y: 0, active: false},
+      {x: 0, y: 0, active: false},
+      {x: 0, y: 0, active: false}
+    ];
+    
+    // État des envahisseurs
+    var invadersX = 0;  // Décalage horizontal du groupe
+    var invadersY = 0;  // Décalage vertical du groupe
+    var invadersDX = 1; // Direction horizontale
+    // Nombre total d'envahisseurs = INVADER_ROWS * INVADER_COLS = 4 * 8 = 32
+    var invadersAlive = 32;
+    // Tableau des envahisseurs vivants [row][col] = true/false
+    var invadersGrid = [
+      [true, true, true, true, true, true, true, true],
+      [true, true, true, true, true, true, true, true],
+      [true, true, true, true, true, true, true, true],
+      [true, true, true, true, true, true, true, true]
+    ];
+    
+    // État du jeu
+    var score = 0;
+    var lives = 3;
+    var gameOver = false;
+    var moveCounter = 0;
+    var fireCounter = 0;
+    
+    function getLayers() {
+      return _currentLayers;
+    }
+    
+    function domReady() {
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Initialiser les envahisseurs
+      initInvaders(layers);
+      
+      // Afficher le vaisseau
+      var ship = layers.getSprite("ship");
+      if (ship != null) {
+        ship.setColor(7);  // Blanc
+        ship.show(0);
+        ship.move(shipX, shipY);
+      }
+      
+      // Cacher le tir
+      var bullet = layers.getSprite("bullet");
+      if (bullet != null) {
+        bullet.setColor(7);
+        bullet.hide();
+      }
+      
+      // Cacher les tirs ennemis
+      for (var i = 0; i < 6; i++) {
+        var eb = layers.getSprite("ebullet" + i);
+        if (eb != null) {
+          eb.setColor(1);  // Rouge
+          eb.hide();
+        }
+      }
+    }
+    
+    function initInvaders(layers) {
+      // Dessiner tous les envahisseurs
+      for (var row = 0; row < INVADER_ROWS; row++) {
+        var c = INVADER_CHARS[row];
+        var color = INVADER_COLORS[row];
+        var y = INVADER_START_Y + row * 2;
+        
+        for (var col = 0; col < INVADER_COLS; col++) {
+          var x = INVADER_START_X + col * INVADER_WIDTH;
+          
+          // Dessiner l'envahisseur (2 caractères)
+          layers.setMapChar(INVADERS_MAP, x, y, c);
+          layers.setMapColor(INVADERS_MAP, x, y, color);
+          layers.setMapChar(INVADERS_MAP, x + 1, y, c);
+          layers.setMapColor(INVADERS_MAP, x + 1, y, color);
+        }
+      }
+    }
+    
+    function redrawInvaders(layers) {
+      // Redessiner tous les envahisseurs vivants à leur nouvelle position
+      for (var row = 0; row < INVADER_ROWS; row++) {
+        var c = INVADER_CHARS[row];
+        var color = INVADER_COLORS[row];
+        var y = INVADER_START_Y + row * 2;
+        
+        for (var col = 0; col < INVADER_COLS; col++) {
+          if (invadersGrid[row] && invadersGrid[row][col]) {
+            var x = INVADER_START_X + col * INVADER_WIDTH;
+            layers.setMapChar(INVADERS_MAP, x, y, c);
+            layers.setMapColor(INVADERS_MAP, x, y, color);
+            layers.setMapChar(INVADERS_MAP, x + 1, y, c);
+            layers.setMapColor(INVADERS_MAP, x + 1, y, color);
+          }
+        }
+      }
+    }
+    
+    function moveLeft() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      if (shipX > FIELD_LEFT) {
+        shipX -= 2;
+        var ship = layers.getSprite("ship");
+        if (ship != null) {
+          ship.move(shipX, shipY);
+        }
+      }
+    }
+    
+    function moveRight() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      if (shipX < FIELD_RIGHT - 3) {
+        shipX += 2;
+        var ship = layers.getSprite("ship");
+        if (ship != null) {
+          ship.move(shipX, shipY);
+        }
+      }
+    }
+    
+    function fire() {
+      if (gameOver) return;
+      if (bulletActive) return;
+      
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      bulletActive = true;
+      bulletX = shipX + 1;
+      bulletY = shipY - 1;
+      
+      var bullet = layers.getSprite("bullet");
+      if (bullet != null) {
+        bullet.show(0);
+        bullet.move(bulletX, bulletY);
+      }
+    }
+    
+    function getInvaderAt(layers, x, y) {
+      // Retourne l'index de rangée si un envahisseur est présent, -1 sinon
+      var c = layers.getMapChar(INVADERS_MAP, x, y);
+      if (c != 0 && c != 32) {
+        for (var row = 0; row < INVADER_ROWS; row++) {
+          if (c == INVADER_CHARS[row].charCodeAt(0)) {
+            return row;
+          }
+        }
+      }
+      return -1;
+    }
+    
+    function killInvader(layers, x, y) {
+      // Trouver la colonne de l'envahisseur
+      var col = Math.floor((x - INVADER_START_X) / INVADER_WIDTH);
+      // Trouver la rangée
+      var row = Math.floor((y - INVADER_START_Y) / 2);
+      
+      // Marquer comme mort dans la grille
+      if (row >= 0 && row < INVADER_ROWS && col >= 0 && col < INVADER_COLS) {
+        invadersGrid[row][col] = false;
+      }
+      
+      // Trouver le début de l'envahisseur pour l'effacer
+      var invX = INVADER_START_X + col * INVADER_WIDTH;
+      
+      // Effacer l'envahisseur
+      layers.setMapChar(INVADERS_MAP, invX, y, ' ');
+      layers.setMapChar(INVADERS_MAP, invX + 1, y, ' ');
+      
+      invadersAlive--;
+    }
+    
+    function updateBullet(layers) {
+      if (!bulletActive) return;
+      
+      bulletY--;
+      
+      if (bulletY < FIELD_TOP) {
+        // Tir sorti de l'écran
+        bulletActive = false;
+        var bullet = layers.getSprite("bullet");
+        if (bullet != null) {
+          bullet.hide();
+        }
+        return;
+      }
+      
+      // Vérifier collision avec envahisseur
+      var row = getInvaderAt(layers, bulletX, bulletY);
+      if (row >= 0) {
+        // Touché!
+        killInvader(layers, bulletX, bulletY);
+        score += INVADER_POINTS[row];
+        layers.setText("score", "Score: " + score);
+        
+        bulletActive = false;
+        var bullet = layers.getSprite("bullet");
+        if (bullet != null) {
+          bullet.hide();
+        }
+        
+        // Victoire?
+        if (invadersAlive <= 0) {
+          gameOver = true;
+          layers.setText("gameover", "VICTOIRE!");
+          layers.showLabel("gameover");
+        }
+        return;
+      }
+      
+      // Mettre à jour la position
+      var bullet = layers.getSprite("bullet");
+      if (bullet != null) {
+        bullet.move(bulletX, bulletY);
+      }
+    }
+    
+    function updateEnemyBullets(layers) {
+      for (var i = 0; i < 6; i++) {
+        var eb = enemyBullets[i];
+        if (!eb.active) continue;
+        
+        eb.y++;
+        
+        if (eb.y > FIELD_BOTTOM) {
+          // Tir sorti
+          eb.active = false;
+          var sprite = layers.getSprite("ebullet" + i);
+          if (sprite != null) {
+            sprite.hide();
+          }
+          continue;
+        }
+        
+        // Collision avec le joueur
+        if (eb.y >= shipY && eb.y <= shipY + 1) {
+          if (eb.x >= shipX && eb.x <= shipX + 2) {
+            // Touché!
+            eb.active = false;
+            var sprite = layers.getSprite("ebullet" + i);
+            if (sprite != null) {
+              sprite.hide();
+            }
+            
+            lives--;
+            layers.setText("lives", "Vies: " + lives);
+            
+            if (lives <= 0) {
+              gameOver = true;
+              layers.setText("gameover", "GAME OVER!");
+              layers.showLabel("gameover");
+            }
+            continue;
+          }
+        }
+        
+        // Mettre à jour position
+        var sprite = layers.getSprite("ebullet" + i);
+        if (sprite != null) {
+          sprite.move(eb.x, eb.y);
+        }
+      }
+    }
+    
+    function enemyFire(layers) {
+      // Trouver un slot libre
+      var slot = -1;
+      for (var i = 0; i < 6; i++) {
+        if (!enemyBullets[i].active) {
+          slot = i;
+          break;
+        }
+      }
+      if (slot < 0) return;  // Plus de slots libres
+      
+      // Trouver la rangée la plus haute avec des envahisseurs vivants
+      var highestRow = INVADER_ROWS;
+      for (var row = 0; row < INVADER_ROWS; row++) {
+        for (var col = 0; col < INVADER_COLS; col++) {
+          if (invadersGrid[row] && invadersGrid[row][col]) {
+            highestRow = row;
+            break;
+          }
+        }
+        if (highestRow < INVADER_ROWS) break;
+      }
+      
+      if (highestRow >= INVADER_ROWS) return;
+      
+      // Collecter tous les envahisseurs de la rangée la plus haute
+      var shooters = [];
+      for (var col = 0; col < INVADER_COLS; col++) {
+        if (invadersGrid[highestRow] && invadersGrid[highestRow][col]) {
+          var x = INVADER_START_X + col * INVADER_WIDTH;
+          var y = INVADER_START_Y + highestRow * 2;
+          var dist = Math.abs((x + 1) - (shipX + 1));
+          shooters.push({x: x + 1, y: y + 1, dist: dist});
+        }
+      }
+      
+      if (shooters.length == 0) return;
+      
+      // Trier par distance au joueur et prendre un des 3 plus proches au hasard
+      shooters.sort(function(a, b) { return a.dist - b.dist; });
+      var maxShooters = Math.min(3, shooters.length);
+      var shooter = shooters[Math.floor(Math.random() * maxShooters)];
+      
+      enemyBullets[slot].x = shooter.x;
+      enemyBullets[slot].y = shooter.y;
+      enemyBullets[slot].active = true;
+      
+      var sprite = layers.getSprite("ebullet" + slot);
+      if (sprite != null) {
+        sprite.show(0);
+        sprite.move(shooter.x, shooter.y);
+      }
+    }
+    
+    function moveInvaders(layers) {
+      // Déplacer tous les envahisseurs
+      var needReverse = false;
+      
+      // Vérifier si on doit changer de direction
+      for (var row = 0; row < INVADER_ROWS; row++) {
+        var y = INVADER_START_Y + row * 2;
+        for (var col = 0; col < INVADER_COLS; col++) {
+          if (invadersGrid[row] && invadersGrid[row][col]) {
+            var x = INVADER_START_X + col * INVADER_WIDTH;
+            if (invadersDX > 0 && x + 2 >= FIELD_RIGHT - 1) {
+              needReverse = true;
+            } else if (invadersDX < 0 && x <= FIELD_LEFT + 1) {
+              needReverse = true;
+            }
+          }
+        }
+      }
+      
+      if (needReverse) {
+        invadersDX = -invadersDX;
+        // Descendre d'une ligne
+        shiftInvadersDown(layers);
+        return;
+      }
+      
+      // Déplacer horizontalement
+      shiftInvadersHorizontal(layers, invadersDX);
+    }
+    
+    function shiftInvadersHorizontal(layers, dx) {
+      // D'abord effacer TOUS les envahisseurs
+      for (var row = 0; row < INVADER_ROWS; row++) {
+        var y = INVADER_START_Y + row * 2;
+        for (var col = 0; col < INVADER_COLS; col++) {
+          var x = INVADER_START_X + col * INVADER_WIDTH;
+          layers.setMapChar(INVADERS_MAP, x, y, ' ');
+          layers.setMapChar(INVADERS_MAP, x + 1, y, ' ');
+        }
+      }
+      
+      // Mettre à jour la position de départ
+      INVADER_START_X += dx;
+      
+      // Redessiner tous les envahisseurs vivants
+      redrawInvaders(layers);
+    }
+    
+    function shiftInvadersDown(layers) {
+      // D'abord effacer TOUS les envahisseurs
+      for (var row = 0; row < INVADER_ROWS; row++) {
+        var y = INVADER_START_Y + row * 2;
+        for (var col = 0; col < INVADER_COLS; col++) {
+          var x = INVADER_START_X + col * INVADER_WIDTH;
+          layers.setMapChar(INVADERS_MAP, x, y, ' ');
+          layers.setMapChar(INVADERS_MAP, x + 1, y, ' ');
+        }
+      }
+      
+      // Mettre à jour la position de départ
+      INVADER_START_Y += 1;
+      
+      // Game over si les envahisseurs atteignent le joueur
+      if (INVADER_START_Y + (INVADER_ROWS - 1) * 2 >= shipY - 1) {
+        gameOver = true;
+        layers.setText("gameover", "INVASION!");
+        layers.showLabel("gameover");
+        return;
+      }
+      
+      // Redessiner tous les envahisseurs vivants
+      redrawInvaders(layers);
+    }
+    
+    function gameLoop() {
+      if (gameOver) return;
+      
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Mettre à jour le tir du joueur
+      updateBullet(layers);
+      
+      // Mettre à jour les tirs ennemis
+      updateEnemyBullets(layers);
+      
+      // Déplacer les envahisseurs (tous les 5 ticks)
+      moveCounter++;
+      if (moveCounter >= 5) {
+        moveCounter = 0;
+        moveInvaders(layers);
+      }
+      
+      // Tir ennemi (tous les 8 ticks)
+      fireCounter++;
+      if (fireCounter >= 8) {
+        fireCounter = 0;
+        enemyFire(layers);
+      }
+    }
+  </script>
+</minitel>

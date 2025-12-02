@@ -1,0 +1,19 @@
+<minitel title="games">
+
+	<img src="images/joystick.png" left="0" top="3" width="17" height="11" >
+
+	<menu name="main" left="18" top="4" width="30" height="10" keytype="alpha">
+		<item link="games/pong.vtml">Pong</item>
+		<item link="games/snake.vtml">Snake</item>	
+		<item link="games/tetris.vtml">Tetris</item>
+		<item link="games/tetris_color.vtml">Tetris Couleur</item>
+		<item link="games/invaders.vtml">Space Invaders</item>				
+		<item link="games/runner_demo.vtml">Runner Demo</item>
+		<item link="games/ball_demo.vtml">Ball Demo</item>
+		<item link="games/breakout.vtml">Casse briques</item>
+		<item link="games/mygame2.vtml">Test</item>
+		<item link="games/joystick.vtml">Joystick Config</item>
+	</menu>	
+
+
+</minitel>

@@ -1,0 +1,279 @@
+<minitel>
+  <layers id="game" left="0" top="1" width="40" height="24">
+    
+    <!-- Décor : sol -->
+    <map type="char">
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>________________________________________</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+    </map>
+    
+    <!-- Sprite balle contour (10 frames) - 10x10 pixels avec écrasement fluide -->
+    <spritedef id="ball" type="bitmap" width="5" height="5">
+      
+      <!-- Frame 0 : Balle ronde normale -->
+      <sprite>
+        <line>  ######  </line>
+        <line> ##    ## </line>
+        <line>##      ##</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>##      ##</line>
+        <line> ##    ## </line>
+        <line>  ######  </line>
+      </sprite>
+      
+      <!-- Frame 1 : Légère déformation descente -->
+      <sprite>
+        <line>  ######  </line>
+        <line> ##    ## </line>
+        <line> #      # </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line> #      # </line>
+        <line> ##    ## </line>
+        <line>  ######  </line>
+      </sprite>
+      
+      <!-- Frame 2 : Étirée descente -->
+      <sprite>
+        <line>   ####   </line>
+        <line>  ##  ##  </line>
+        <line> ##    ## </line>
+        <line> #      # </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line> #      # </line>
+        <line> ##    ## </line>
+        <line>  ##  ##  </line>
+        <line>   ####   </line>
+      </sprite>
+      
+      <!-- Frame 3 : Approche sol -->
+      <sprite>
+        <line>          </line>
+        <line>   ####   </line>
+        <line>  ##  ##  </line>
+        <line> ##    ## </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line> ##    ## </line>
+        <line> ##    ## </line>
+        <line>  ##  ##  </line>
+        <line>  ######  </line>
+      </sprite>
+      
+      <!-- Frame 4 : Contact sol -->
+      <sprite>
+        <line>          </line>
+        <line>  ######  </line>
+        <line> ##    ## </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>##      ##</line>
+        <line> ######## </line>
+      </sprite>
+      
+      <!-- Frame 5 : Écrasée légère -->
+      <sprite>
+        <line>          </line>
+        <line>          </line>
+        <line>  ######  </line>
+        <line> #      # </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>##      ##</line>
+        <line>##########</line>
+      </sprite>
+      
+      <!-- Frame 6 : Écrasée max -->
+      <sprite>
+        <line>          </line>
+        <line>          </line>
+        <line>          </line>
+        <line> ######## </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>##########</line>
+      </sprite>
+      
+      <!-- Frame 7 : Décompression -->
+      <sprite>
+        <line>          </line>
+        <line>          </line>
+        <line>  ######  </line>
+        <line> #      # </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>##      ##</line>
+        <line>##########</line>
+      </sprite>
+      
+      <!-- Frame 8 : Rebond -->
+      <sprite>
+        <line>          </line>
+        <line>  ######  </line>
+        <line> ##    ## </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line>##      ##</line>
+        <line> ######## </line>
+      </sprite>
+      
+      <!-- Frame 9 : Étirée montée -->
+      <sprite>
+        <line>   ####   </line>
+        <line>  ##  ##  </line>
+        <line> ##    ## </line>
+        <line> #      # </line>
+        <line>#        #</line>
+        <line>#        #</line>
+        <line> #      # </line>
+        <line> ##    ## </line>
+        <line>  ##  ##  </line>
+        <line>   ####   </line>
+      </sprite>
+      
+    </spritedef>
+    
+    <!-- Timer pour l'animation -->
+    <timer event="gameLoop" interval="50"/>
+    
+  </layers>
+  
+  <script>
+    var layers = _currentLayers;
+    var ball = layers.getSprite("ball");
+    
+    // Position et physique
+    var x = 17;
+    var y = 0;
+    var velocityY = 0;
+    var gravity = 0.3;
+    var groundY = 13;  // Position du sol
+    var bounceFactor = 0.75;
+    var directionX = 1;
+    var velocityX = 0.5;
+    
+    // État animation
+    var state = "falling";  // falling, squash, rising
+    var squashFrame = 0;
+    
+    // Initialisation
+    ball.show(0);
+    ball.move(x, y);
+    
+    function gameLoop() {
+      
+      if (state == "falling") {
+        // Gravité
+        velocityY = velocityY + gravity;
+        y = y + velocityY;
+        
+        // Frame selon vitesse
+        if (velocityY > 2) {
+          ball.show(1);  // Étirée descente
+        } else {
+          ball.show(0);  // Ronde
+        }
+        
+        // Contact sol
+        if (y >= groundY) {
+          y = groundY;
+          state = "squash";
+          squashFrame = 0;
+        }
+        
+      } else if (state == "squash") {
+        // Animation écrasement
+        squashFrame = squashFrame + 1;
+        
+        if (squashFrame == 1) {
+          ball.show(2);  // Début écrasement
+        } else if (squashFrame == 2) {
+          ball.show(3);  // Écrasée max
+        } else if (squashFrame == 3) {
+          ball.show(4);  // Décompression
+        } else if (squashFrame >= 4) {
+          // Rebond
+          velocityY = -velocityY * bounceFactor;
+          
+          // Arrêter si trop faible
+          if (velocityY > -1) {
+            velocityY = -5;  // Relancer
+          }
+          
+          state = "rising";
+        }
+        
+      } else if (state == "rising") {
+        // Montée
+        velocityY = velocityY + gravity;
+        y = y + velocityY;
+        
+        // Frame selon vitesse
+        if (velocityY < -2) {
+          ball.show(5);  // Étirée montée
+        } else {
+          ball.show(0);  // Ronde
+        }
+        
+        // Transition vers descente
+        if (velocityY >= 0) {
+          state = "falling";
+        }
+      }
+      
+      // Déplacement horizontal
+      x = x + velocityX * directionX;
+      
+      // Rebond sur les bords
+      if (x >= 35) {
+        directionX = -1;
+      } else if (x <= 0) {
+        directionX = 1;
+      }
+      
+      ball.move(Math.floor(x), Math.floor(y));
+    }
+  </script>
+  
+</minitel>

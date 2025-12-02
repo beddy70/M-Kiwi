@@ -1,5 +1,9 @@
 <minitel title="acceuil">
-	Hello
+ 	
+ 	<key name="sommaire" link="index.vtml">
+ 	<key name="guide" link="guide.vtml">
+ 	<key name="telephone" link="contact.vtml"/>
+	
 	<div class="frame" left="6" top="2" width="30" height="10">
 		<row> __  __ _       _ _       _ </row>
 		<row>|  \/  (_)_ __ (_) |_ ___| |</row>
@@ -8,15 +12,61 @@
 		<row>|_|  |_|_|_| |_|_|\__\___|_|</row>
 		<br>
 		<row>     LE LIEU TRANQUILLE     </row>
-		world
+		
 	</div>
 
-	<menu name="main" left="4" top="10" width="30" height="10" keytype="number">
-		<item link="acceuil.mod">Actualité</item>
+	<menu name="main" left="4" top="10" width="30" height="10" keytype="alpha">
+		<item link="concerts/hugo.vtml">Actualité</item>
 		<item link="bar/">Bar</item>	
-		<item link="concerts/">concerts</item>
+		<item link="mickey.vtml">Image</item>
 		<item link="ServerStatus.mod?val1=69&val2=hello">Info Serveur</item>
-		<item link="wifi/">wifi</item>	
+		<item link="games/">Jeux</item> 
+		<item link="wifi/">Notre Wifi</item>	
 	</menu> 
+	
+	<!-- 
+	<div class="frame" left="0" top="16" width="30" height="10">
+		<br>
+	    	<script>
+	      		var date = new Date();
+	      		var heure = date.getHours() + ":" + date.getMinutes();
+	      		output = "Il est " + heure;
+	    	</script>
+	    	<br>
+	    	<script>
+		  // Accès direct aux classes exposées
+		  var config = Kernel.getIntance().getConfig();
+		  output = "Port serveur: " + config.server.port;
+		</script>
+		<br>
+
+		<script>
+		  // Utiliser Packages pour accéder à n'importe quelle classe
+		  var File = Packages.java.io.File;
+		  var f = new File("config.json");
+		  output = "Fichier existe: " + f.exists();
+		</script>
+		<br>
+
+		<script>
+		  // Accès aux constantes Teletel
+		  output = "Largeur page: " + Teletel.PAGE_WIDTH;
+		</script>
+		<br>
+		<form action="search.vtml" left="20" top="15" >
+		  <input name="query" left="0" top="0" width="7" label="age: ">
+		  <input name="ville" left="0" top="2" width="5" label="Ville: ">
+		</form>
+	<div>-->
+
+	 <!-- <img src="images/face.jpg" left="0" top="16" width="20" height="20" negative="true">-->
+	
+  	<!--	QR Code pour site web -->
+         <!-- <qrcode type="url" message="https://eddy-briere.com" left="20" top="10"/>-->
+    
+    
+        <!-- QR Code WiFi -->
+         <!-- <qrcode type="wpawifi" message="ssid:'MonWiFi', password:'secret123'" left="15" top="10"/>-->
+        
 
 </minitel>

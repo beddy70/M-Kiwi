@@ -1,0 +1,6 @@
+<minitel title="wifi">
+    
+        <!-- QR Code WiFi -->
+       <qrcode type="wpawifi" message="ssid:'MonWiFi', password:'secret123'" left=5 top="2" scale="2"/>
+
+</minitel>

@@ -1,0 +1,9 @@
+<minitel tile="Guide d'utilisation">
+	
+	<div class="frame" left="6" top="2" width="30" height="10">
+		<row>LE GUIDE UTILISATEUR</row>
+	</div>
+	
+	<img src="images/face.jpg" left="0" top="10" width="32" height="42" >
+
+</minitel>

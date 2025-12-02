@@ -1,0 +1,21 @@
+<minitel tile="Hulk">
+	
+	<img src="images/hulk.png" left="0" top="1" width="20" height="15" >
+	
+	<menu name="main" left="22" top="4" width="30" height="10" keytype="number">
+		<item link="acceuil.mod">Actualit&eacute;</item>
+		<item link="bar/">Bar</item>	
+		<item link="mickey.vtml">Image</item>
+		<item link="ServerStatus.mod?val1=69&val2=hello">Info Serveur</item>
+		<item link="wifi/">Notre Wifi</item>	
+	</menu> 
+
+	<form action="ServerStatus.mod" method="GET" left="11" top="17" >
+		<input name="query" left="0" top="0" size="21" label="Age: ">
+		<input name="ville" left="0" top="2" size="19" label="Ville: ">
+		<input name="prenom" left="0" top="4" size="18" label="Prenom: ">
+	</form>
+
+	<status left="0" top="24" width="40" height="1"/>
+
+</minitel>

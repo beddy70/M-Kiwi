@@ -1,0 +1,331 @@
+<minitel title="Snake Minitel">
+  
+  <layers id="game" left="0" top="1" width="40" height="22">
+    
+    <!-- Map 0: Terrain de jeu (bordures) -->
+    <map id="terrain" type="char">
+      <row>########################################</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>########################################</row>
+    </map>
+    
+    <!-- Map 1: Corps du serpent (dessiné dynamiquement) -->
+    <map id="snakebody">
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+    </map>
+    
+    <!-- Tête du serpent (sprite) -->
+    <spritedef id="head" width="1" height="1" type="char">
+      <sprite>
+        <line>@</line>
+         <colorsprite>
+          <line>3</line>
+        </colorsprite>
+      </sprite>
+    </spritedef>
+    
+    <!-- Pomme (sprite) -->
+    <spritedef id="apple" width="1" height="1" type="char">
+      <sprite>
+        <line>X</line>
+        <colorsprite>
+          <line>2</line>
+        </colorsprite>
+      </sprite>
+    </spritedef>
+    
+    <!-- Score et infos sur ligne 0 du layers -->
+    <label id="score" x="1" y="0" width="14"> Score: 0</label>
+    <label id="length" x="16" y="0" width="10"> Len: 4</label>
+    <label id="timer" x="29" y="0" width="10"> Pomme: 10</label>
+    
+    <!-- Message de fin de jeu (caché au départ) -->
+    <label id="gameover" x="10" y="10" width="20" visibility="hidden"><color ink="red">GAME OVER</color></label>
+    
+    <!-- Contrôles -->
+    <keypad action="UP" key="Z" event="goUp"/>
+    <keypad action="DOWN" key="S" event="goDown"/>
+    <keypad action="LEFT" key="Q" event="goLeft"/>
+    <keypad action="RIGHT" key="D" event="goRight"/>
+    
+    <!-- Game loop (150ms = plus rapide!) -->
+    <timer event="gameLoop" interval="150"></timer>
+    
+  </layers>
+  
+  <div left="0" top="23" width="40" height="1">
+    <row>[Z]Haut [S]Bas [Q]Gauche [D]Droite</row>
+  </div>
+  
+  <script>
+    // Direction: 0=droite, 1=bas, 2=gauche, 3=haut
+    var direction = 0;
+    var nextDirection = 0;
+    var score = 0;
+    var gameOver = false;
+    
+    // Position de la tête
+    var headX = 20;
+    var headY = 10;
+    
+    // Corps du serpent (tableau de positions) - pas de limite!
+    var bodyX = [19, 18, 17];
+    var bodyY = [10, 10, 10];
+    var BODY_MAP = 1;  // Index de la map du corps
+    var BODY_CHAR = 'O';
+    var MIN_LENGTH = 2;  // Longueur minimale avant mort
+    
+    // Position de la pomme
+    var appleX = 30;
+    var appleY = 5;
+    
+    // Timer pomme: disparait après ~10 secondes (66 ticks à 150ms)
+    var appleTimer = 0;
+    var APPLE_DURATION = 66;
+    
+    function getLayers() {
+      return _currentLayers;
+    }
+    
+    function domReady() {
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Afficher la tête
+      var head = layers.getSprite("head");
+      if (head != null) {
+        head.show(0);
+        head.move(headX, headY);
+      }
+      
+      // Dessiner le corps initial sur la map
+      drawBody(layers);
+      
+      // Afficher la pomme initiale (pas de spawnApple, juste afficher)
+      var apple = layers.getSprite("apple");
+      if (apple != null) {
+        apple.show(0);
+        apple.move(appleX, appleY);
+      }
+    }
+    
+    function drawBody(layers) {
+      // Dessiner tous les segments du corps sur la map
+      for (var i = 0; i < bodyX.length; i++) {
+        layers.setMapChar(BODY_MAP, bodyX[i], bodyY[i], BODY_CHAR);
+      }
+    }
+    
+    function clearBodyTail(layers, x, y) {
+      // Effacer un segment du corps
+      layers.setMapChar(BODY_MAP, x, y, ' ');
+    }
+    
+    function updateInfo(layers) {
+      var len = bodyX.length + 1;
+      var secondsLeft = Math.floor((APPLE_DURATION - appleTimer) * 150 / 1000);
+      layers.setText("score", " Score: " + score);
+      layers.setText("length", " Len: " + len);
+      layers.setText("timer", " Pomme: " + secondsLeft);
+    }
+    
+    function goUp() {
+      if (direction != 1) nextDirection = 3;
+    }
+    
+    function goDown() {
+      if (direction != 3) nextDirection = 1;
+    }
+    
+    function goLeft() {
+      if (direction != 0) nextDirection = 2;
+    }
+    
+    function goRight() {
+      if (direction != 2) nextDirection = 0;
+    }
+    
+    function gameLoop() {
+      if (gameOver) return;
+      
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Gérer le timer de la pomme
+      appleTimer++;
+      updateInfo(layers);
+      
+      if (appleTimer >= APPLE_DURATION) {
+        // La pomme disparait - pénalité!
+        // Rétrécir le serpent
+        if (bodyX.length > 0) {
+          var lastIdx = bodyX.length - 1;
+          clearBodyTail(layers, bodyX[lastIdx], bodyY[lastIdx]);
+          bodyX.pop();
+          bodyY.pop();
+        }
+        
+        // Vérifier si trop petit
+        if (bodyX.length < MIN_LENGTH) {
+          endGame(layers, "TROP MAIGRE!");
+          return;
+        }
+        
+        // Faire réapparaitre la pomme ailleurs
+        spawnApple(layers);
+      }
+      
+      // Appliquer la nouvelle direction
+      direction = nextDirection;
+      
+      // Sauvegarder l'ancienne position de la tête
+      var oldHeadX = headX;
+      var oldHeadY = headY;
+      
+      // Déplacer la tête selon la direction
+      if (direction == 0) headX++;
+      else if (direction == 1) headY++;
+      else if (direction == 2) headX--;
+      else if (direction == 3) headY--;
+      
+      // Vérifier collision avec les murs (map 0)
+      var hit = layers.checkMapCollisionAt("head", headX, headY);
+      if (hit == 35) {  // '#' = mur
+        endGame(layers, "GAME OVER!");
+        return;
+      }
+      
+      // Vérifier collision avec le corps (map 1)
+      var bodyHit = layers.getMapChar(BODY_MAP, headX, headY);
+      if (bodyHit == 79) {  // 'O' = corps
+        endGame(layers, "GAME OVER!");
+        return;
+      }
+      
+      // Vérifier si on mange la pomme
+      var ate = false;
+      if (headX == appleX && headY == appleY) {
+        ate = true;
+        // Score = 1 + temps restant (plus on mange vite, plus on gagne)
+        var secondsLeft = Math.floor((APPLE_DURATION - appleTimer) * 150 / 1000);
+        score += 1 + secondsLeft;
+        layers.beep();
+        spawnApple(layers);
+      }
+      
+      // Déplacer le corps
+      if (!ate) {
+        // Effacer le dernier segment de la map
+        if (bodyX.length > 0) {
+          var lastIdx = bodyX.length - 1;
+          clearBodyTail(layers, bodyX[lastIdx], bodyY[lastIdx]);
+        }
+        // Décaler le tableau
+        for (var i = bodyX.length - 1; i > 0; i--) {
+          bodyX[i] = bodyX[i - 1];
+          bodyY[i] = bodyY[i - 1];
+        }
+      } else {
+        // Ajouter un segment (décaler et ajouter)
+        bodyX.push(0);
+        bodyY.push(0);
+        for (var i = bodyX.length - 1; i > 0; i--) {
+          bodyX[i] = bodyX[i - 1];
+          bodyY[i] = bodyY[i - 1];
+        }
+      }
+      
+      // Le premier segment prend l'ancienne position de la tête
+      if (bodyX.length > 0) {
+        bodyX[0] = oldHeadX;
+        bodyY[0] = oldHeadY;
+        // Dessiner ce nouveau segment sur la map
+        layers.setMapChar(BODY_MAP, oldHeadX, oldHeadY, BODY_CHAR);
+      }
+      
+      // Mettre à jour l'affichage de la tête
+      var head = layers.getSprite("head");
+      if (head != null) {
+        head.move(headX, headY);
+      }
+      
+      updateInfo(layers);
+    }
+    
+    function spawnApple(layers) {
+      // Réinitialiser le timer
+      appleTimer = 0;
+      
+      // Générer une position aléatoire pour la pomme
+      var valid = false;
+      var attempts = 0;
+      while (!valid && attempts < 100) {
+        attempts++;
+        appleX = Math.floor(Math.random() * 36) + 2;
+        appleY = Math.floor(Math.random() * 18) + 2;
+        
+        // Vérifier que ce n'est pas sur le serpent
+        valid = true;
+        if (appleX == headX && appleY == headY) valid = false;
+        
+        // Vérifier sur la map du corps
+        if (valid) {
+          var c = layers.getMapChar(BODY_MAP, appleX, appleY);
+          if (c == 79) valid = false;  // 'O'
+        }
+      }
+      
+      var apple = layers.getSprite("apple");
+      if (apple != null) {
+        apple.move(appleX, appleY);
+      }
+    }
+    
+    function endGame(layers, message) {
+      gameOver = true;
+      // Afficher le message de fin au centre
+      layers.setText("gameover", message + " Score:" + score);
+      layers.showLabel("gameover");
+      layers.beep();
+    }
+  </script>
+  
+</minitel>

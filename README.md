@@ -89,13 +89,30 @@ dtoverlay=disable-bt
 sudo systemctl disable serial-getty@ttyAMA0.service
 ```
 
-### 3. Basculement 9600 Bauds (Minitel 2)
+### 3. Auto-négociation de Vitesse
 
-Utilisez le script fourni pour basculer en haute vitesse :
-```bash
-chmod +x switchTo9600b.sh
-./switchTo9600b.sh
-```
+**Important** : Le Minitel démarre toujours en **1200 bauds** à sa mise sous tension.
+
+Le client intègre un système d'**auto-négociation automatique** de la vitesse série :
+
+1. Si le client est configuré en 9600 bauds (ou 4800) dans `config.json` mais que le Minitel est en 1200 bauds, le client détecte la désynchronisation (réception de séries de `0x00`)
+2. Le client bascule temporairement en 1200 bauds
+3. Il envoie la séquence PRO2 pour forcer le Minitel à la vitesse cible
+4. Il reconfigure le port série à la vitesse cible
+5. La communication reprend normalement
+
+**Séquences de changement de vitesse (PRO2) :**
+| Vitesse | Séquence HEX |
+|---------|--------------|
+| 1200 bauds | `1B 3A 64 7F` |
+| 4800 bauds | `1B 3A 6A 7F` |
+| 9600 bauds | `1B 3A 6B 7F` |
+
+> **Note** : Le script `switchTo9600b.sh` permet de forcer manuellement le passage en 9600 bauds si nécessaire :
+> ```bash
+> chmod +x switchTo9600b.sh
+> ./switchTo9600b.sh
+> ```
 
 ### 4. Fichier de Configuration
 

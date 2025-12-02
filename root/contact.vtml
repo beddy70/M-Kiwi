@@ -1,0 +1,13 @@
+<minitel tile="Contacts">
+	
+	<img src="images/phone.jpg" left="0" top="6" width="10" height="10" negative="true" >
+
+	<div class="frame" left="0" top="1" width="30" height="10">
+		<row>Nous contacter :</row>
+		<br>
+		<row>Tel   : 07 67 21 65 78</row>
+		<row>email : lestranquillesnoisy@gmail.com</row>
+	</div>
+	<qrcode type="vcard" message=" name:'Le Lieu Tranquille' tel:'+33767216578', email:'lestranquillesnoisy@gmail.com', url:'lestranquilles.fr'" left="11" top="6" scale="1"/>
+	
+</minitel>

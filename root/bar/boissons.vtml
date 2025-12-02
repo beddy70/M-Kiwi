@@ -1,4 +1,4 @@
-<minitel tile="le bar">
+<minitel tile="les boisson">
 
 	<div class="frame" left="6" top="2" width="30" height="10">
 		<row> _           _                </row>
@@ -10,9 +10,6 @@
 		<row>Le bar des Tranquilles</row>
 	</div>
 
-	<menu  ame="main" left="4" top="10" keytype="number">
-		<item link="bar/menu.mtxt">Menu</item>
-		<item link="bar/boissons.vtml">Boissons</item>
-	</menu> 
+	<img src="images/boissons2_c.png" left="0" top="10" width="22" height="14" >
 
 </minitel>

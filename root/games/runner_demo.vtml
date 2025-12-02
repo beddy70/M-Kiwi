@@ -1,0 +1,300 @@
+<minitel>
+  <layers id="game" left="0" top="1" width="40" height="24">
+    
+    <!-- Décor : sol -->
+    <map type="char">
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>________________________________________</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+      <row>########################################</row>
+    </map>
+    
+    <!-- Sprite marcheur de profil (8 frames) - 14x24 pixels -->
+    <spritedef id="runner" type="bitmap" width="7" height="12">
+      
+      <!-- Frame 0 : Contact talon - grande foulée -->
+      <sprite>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ######     </line>
+        <line>   #####      </line>
+        <line>    ###       </line>
+        <line>     ##       </line>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>  ##  ###     </line>
+        <line> ##   ##      </line>
+        <line>      ##      </line>
+        <line>     ###      </line>
+        <line>    ## ##     </line>
+        <line>   ##   ##    </line>
+        <line>  ##     ##   </line>
+        <line> ##       ##  </line>
+        <line>##         ## </line>
+        <line>#           ##</line>
+        <line>##           #</line>
+        <line>###        ###</line>
+        <line> #          ##</line>
+        <line>            # </line>
+        <line>              </line>
+        <line>              </line>
+      </sprite>
+      
+      <!-- Frame 1 : Pied à plat -->
+      <sprite>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ######     </line>
+        <line>   #####      </line>
+        <line>    ###       </line>
+        <line>     ##       </line>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ## ##      </line>
+        <line>  ##  ##      </line>
+        <line>      ##      </line>
+        <line>     ###      </line>
+        <line>    ## ##     </line>
+        <line>   ##   ##    </line>
+        <line>  ##     #    </line>
+        <line> ##      ##   </line>
+        <line>##        ##  </line>
+        <line>#          ## </line>
+        <line>##          ##</line>
+        <line>###        ###</line>
+        <line> #          # </line>
+        <line>              </line>
+        <line>              </line>
+        <line>              </line>
+      </sprite>
+      
+      <!-- Frame 2 : Milieu appui -->
+      <sprite>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ######     </line>
+        <line>   #####      </line>
+        <line>    ###       </line>
+        <line>     ##       </line>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ## ##      </line>
+        <line>   #  ##      </line>
+        <line>      ##      </line>
+        <line>      ##      </line>
+        <line>     ####     </line>
+        <line>    ##  ##    </line>
+        <line>    #    #    </line>
+        <line>   ##    ##   </line>
+        <line>   #      #   </line>
+        <line>  ##      ##  </line>
+        <line>  #        #  </line>
+        <line> ##        ## </line>
+        <line>###        ###</line>
+        <line>              </line>
+        <line>              </line>
+        <line>              </line>
+      </sprite>
+      
+      <!-- Frame 3 : Poussée - jambes serrées -->
+      <sprite>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ######     </line>
+        <line>   #####      </line>
+        <line>    ###       </line>
+        <line>     ##       </line>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ## ##      </line>
+        <line>   #  ##      </line>
+        <line>      ##      </line>
+        <line>      ##      </line>
+        <line>      ##      </line>
+        <line>     ####     </line>
+        <line>     ####     </line>
+        <line>    ##  ##    </line>
+        <line>    #    #    </line>
+        <line>   ##    ##   </line>
+        <line>   ##    ##   </line>
+        <line>  ###    ###  </line>
+        <line>   #      #   </line>
+        <line>              </line>
+        <line>              </line>
+        <line>              </line>
+      </sprite>
+      
+      <!-- Frame 4 : Contact talon (autre jambe) -->
+      <sprite>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ######     </line>
+        <line>   #####      </line>
+        <line>    ###       </line>
+        <line>     ##       </line>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>     ### ##   </line>
+        <line>      ##  ##  </line>
+        <line>      ##      </line>
+        <line>      ###     </line>
+        <line>     ## ##    </line>
+        <line>    ##   ##   </line>
+        <line>   ##     ##  </line>
+        <line>  ##       ## </line>
+        <line> ##         ##</line>
+        <line>##           #</line>
+        <line>#           ##</line>
+        <line>###        ###</line>
+        <line>##          # </line>
+        <line> #            </line>
+        <line>              </line>
+        <line>              </line>
+      </sprite>
+      
+      <!-- Frame 5 : Pied à plat (autre jambe) -->
+      <sprite>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ######     </line>
+        <line>   #####      </line>
+        <line>    ###       </line>
+        <line>     ##       </line>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>      ## ##   </line>
+        <line>      ##  ##  </line>
+        <line>      ##      </line>
+        <line>      ###     </line>
+        <line>     ## ##    </line>
+        <line>    ##   ##   </line>
+        <line>    #     ##  </line>
+        <line>   ##      ## </line>
+        <line>  ##        ##</line>
+        <line> ##          #</line>
+        <line>##          ##</line>
+        <line>###        ###</line>
+        <line> #          # </line>
+        <line>              </line>
+        <line>              </line>
+        <line>              </line>
+      </sprite>
+      
+      <!-- Frame 6 : Milieu appui (autre jambe) -->
+      <sprite>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ######     </line>
+        <line>   #####      </line>
+        <line>    ###       </line>
+        <line>     ##       </line>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>      ## ##   </line>
+        <line>      ##  #   </line>
+        <line>      ##      </line>
+        <line>      ##      </line>
+        <line>     ####     </line>
+        <line>    ##  ##    </line>
+        <line>    #    #    </line>
+        <line>   ##    ##   </line>
+        <line>   #      #   </line>
+        <line>  ##      ##  </line>
+        <line>  #        #  </line>
+        <line> ##        ## </line>
+        <line>###        ###</line>
+        <line>              </line>
+        <line>              </line>
+        <line>              </line>
+      </sprite>
+      
+      <!-- Frame 7 : Poussée (autre jambe) -->
+      <sprite>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>   ######     </line>
+        <line>   #####      </line>
+        <line>    ###       </line>
+        <line>     ##       </line>
+        <line>    ####      </line>
+        <line>   ######     </line>
+        <line>      ## ##   </line>
+        <line>      ##  #   </line>
+        <line>      ##      </line>
+        <line>      ##      </line>
+        <line>      ##      </line>
+        <line>     ####     </line>
+        <line>     ####     </line>
+        <line>    ##  ##    </line>
+        <line>    #    #    </line>
+        <line>   ##    ##   </line>
+        <line>   ##    ##   </line>
+        <line>  ###    ###  </line>
+        <line>   #      #   </line>
+        <line>              </line>
+        <line>              </line>
+        <line>              </line>
+      </sprite>
+      
+    </spritedef>
+    
+    <!-- Timer pour l'animation automatique -->
+    <timer event="gameLoop" interval="100"/>
+    
+  </layers>
+  
+  <script>
+    var layers = _currentLayers;
+    var runner = layers.getSprite("runner");
+    
+    // Position et état
+    var x = 0;
+    var y = 5;
+    var frame = 0;
+    var direction = 1;  // 1 = droite, -1 = gauche
+    
+    // Initialisation
+    runner.show(0);
+    runner.move(x, y);
+    
+    // Boucle de jeu - animation automatique
+    function gameLoop() {
+      // Animer la marche (8 frames)
+      frame = (frame + 1) % 8;
+      runner.show(frame);
+      
+      // Déplacer le personnage
+      x = x + direction;
+      
+      // Rebondir sur les bords
+      if (x >= 31) {
+        direction = -1;
+      } else if (x <= 0) {
+        direction = 1;
+      }
+      
+      runner.move(x, y);
+    }
+  </script>
+  
+</minitel>

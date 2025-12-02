@@ -1,0 +1,140 @@
+<minitel title="Pong Minitel"> 
+  <layers id="game" left="0" top="1" width="40" height="22">
+    <!-- Fond du terrain -->
+    <map id="terrain" type="char">
+      <row>########################################</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row># -------                              #</row>
+      <row>#  |   |                               #</row>
+      <row># -------                              #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>########################################</row>
+    </map>  
+    <spritedef id="paddle" width="1" height="4" type="bitmap">
+      <sprite>
+        <line>##</line>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+        <line>##</line>
+      </sprite>
+    </spritedef>    
+    <spritedef id="ball" width="1" height="1" type="char">
+      <sprite>
+        <line>O</line>
+      </sprite>
+    </spritedef>
+    <keypad action="UP"   key="Z" event="moveUp"/>
+    <keypad action="DOWN" key="S" event="moveDown"/>   
+    <!-- Timer pour la balle : appelle moveBall() toutes les 300ms -->
+    <timer event="moveBall" interval="100"/>    
+  </layers> 
+  <div left="0" top="23" width="38" height="1">
+    <row>[Z]=Haut [S]=Bas</row>
+  </div> 
+  <script>
+    var paddleY = 10;
+    var ballX = 20;
+    var ballY = 10;
+    var ballDX = 1;
+    var ballDY = 1;
+
+    function getLayers() {
+      return _currentLayers;
+    }
+
+    function domReady() {
+      var layers = getLayers();
+      if (layers != null) {
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.show(0);
+          paddle.move(2, paddleY);
+        }
+        
+        var ball = layers.getSprite("ball");
+        if (ball != null) {
+          ball.show(0);
+          ball.move(ballX, ballY);
+        }
+      }
+    }
+
+    function moveUp() {
+      var layers = getLayers();
+      if (layers != null && paddleY > 0) {
+        paddleY--;
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.move(2, paddleY);
+        }
+      }
+    }
+
+    function moveDown() {
+      var layers = getLayers();
+      if (layers != null && paddleY < 16) {
+        paddleY++;
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.move(2, paddleY);
+        }
+      }
+    }
+
+    function moveBall() {
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      ballX = ballX + ballDX;
+      ballY = ballY + ballDY;
+      
+      // Rebond murs haut/bas
+      if (ballY <= 1 || ballY >= 19) {
+        ballDY = -ballDY;
+      }
+      
+      // Rebond mur droit
+      if (ballX >= 38) {
+        ballDX = -ballDX;
+      }
+      
+      // Rebond raquette ou perdu
+      if (ballX <= 3) {
+        if (ballY >= paddleY && ballY < paddleY + 4) {
+          ballDX = -ballDX;
+        } else if (ballX <= 1) {
+          ballX = 20;
+          ballY = 10;
+          ballDX = 1;
+        }
+      }
+      
+      var ball = layers.getSprite("ball");
+      if (ball != null) {
+        ball.move(ballX, ballY);
+      }
+    }
+  </script> 
+</minitel>

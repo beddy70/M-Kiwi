@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<minitel>
+  <layers id="game" left="0" top="1" width="40" height="22">
+    
+    <!-- Map 0: Bordures -->
+    <map>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>########################################</row>
+      <colormap>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7                                      7</row>
+        <row>7777777777777777777777777777777777777777</row>
+      </colormap>
+    </map>
+    
+    <!-- Map 1: Briques (initialement vide, remplies par JS) -->
+    <map>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+    </map>
+    
+    <!-- Raquette: 10x1 pixels = 5 caractères en bitmap -->
+    <spritedef id="paddle" width="10" height="1" type="bitmap">
+      <sprite>
+        <line>##########</line>
+        <colorsprite>
+          <line>17771</line>
+        </colorsprite>
+      </sprite>
+    </spritedef>
+    
+    <!-- Balle: 2x2 pixels = 1 caractère en bitmap -->
+    <spritedef id="ball" width="2" height="3" type="bitmap">
+      <sprite>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+      </sprite>
+    </spritedef>
+    
+    <!-- Labels -->
+    <label id="score" x="1" y="0" width="12">Score: 0</label>
+    <label id="lives" x="28" y="0" width="10">Vies: 3</label>
+    <label id="gameover" x="14" y="10" width="12"></label>
+    
+    <!-- Contrôles -->
+    <keypad action="LEFT" key="Q" event="moveLeft"/>
+    <keypad action="RIGHT" key="D" event="moveRight"/>
+    <keypad action="UP" key="Z" event="launch"/>
+    <keypad action="ACTION1" event="launch"/>
+    <keypad action="ACTION2" event="launch"/>
+    
+    <!-- Game loop -->
+    <timer event="gameLoop" interval="150"></timer>
+    
+  </layers>
+  
+  <div left="0" top="23" width="40" height="1">
+    <row>   [Q] Gauche  [D] Droite  [Z] Lancer   </row>
+  </div>
+  
+  <script>
+    // Dimensions du terrain de jeu
+    var FIELD_LEFT = 1;
+    var FIELD_RIGHT = 38;
+    var FIELD_TOP = 1;
+    var FIELD_BOTTOM = 20;
+    
+    // Map des briques
+    var BRICKS_MAP = 1;
+    
+    // Couleurs des briques par ligne
+    var BRICK_COLORS = [1, 1, 3, 3, 2, 2, 6, 6];  // Rouge, Jaune, Vert, Cyan
+    
+    // Configuration des briques
+    var BRICK_ROWS = 8;
+    var BRICK_COLS = 18;
+    var BRICK_WIDTH = 2;
+    var BRICK_START_X = 2;
+    var BRICK_START_Y = 2;
+    
+    // État du jeu
+    var paddleX = 18;
+    var paddleY = 19;
+    var ballX = 19;
+    var ballY = 18;
+    var ballDX = 1;
+    var ballDY = -1;
+    var ballLaunched = false;
+    var score = 0;
+    var lives = 3;
+    var gameOver = false;
+    // Nombre total de briques = BRICK_ROWS * BRICK_COLS = 8 * 18 = 144
+    var bricksRemaining = 144;
+    
+    function getLayers() {
+      return _currentLayers;
+    }
+    
+    function domReady() {
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Initialiser les briques
+      initBricks(layers);
+      
+      // Afficher la raquette
+      var paddle = layers.getSprite("paddle");
+      if (paddle != null) {
+        paddle.setColor(7);  // Blanc
+        paddle.show(0);
+        paddle.move(paddleX, paddleY);
+      }
+      
+      // Afficher la balle (sur la raquette)
+      var ball = layers.getSprite("ball");
+      if (ball != null) {
+        ball.setColor(7);  // Blanc
+        ball.show(0);
+        ball.move(ballX, ballY);
+      }
+    }
+    
+    function initBricks(layers) {
+      bricksRemaining = 0;
+      
+      for (var row = 0; row < BRICK_ROWS; row++) {
+        var color = BRICK_COLORS[row];
+        var y = BRICK_START_Y + row;
+        
+        for (var col = 0; col < BRICK_COLS; col++) {
+          var x = BRICK_START_X + col * BRICK_WIDTH;
+          
+          // Dessiner la brique (2 caractères de large)
+          layers.setMapChar(BRICKS_MAP, x, y, '#');
+          layers.setMapColor(BRICKS_MAP, x, y, color);
+          layers.setMapChar(BRICKS_MAP, x + 1, y, '#');
+          layers.setMapColor(BRICKS_MAP, x + 1, y, color);
+          
+          bricksRemaining++;
+        }
+      }
+    }
+    
+    function moveLeft() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      if (paddleX > FIELD_LEFT) {
+        paddleX -= 2;
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.move(paddleX, paddleY);
+        }
+        
+        // Si la balle n'est pas lancée, elle suit la raquette
+        if (!ballLaunched) {
+          ballX = paddleX + 1;
+          var ball = layers.getSprite("ball");
+          if (ball != null) {
+            ball.move(ballX, ballY);
+          }
+        }
+      }
+    }
+    
+    function moveRight() {
+      if (gameOver) return;
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      if (paddleX < FIELD_RIGHT - 5) {
+        paddleX += 2;
+        var paddle = layers.getSprite("paddle");
+        if (paddle != null) {
+          paddle.move(paddleX, paddleY);
+        }
+        
+        // Si la balle n'est pas lancée, elle suit la raquette
+        if (!ballLaunched) {
+          ballX = paddleX + 1;
+          var ball = layers.getSprite("ball");
+          if (ball != null) {
+            ball.move(ballX, ballY);
+          }
+        }
+      }
+    }
+    
+    function launch() {
+      if (gameOver) return;
+      if (!ballLaunched) {
+        ballLaunched = true;
+        ballDX = 1;
+        ballDY = -1;
+      }
+    }
+    
+    function checkBrickCollision(layers, x, y) {
+      // Vérifier si on touche une brique
+      var c = layers.getMapChar(BRICKS_MAP, x, y);
+      if (c != 0 && c != 32) {  // Pas un espace
+        // Trouver le début de la brique (aligné sur BRICK_WIDTH)
+        var brickX = Math.floor((x - BRICK_START_X) / BRICK_WIDTH) * BRICK_WIDTH + BRICK_START_X;
+        
+        // Effacer la brique
+        layers.setMapChar(BRICKS_MAP, brickX, y, ' ');
+        layers.setMapChar(BRICKS_MAP, brickX + 1, y, ' ');
+        
+        bricksRemaining--;
+        score += 10;
+        layers.setText("score", "Score: " + score);
+        
+        // Victoire ?
+        if (bricksRemaining <= 0) {
+          gameOver = true;
+          layers.setText("gameover", "GAGNE!");
+          // layers.beep();
+        }
+        
+        return true;
+      }
+      return false;
+    }
+    
+    function gameLoop() {
+      if (gameOver || !ballLaunched) return;
+      
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Calculer la nouvelle position
+      var newX = ballX + ballDX;
+      var newY = ballY + ballDY;
+      
+      // Collision avec les murs latéraux
+      if (newX <= FIELD_LEFT || newX >= FIELD_RIGHT - 1) {
+        ballDX = -ballDX;
+        newX = ballX + ballDX;
+        // layers.beep();
+      }
+      
+      // Collision avec le plafond
+      if (newY <= FIELD_TOP) {
+        ballDY = -ballDY;
+        newY = ballY + ballDY;
+        // layers.beep();
+      }
+      
+      // Collision avec les briques
+      if (checkBrickCollision(layers, newX, newY)) {
+        ballDY = -ballDY;
+        newY = ballY + ballDY;
+        // layers.beep();
+      }
+      
+      // Collision avec la raquette
+      if (newY >= paddleY && ballY < paddleY) {
+        if (newX >= paddleX && newX < paddleX + 5) {
+          // Rebond selon la position sur la raquette (5 zones)
+          var hitPos = newX - paddleX;
+          
+          if (hitPos == 0) {
+            // Extrême gauche: angle très prononcé
+            ballDX = -2;
+            ballDY = -1;
+          } else if (hitPos == 1) {
+            // Gauche: angle modéré
+            ballDX = -1;
+            ballDY = -1;
+          } else if (hitPos == 3) {
+            // Droite: angle modéré
+            ballDX = 1;
+            ballDY = -1;
+          } else if (hitPos == 4) {
+            // Extrême droite: angle très prononcé
+            ballDX = 2;
+            ballDY = -1;
+          } else {
+            // Centre: rebond vertical
+            ballDX = 0;
+            ballDY = -1;
+          }
+          
+          newY = paddleY - 1;
+          // layers.beep();
+        }
+      }
+      
+      // Balle perdue (bas de l'écran)
+      if (newY >= FIELD_BOTTOM) {
+        lives--;
+        layers.setText("lives", "Vies: " + lives);
+        
+        if (lives <= 0) {
+          gameOver = true;
+          layers.setText("gameover", "GAME OVER!");
+          // layers.beep();
+        } else {
+          // Replacer la balle sur la raquette
+          ballLaunched = false;
+          ballX = paddleX + 1;
+          ballY = paddleY - 1;
+          var ball = layers.getSprite("ball");
+          if (ball != null) {
+            ball.move(ballX, ballY);
+          }
+          // layers.beep();
+        }
+        return;
+      }
+      
+      // Mettre à jour la position de la balle
+      ballX = newX;
+      ballY = newY;
+      
+      var ball = layers.getSprite("ball");
+      if (ball != null) {
+        ball.move(ballX, ballY);
+      }
+    }
+  </script>
+</minitel>
