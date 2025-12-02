@@ -15,7 +15,7 @@ Minitel-Serveur est une plateforme Java innovante qui transforme un terminal Min
 - [Modules Dynamiques (MModules)](#-modules-dynamiques-mmodules)
 - [Composants Graphiques](#-composants-graphiques)
 - [Navigation et Événements](#-navigation-et-événements)
-- [Développement et Debug](#%EF%B8%8F-développement-et-debug)
+- [Développement et Debug](#-développement-et-debug)
 - [Ressources Techniques](#-ressources-techniques)
 - [Contribution](#-contribution)
 
@@ -206,12 +206,18 @@ jar cfm Minitel.jar manifest.mf -C build .
 ```bash
 # Démarrer le serveur (utilise config.json)
 java -cp Minitel.jar org.somanybits.minitel.server.StaticFileServer
+
+# Ou utiliser le script fourni
+./startserver.sh
 ```
 
 ### 3. Lancement du Client
 ```bash
 # Connecter le client au serveur
 java -jar Minitel.jar localhost 8080
+
+# Ou utiliser le script fourni
+./startclient.sh
 ```
 
 ## 📝 Format VTML (Videotex Markup Language)
