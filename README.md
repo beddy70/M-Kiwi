@@ -60,9 +60,24 @@ Minitel-Serveur est une plateforme Java innovante qui transforme un terminal Min
 - **Connexion Ethernet/WiFi**
 
 ### Logiciel
-- **Java 11+** (OpenJDK recommandé)
+- **Java 17+** (OpenJDK 17 recommandé)
 - **Raspberry Pi OS** ou distribution Linux
 - **Accès GPIO** (`/dev/serial0` configuré)
+
+#### Installation de Java 17 sur Raspberry Pi
+
+```bash
+# Mise à jour du système
+sudo apt update && sudo apt upgrade -y
+
+# Installation d'OpenJDK 17
+sudo apt install openjdk-17-jdk -y
+
+# Vérification de l'installation
+java -version
+```
+
+> **Note** : Sur Raspberry Pi OS Lite, vous pouvez aussi utiliser `openjdk-17-jre` si vous n'avez pas besoin de compiler.
 
 ## 🔧 Installation et Configuration
 
