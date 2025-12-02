@@ -12,7 +12,6 @@
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/VTMLContants.java</file>
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/client/MinitelPageReader.java</file>
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/README.md</file>
-            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/Teletel.java</file>
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/log/LogManager.java</file>
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/kernel/Kernel.java</file>
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/server/MModulesManager.java</file>
@@ -21,8 +20,27 @@
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/TeletelCode.java</file>
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/config.json</file>
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/client/Page.java</file>
-            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/PageManager.java</file>
             <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/PageMinitel.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/GraphTel.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/tools/ImageTo1bpp.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/Teletel.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLQRCodeComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLMinitelComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLDivComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/MComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/ModelMComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLBrComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLMenuComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLItemComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLRowComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/GetTeletelCode.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLImgComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/client/LinkNotValidException.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/client/PageManager.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLInputComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLSpriteComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/components/vtml/VTMLLayersComponent.java</file>
+            <file>file:/Users/eddy/NetBeansProjects/Minitel-Serveur/src/org/somanybits/minitel/server/mmodules/QRCodeVTMLDemo.java</file>
         </group>
     </open-files>
 </project-private>

@@ -8,37 +8,38 @@ import org.mozilla.javascript.ClassShutter;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.somanybits.minitel.client.Page;
 
 /**
  * Moteur JavaScript pour l'exécution de scripts dans les pages VTML.
  * <p>
- * Ce moteur utilise Mozilla Rhino pour exécuter du JavaScript côté serveur.
- * Il implémente le pattern Singleton et fournit un environnement sécurisé
- * avec une liste blanche de classes Java accessibles.
+ * Ce moteur utilise Mozilla Rhino pour exécuter du JavaScript côté serveur. Il
+ * implémente le pattern Singleton et fournit un environnement sécurisé avec une
+ * liste blanche de classes Java accessibles.
  * </p>
- * 
+ *
  * <h2>Sécurité</h2>
  * <p>
  * Seules les classes suivantes sont accessibles depuis JavaScript :
  * </p>
  * <ul>
- *   <li>Classes Minitel : Kernel, Config, GetTeletelCode, Teletel</li>
- *   <li>Classes Java de base : String, Integer, Double, Boolean, Math, Date</li>
+ * <li>Classes Minitel : Kernel, Config, GetTeletelCode, Teletel</li>
+ * <li>Classes Java de base : String, Integer, Double, Boolean, Math, Date</li>
  * </ul>
- * 
+ *
  * <h2>Variables globales</h2>
  * <ul>
- *   <li>{@code _currentLayers} - Référence au VTMLLayersComponent courant</li>
- *   <li>{@code _joystickMapping} - Configuration du joystick</li>
+ * <li>{@code _currentLayers} - Référence au VTMLLayersComponent courant</li>
+ * <li>{@code _joystickMapping} - Configuration du joystick</li>
  * </ul>
- * 
+ *
  * <h2>Fonctions spéciales</h2>
  * <ul>
- *   <li>{@code domReady()} - Appelée après le chargement de la page</li>
- *   <li>{@code debug(msg)} - Affiche un message dans la console</li>
- *   <li>{@code getLayers()} - Retourne le layers courant</li>
+ * <li>{@code domReady()} - Appelée après le chargement de la page</li>
+ * <li>{@code debug(msg)} - Affiche un message dans la console</li>
+ * <li>{@code getLayers()} - Retourne le layers courant</li>
  * </ul>
- * 
+ *
  * @author Eddy Briere
  * @version 0.3
  * @see VTMLScriptComponent
@@ -52,25 +53,30 @@ public class VTMLScriptEngine {
 
     // Liste blanche des classes Java autorisées
     private static final java.util.Set<String> ALLOWED_CLASSES = java.util.Set.of(
-        // Classes Minitel
-        "org.somanybits.minitel.kernel.Kernel",
-        "org.somanybits.minitel.kernel.Config",
-        "org.somanybits.minitel.GetTeletelCode",
-        "org.somanybits.minitel.Teletel",
-        // Classes Java de base (lecture seule)
-        "java.lang.String",
-        "java.lang.Integer",
-        "java.lang.Double",
-        "java.lang.Boolean",
-        "java.lang.Math",
-        "java.util.Date"
+            // Classes Minitel
+            "org.somanybits.minitel.kernel.Kernel",
+            "org.somanybits.minitel.kernel.Config",
+            "org.somanybits.minitel.GetTeletelCode",
+            "org.somanybits.minitel.Teletel",
+            // Classes Java de base (lecture seule)
+            "java.lang.String",
+            "java.lang.Integer",
+            "java.lang.Double",
+            "java.lang.Boolean",
+            "java.lang.Math",
+            "java.util.Date",
+            // Classes pour requêtes HTTP
+            "java.net.URL",
+            "java.net.HttpURLConnection",
+            "java.io.BufferedReader",
+            "java.io.InputStreamReader"
     );
 
     private VTMLScriptEngine() {
         try {
             // Initialiser Rhino
             Context cx = Context.enter();
-            
+
             // Activer le ClassShutter pour filtrer les classes accessibles
             cx.setClassShutter(new ClassShutter() {
                 @Override
@@ -79,12 +85,12 @@ public class VTMLScriptEngine {
                     return ALLOWED_CLASSES.contains(className);
                 }
             });
-            
+
             scope = cx.initStandardObjects();
-            
+
             // Exposer des classes Java utiles au JavaScript
             exposeJavaClasses(cx);
-            
+
             available = true;
             System.out.println("✅ Moteur JavaScript Rhino initialisé (mode sécurisé)");
             Context.exit();
@@ -93,66 +99,102 @@ public class VTMLScriptEngine {
             available = false;
         }
     }
-    
+
     /**
      * Expose des classes Java au contexte JavaScript
      */
     private void exposeJavaClasses(Context cx) {
         try {
             // Définir les classes Java accessibles via JavaScript
-            String initScript = 
-                "var Kernel = Packages.org.somanybits.minitel.kernel.Kernel;\n" +
-                "var GetTeletelCode = Packages.org.somanybits.minitel.GetTeletelCode;\n" +
-                "var Teletel = Packages.org.somanybits.minitel.Teletel;\n" +
-                "var Config = Packages.org.somanybits.minitel.kernel.Config;\n" +
-                "\n" +
-                "// Variable globale pour le layers courant\n" +
-                "var _currentLayers = null;\n" +
-                "\n" +
-                "// Helper pour importer une classe\n" +
-                "function importClass(className) {\n" +
-                "  return Packages[className];\n" +
-                "}\n" +
-                "\n" +
-                "// Helper pour obtenir la config\n" +
-                "function getConfig() {\n" +
-                "  return Kernel.getInstance().getConfig();\n" +
-                "}\n" +
-                "\n" +
-                "// Fonction debug pour afficher dans la console Java\n" +
-                "function debug(msg) {\n" +
-                "  java.lang.System.out.println('🔧 JS: ' + msg);\n" +
-                "}\n" +
-                "\n" +
-                "// Variable globale pour le mapping joystick\n" +
-                "var _joystickMapping = null;\n" +
-                "\n" +
-                "// API Joystick\n" +
-                "var joystick = {\n" +
-                "  // Mapper un bouton vers une action\n" +
-                "  mapButton: function(button, action) {\n" +
-                "    if (_joystickMapping) _joystickMapping.mapButton(button, action);\n" +
-                "  },\n" +
-                "  // Mapper un axe vers une action (ex: '0+' pour axe 0 positif)\n" +
-                "  mapAxis: function(axis, action) {\n" +
-                "    if (_joystickMapping) _joystickMapping.mapAxis(axis, action);\n" +
-                "  },\n" +
-                "  // Définir le seuil des axes (0-32767)\n" +
-                "  setThreshold: function(threshold) {\n" +
-                "    if (_joystickMapping) _joystickMapping.setAxisThreshold(threshold);\n" +
-                "  },\n" +
-                "  // Afficher le mapping actuel\n" +
-                "  printMapping: function() {\n" +
-                "    if (_joystickMapping) _joystickMapping.printMapping();\n" +
-                "  },\n" +
-                "  // Réinitialiser le mapping par défaut\n" +
-                "  resetMapping: function() {\n" +
-                "    if (_joystickMapping) _joystickMapping.setDefaultMapping();\n" +
-                "  }\n" +
-                "};\n";
-            
+            String initScript
+                    = "var Kernel = Packages.org.somanybits.minitel.kernel.Kernel;\n"
+                    + "var GetTeletelCode = Packages.org.somanybits.minitel.GetTeletelCode;\n"
+                    + "var Teletel = Packages.org.somanybits.minitel.Teletel;\n"
+                    + "var Config = Packages.org.somanybits.minitel.kernel.Config;\n"
+                    + "\n"
+                    + "// Variable globale pour le layers courant\n"
+                    + "var _currentLayers = null;\n"
+                    + "\n"
+                    + "// Helper pour importer une classe\n"
+                    + "function importClass(className) {\n"
+                    + "  return Packages[className];\n"
+                    + "}\n"
+                    + "\n"
+                    + "// Helper pour obtenir la config\n"
+                    + "function getConfig() {\n"
+                    + "  return Kernel.getInstance().getConfig();\n"
+                    + "}\n"
+                    + "\n"
+                    + "// Fonction debug pour afficher dans la console Java\n"
+                    + "function debug(msg) {\n"
+                    + "  java.lang.System.out.println('🔧 JS: ' + msg);\n"
+                    + "}\n"
+                    + "\n"
+                    + "// Variable globale pour le mapping joystick\n"
+                    + "var _joystickMapping = null;\n"
+                    + "\n"
+                    + "// API Joystick\n"
+                    + "var joystick = {\n"
+                    + "  // Mapper un bouton vers une action\n"
+                    + "  mapButton: function(button, action) {\n"
+                    + "    if (_joystickMapping) _joystickMapping.mapButton(button, action);\n"
+                    + "  },\n"
+                    + "  // Mapper un axe vers une action (ex: '0+' pour axe 0 positif)\n"
+                    + "  mapAxis: function(axis, action) {\n"
+                    + "    if (_joystickMapping) _joystickMapping.mapAxis(axis, action);\n"
+                    + "  },\n"
+                    + "  // Définir le seuil des axes (0-32767)\n"
+                    + "  setThreshold: function(threshold) {\n"
+                    + "    if (_joystickMapping) _joystickMapping.setAxisThreshold(threshold);\n"
+                    + "  },\n"
+                    + "  // Afficher le mapping actuel\n"
+                    + "  printMapping: function() {\n"
+                    + "    if (_joystickMapping) _joystickMapping.printMapping();\n"
+                    + "  },\n"
+                    + "  // Réinitialiser le mapping par défaut\n"
+                    + "  resetMapping: function() {\n"
+                    + "    if (_joystickMapping) _joystickMapping.setDefaultMapping();\n"
+                    + "  }\n"
+                    + "};\n"
+                    + "// API pour créer des éléments dynamiques\n"
+                    + "function createRow(text) {\n"
+                    + "  if (_currentParent && _currentParent.createRow) {\n"
+                    + "    return _currentParent.createRow(text);\n"
+                    + "  }\n"
+                    + "  return null;\n"
+                    + "}\n"
+                    + "// Variable globale pour la page courante\n"
+                    + "var _currentPage = null;\n"
+                    + "\n"
+                    + "// Récupérer un composant par ID\n"
+                    + "function getElementById(id) {\n"
+                    + "  if (_currentPage) {\n"
+                    + "    return _currentPage.getComponentById(id);\n"
+                    + "  }\n"
+                    + "  return null;\n"
+                    + "}\n"
+                    + "\n"
+                    + "// Récupérer un composant par name\n"
+                    + "function getElementByName(name) {\n"
+                    + "  if (_currentPage) {\n"
+                    + "    return _currentPage.getComponentByName(name);\n"
+                    + "  }\n"
+                    + "  return null;\n"
+                    + "}\n"
+                    + "// Storage persistant entre pages\n"
+                    + "var _storage = {};\n"
+                    + "\n"
+                    + "var storage = {\n"
+                    + "  set: function(key, value) { _storage[key] = value; },\n"
+                    + "  get: function(key, defaultValue) {\n"
+                    + "    return _storage[key] !== undefined ? _storage[key] : defaultValue;\n"
+                    + "  },\n"
+                    + "  remove: function(key) { delete _storage[key]; },\n"
+                    + "  clear: function() { _storage = {}; }\n"
+                    + "};\n";
+
             cx.evaluateString(scope, initScript, "init", 1, null);
-            
+
         } catch (Exception e) {
             System.err.println("Erreur exposition classes Java: " + e.getMessage());
         }
@@ -170,6 +212,28 @@ public class VTMLScriptEngine {
      */
     public boolean isAvailable() {
         return available;
+    }
+
+    /**
+     * Définit la page courante pour le JavaScript
+     */
+    public void setCurrentPage(Page page) {
+        setVariable("_currentPage", page);
+        System.out.println("📄 _currentPage défini: " + page);
+    }
+
+    /**
+     * Réinitialise les variables spécifiques à une page (pas le storage) À
+     * appeler avant de charger une nouvelle page
+     */
+    public void resetPageContext() {
+        try {
+            // Supprimer domReady et autres fonctions de page
+            execute("domReady = undefined; output = null; _currentLayers = null; _currentPage = null;");
+            System.out.println("🔄 Contexte de page réinitialisé");
+        } catch (Exception e) {
+            System.err.println("Erreur reset contexte: " + e.getMessage());
+        }
     }
 
     /**
@@ -213,7 +277,7 @@ public class VTMLScriptEngine {
         if (!available) {
             throw new Exception("Moteur JavaScript non disponible");
         }
-        
+
         Context cx = Context.enter();
         try {
             Object result = cx.evaluateString(scope, script, "script", 1, null);
@@ -242,7 +306,7 @@ public class VTMLScriptEngine {
             Context.exit();
         }
     }
-    
+
     /**
      * Définit le layers courant pour le JavaScript
      */
@@ -250,14 +314,16 @@ public class VTMLScriptEngine {
         setVariable("_currentLayers", layers);
         System.out.println("🎮 _currentLayers défini: " + layers);
     }
-    
+
     /**
-     * Appelle la fonction domReady() si elle est définie
-     * À appeler après le rendu complet de la page
+     * Appelle la fonction domReady() si elle est définie À appeler après le
+     * rendu complet de la page
      */
     public void callDomReady() {
-        if (!available) return;
-        
+        if (!available) {
+            return;
+        }
+
         try {
             // Vérifier si domReady existe
             Object domReady = getVariable("domReady");
@@ -271,7 +337,7 @@ public class VTMLScriptEngine {
             e.printStackTrace();
         }
     }
-    
+
     /**
      * Appelle une fonction JavaScript par son nom
      */
@@ -279,14 +345,16 @@ public class VTMLScriptEngine {
         if (!available) {
             throw new Exception("Moteur JavaScript non disponible");
         }
-        
+
         Context cx = Context.enter();
         try {
             // Construire l'appel de fonction
             StringBuilder call = new StringBuilder(functionName);
             call.append("(");
             for (int i = 0; i < args.length; i++) {
-                if (i > 0) call.append(", ");
+                if (i > 0) {
+                    call.append(", ");
+                }
                 if (args[i] instanceof String) {
                     call.append("\"").append(args[i]).append("\"");
                 } else {
@@ -294,7 +362,7 @@ public class VTMLScriptEngine {
                 }
             }
             call.append(")");
-            
+
             Object result = cx.evaluateString(scope, call.toString(), "call", 1, null);
             return Context.jsToJava(result, Object.class);
         } finally {

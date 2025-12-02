@@ -59,7 +59,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.4";
+    private static final String VERSION = "0.5";
     private static LogManager logmgr;
 
 //    private Thread rxThread;

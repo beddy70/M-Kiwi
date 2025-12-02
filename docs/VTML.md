@@ -37,6 +37,10 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 
 ### Scripting
 - [`<script>`](#script) - Code JavaScript
+  - [Variables globales](#variables-globales-1)
+  - [API Storage](#api-storage-persistant-entre-pages)
+  - [Création dynamique](#création-dynamique-déléments)
+  - [Requêtes HTTP](#requêtes-http)
 
 ---
 
@@ -860,21 +864,111 @@ Exécute du JavaScript côté serveur. Permet de générer du contenu dynamique.
 
 **Variable spéciale** : `output` - son contenu est affiché dans la page.
 
+#### Variables globales
+
+| Variable          | Description                                      |
+|-------------------|--------------------------------------------------|
+| `_currentLayers`  | Référence au VTMLLayersComponent courant         |
+| `_currentPage`    | Référence à la page courante                     |
+
+#### Fonctions disponibles
+
+| Fonction                      | Description                                           |
+|-------------------------------|-------------------------------------------------------|
+| `domReady()`                  | Appelée automatiquement après le chargement de la page |
+| `debug(msg)`                  | Affiche un message dans la console Java               |
+| `getElementById(id)`          | Récupère un composant par son attribut `id`           |
+| `getElementByName(name)`      | Récupère un composant par son attribut `name`         |
+
+#### API Storage (persistant entre pages)
+
+Le storage permet de conserver des données entre les navigations de pages.
+
+```javascript
+// Stocker une valeur
+storage.set("userId", 12);
+storage.set("score", 100);
+
+// Récupérer une valeur (avec valeur par défaut optionnelle)
+var userId = storage.get("userId");
+var score = storage.get("score", 0);  // 0 si non défini
+
+// Supprimer une valeur
+storage.remove("userId");
+
+// Vider tout le storage
+storage.clear();
+```
+
+#### Création dynamique d'éléments
+
+Les composants `<div>` avec un `id` ou `name` peuvent créer des éléments `<row>` dynamiquement :
+
+```xml
+<div id="container" left="2" top="5" width="30" height="10">
+  <row>== Liste ==</row>
+</div>
+
+<script>
+  function domReady() {
+    var container = getElementById("container");
+    container.createRow("Ligne 1");
+    container.createRow("Ligne 2");
+    container.createRow("Ligne 3");
+  }
+</script>
+```
+
+#### Requêtes HTTP
+
+Les classes HTTP sont accessibles pour récupérer des données externes :
+
+```javascript
+function fetchUrl(urlString) {
+  var url = new java.net.URL(urlString);
+  var connection = url.openConnection();
+  connection.setRequestMethod("GET");
+  
+  var reader = new java.io.BufferedReader(
+    new java.io.InputStreamReader(connection.getInputStream())
+  );
+  
+  var response = "";
+  var line;
+  while ((line = reader.readLine()) != null) {
+    response += line;
+  }
+  reader.close();
+  return response;
+}
+
+// Utilisation
+var data = fetchUrl("http://api.example.com/scores");
+var items = data.split(",");
+for (var i = 0; i < items.length; i++) {
+  debug(items[i]);
+}
+```
+
 #### Classes Java accessibles
 
-| Classe          | Description                    |
-|-----------------|--------------------------------|
-| `Kernel`        | Accès à la configuration       |
-| `Config`        | Structure de configuration     |
-| `GetTeletelCode`| Génération de codes Vidéotex   |
-| `Teletel`       | Constantes Minitel             |
-| `Math`          | Fonctions mathématiques        |
-| `Date`          | Date et heure                  |
+| Classe                       | Description                    |
+|------------------------------|--------------------------------|
+| `Kernel`                     | Accès à la configuration       |
+| `Config`                     | Structure de configuration     |
+| `GetTeletelCode`             | Génération de codes Vidéotex   |
+| `Teletel`                    | Constantes Minitel             |
+| `Math`                       | Fonctions mathématiques        |
+| `Date`                       | Date et heure                  |
+| `java.net.URL`               | Requêtes HTTP                  |
+| `java.net.HttpURLConnection` | Connexions HTTP                |
+| `java.io.BufferedReader`     | Lecture de flux                |
+| `java.io.InputStreamReader`  | Conversion de flux             |
 
 ```xml
 <script>
   // Accès à la configuration
-  var config = Kernel.getIntance().getConfig();
+  var config = Kernel.getInstance().getConfig();
   output = "Port: " + config.server.port;
 </script>
 
@@ -884,7 +978,7 @@ Exécute du JavaScript côté serveur. Permet de générer du contenu dynamique.
 </script>
 ```
 
-**Sécurité** : L'accès aux classes Java est restreint à une liste blanche. Les opérations fichiers, réseau et système sont bloquées.
+**Sécurité** : L'accès aux classes Java est restreint à une liste blanche.
 
 ---
 
