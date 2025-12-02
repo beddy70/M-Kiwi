@@ -75,6 +75,7 @@ Pin 8  (TX)   ──► Minitel RX
 Pin 10 (RX)   ──► Minitel TX
 Pin 2  (5V)   ──► Minitel 5V (si nécessaire)
 ```
+Attention !!! Le Minitel ne possède pas de sortie 5v. La broche 5 du Minitel fournie des tension supérieurs (entre 8,5v à 12v en fonction du modèle).
 
 ### 2. Configuration Série
 
