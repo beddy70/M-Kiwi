@@ -9,10 +9,10 @@ Le module **ServerScore** permet de gérer des tableaux de scores pour les jeux 
 Chaque jeu est identifié par un **GameId** unique (généré manuellement). Le module stocke les scores avec des champs personnalisables (score, nom, date, etc.) et limite le nombre d'enregistrements.
 
 ```
-┌─────────────────┐         ┌─────────────────┐
+┌─────────────────┐           ┌─────────────────┐
 │   Jeu Minitel   │ ──HTTP──► │  ServerScore    │
-│   (client)      │ ◄──────  │   (module)      │
-└─────────────────┘         └─────────────────┘
+│   (client)      │ ◄──────── │   (module)      │
+└─────────────────┘           └─────────────────┘
 ```
 
 ---
