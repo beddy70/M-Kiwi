@@ -69,7 +69,9 @@ public class VTMLScriptEngine {
             "java.net.URL",
             "java.net.HttpURLConnection",
             "java.io.BufferedReader",
-            "java.io.InputStreamReader"
+            "java.io.InputStreamReader",
+            // Factory pour création dynamique d'éléments
+            "org.somanybits.minitel.components.vtml.VTMLFactory"
     );
 
     private VTMLScriptEngine() {
@@ -156,13 +158,6 @@ public class VTMLScriptEngine {
                     + "    if (_joystickMapping) _joystickMapping.setDefaultMapping();\n"
                     + "  }\n"
                     + "};\n"
-                    + "// API pour créer des éléments dynamiques\n"
-                    + "function createRow(text) {\n"
-                    + "  if (_currentParent && _currentParent.createRow) {\n"
-                    + "    return _currentParent.createRow(text);\n"
-                    + "  }\n"
-                    + "  return null;\n"
-                    + "}\n"
                     + "// Variable globale pour la page courante\n"
                     + "var _currentPage = null;\n"
                     + "\n"
@@ -325,9 +320,11 @@ public class VTMLScriptEngine {
         }
 
         try {
-            // Vérifier si domReady existe
+            // Vérifier si domReady existe et est une fonction
             Object domReady = getVariable("domReady");
-            if (domReady != null) {
+            if (domReady != null 
+                    && !(domReady instanceof org.mozilla.javascript.Undefined)
+                    && domReady instanceof org.mozilla.javascript.Function) {
                 System.out.println("🎮 Appel de domReady()...");
                 execute("domReady()");
                 System.out.println("✅ domReady() terminé");

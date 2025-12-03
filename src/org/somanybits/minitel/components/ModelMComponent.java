@@ -109,6 +109,27 @@ public class ModelMComponent implements MComponent {
         childs.add(child);
         child.setParent(this);
     }
+    
+    /**
+     * Alias pour addChild - compatibilité DOM JavaScript
+     * @param child Le composant enfant à ajouter
+     */
+    public void appendChild(MComponent child) {
+        addChild(child);
+    }
+    
+    /**
+     * Crée un élément VTML et l'ajoute comme enfant - API DOM JavaScript
+     * @param tagName Le nom du tag (row, br, div, color, blink, label)
+     * @return Le composant créé, ou null si le type est inconnu
+     */
+    public MComponent createElement(String tagName) {
+        MComponent child = org.somanybits.minitel.components.vtml.VTMLFactory.create(tagName);
+        if (child != null) {
+            addChild(child);
+        }
+        return child;
+    }
 
     public ArrayList<MComponent> getChilds() {
         return childs;

@@ -27,12 +27,6 @@ public class VTMLDivComponent extends ModelMComponent {
         setHeight(height);
         setTextContent(textContent);
     }
-    public VTMLRowComponent createRow(String text) {
-        VTMLRowComponent row = new VTMLRowComponent();
-        row.setText(text);
-        this.addChild(row);
-        return row;
-    }
     @Override
     public byte[] getBytes() {
         try {

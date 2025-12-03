@@ -902,22 +902,57 @@ storage.clear();
 
 #### Création dynamique d'éléments
 
-Les composants `<div>` avec un `id` ou `name` peuvent créer des éléments `<row>` dynamiquement :
+L'API DOM permet de créer n'importe quel élément VTML dynamiquement via la méthode `createElement()` disponible sur tous les composants :
+
+| Méthode                        | Description                                           |
+|--------------------------------|-------------------------------------------------------|
+| `container.createElement(tag)` | Crée un élément et l'ajoute automatiquement au container |
+| `container.appendChild(child)` | Ajoute un élément existant (créé ailleurs) au container |
+
+**Important** : `createElement()` ajoute automatiquement l'élément au container. N'utilisez pas `appendChild()` en plus, sinon l'élément sera ajouté deux fois.
+
+**Types d'éléments supportés** : `row`, `br`, `div`, `color`, `blink`, `label`
 
 ```xml
 <div id="container" left="2" top="5" width="30" height="10">
-  <row>== Liste ==</row>
+  <row>== Liste dynamique ==</row>
 </div>
 
 <script>
   function domReady() {
     var container = getElementById("container");
-    container.createRow("Ligne 1");
-    container.createRow("Ligne 2");
-    container.createRow("Ligne 3");
+    
+    // Créer des éléments dynamiquement (ajoutés automatiquement)
+    for (var i = 1; i <= 3; i++) {
+      var row = container.createElement("row");
+      row.setText("Item " + i);
+      // PAS de appendChild nécessaire !
+      
+      container.createElement("br");
+    }
+    
+    // Avec couleur
+    var color = container.createElement("color");
+    color.setInk("red");
+    color.setText("Texte rouge");
+    
+    // Avec clignotement
+    var blink = container.createElement("blink");
+    blink.setText("ATTENTION !");
   }
 </script>
 ```
+
+**Méthodes disponibles sur les éléments créés** :
+
+| Élément | Méthodes                                    |
+|---------|---------------------------------------------|
+| `row`   | `setText(text)`                             |
+| `div`   | `setX(x)`, `setY(y)`, `setWidth(w)`, `setHeight(h)` |
+| `color` | `setInk(color)`, `setBackground(color)`, `setText(text)` |
+| `blink` | `setText(text)`                             |
+| `label` | `setText(text)`, `setX(x)`, `setY(y)`       |
+| Tous    | `setVisible(bool)`, `setId(id)`, `setName(name)`, `createElement(tag)`, `appendChild(child)` |
 
 #### Requêtes HTTP
 
