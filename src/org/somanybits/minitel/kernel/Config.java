@@ -71,6 +71,7 @@ public class Config {
      * Configuration du client Minitel.
      * <p>
      * Définit les paramètres de connexion série et le support joystick.
+     * Supporte jusqu'à 2 joysticks pour le mode 2 joueurs.
      * </p>
      */
     public static class ClientCfg {
@@ -78,12 +79,16 @@ public class Config {
         public String serial_port = "/dev/serial0";
         /** Vitesse du port série en bauds (1200, 4800 ou 9600) */
         public int serial_baud = 9600;
-        /** Périphérique joystick Linux (ex: /dev/input/js0) */
-        public String joystick_device = "/dev/input/js0";
+        /** Périphérique joystick Linux pour joueur 0 (ex: /dev/input/js0) */
+        public String joystick_device_0 = "/dev/input/js0";
+        /** Périphérique joystick Linux pour joueur 1 (ex: /dev/input/js1) */
+        public String joystick_device_1 = "/dev/input/js1";
         /** Activer le support joystick USB pour les jeux */
         public boolean joystick_enabled = true;
-        /** Mapping des boutons et axes joystick vers actions VTML */
-        public JoystickMapping joystick_mapping = new JoystickMapping();
+        /** Mapping des boutons et axes joystick vers actions VTML (joueur 0) */
+        public JoystickMapping joystick_mapping_0 = new JoystickMapping();
+        /** Mapping des boutons et axes joystick vers actions VTML (joueur 1) */
+        public JoystickMapping joystick_mapping_1 = new JoystickMapping();
     }
     
     /**

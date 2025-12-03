@@ -543,9 +543,10 @@ public class MinitelPageReader {
                 String action = attrs.get("action");
                 String keyStr = attrs.get("key");
                 String event = attrs.get("event");
+                int player = parseInt(attrs.get("player"), 0);  // 0 = joueur 1, 1 = joueur 2
                 char key = (keyStr != null && !keyStr.isEmpty()) ? keyStr.charAt(0) : ' ';
-                VTMLKeypadComponent keypad = new VTMLKeypadComponent(action, key, event);
-                System.out.println("🎮 Keypad: action=" + action + ", key=" + key + ", event=" + event);
+                VTMLKeypadComponent keypad = new VTMLKeypadComponent(action, key, event, player);
+                System.out.println("🎮 Keypad: player=" + player + ", action=" + action + ", key=" + key + ", event=" + event);
                 // Chercher le layers parent (peut être plus haut dans l'arbre)
                 MComponent parent = currentComponent;
                 while (parent != null) {

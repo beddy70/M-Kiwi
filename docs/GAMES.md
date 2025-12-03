@@ -501,6 +501,28 @@ Le `<keypad>` associe des touches à des fonctions JavaScript. Deux modes sont d
 
 Ces actions sont aussi déclenchées automatiquement par un joystick USB.
 
+### Mode 2 joueurs
+
+Le paramètre `player` permet d'associer des touches à différents joueurs :
+
+```xml
+<!-- Joueur 0 : touches ZQSD -->
+<keypad action="UP"    key="Z" event="p0Up" player="0"/>
+<keypad action="DOWN"  key="S" event="p0Down" player="0"/>
+<keypad action="LEFT"  key="Q" event="p0Left" player="0"/>
+<keypad action="RIGHT" key="D" event="p0Right" player="0"/>
+<keypad action="ACTION1" key=" " event="p0Fire" player="0"/>
+
+<!-- Joueur 1 : touches OKLM -->
+<keypad action="UP"    key="O" event="p1Up" player="1"/>
+<keypad action="DOWN"  key="L" event="p1Down" player="1"/>
+<keypad action="LEFT"  key="K" event="p1Left" player="1"/>
+<keypad action="RIGHT" key="M" event="p1Right" player="1"/>
+<keypad action="ACTION1" key="N" event="p1Fire" player="1"/>
+```
+
+**Note** : `player="0"` est la valeur par défaut et peut être omis.
+
 ### Actions disponibles
 
 | Action | Description |
@@ -560,7 +582,9 @@ Sur Raspberry Pi, un joystick USB est automatiquement détecté et utilisable.
 
 ### Fonctionnement
 
-Le système lit `/dev/input/js0` (ou autre joystick disponible) et traduit les événements en appels aux mêmes fonctions que le `<keypad>`.
+Le système lit `/dev/input/js0` et `/dev/input/js1` (si disponibles) et traduit les événements en appels aux mêmes fonctions que le `<keypad>`.
+
+**Support 2 joueurs** : Deux joysticks peuvent être connectés simultanément. Le joystick 0 déclenche les events du player 0, le joystick 1 ceux du player 1.
 
 **Aucune configuration nécessaire** : si vous avez défini des `<keypad>` pour UP/DOWN/LEFT/RIGHT et ACTION1/ACTION2, le joystick les déclenchera automatiquement.
 
@@ -599,21 +623,17 @@ Le mapping peut être personnalisé dans `config.json` :
 ```json
 {
   "client": {
-    "joystick_device": "/dev/input/js0",
+    "joystick_device_0": "/dev/input/js0",
+    "joystick_device_1": "/dev/input/js1",
     "joystick_enabled": true,
-    "joystick_mapping": {
-      "buttons": {
-        "0": "ACTION1",
-        "1": "ACTION2",
-        "2": "UP",
-        "3": "DOWN"
-      },
-      "axes": {
-        "0+": "RIGHT",
-        "0-": "LEFT",
-        "1+": "DOWN",
-        "1-": "UP"
-      },
+    "joystick_mapping_0": {
+      "buttons": { "0": "ACTION1", "1": "ACTION2" },
+      "axes": { "0+": "RIGHT", "0-": "LEFT", "1+": "DOWN", "1-": "UP" },
+      "axis_threshold": 16000
+    },
+    "joystick_mapping_1": {
+      "buttons": { "0": "ACTION1", "1": "ACTION2" },
+      "axes": { "0+": "RIGHT", "0-": "LEFT", "1+": "DOWN", "1-": "UP" },
       "axis_threshold": 16000
     }
   }
@@ -1121,11 +1141,12 @@ layers.beep();
 
 ### Élément `<keypad>`
 
-| Attribut | Type | Description |
-|----------|------|-------------|
-| `key` | string | Touche clavier associée |
-| `event` | string | Nom de la fonction JavaScript à appeler |
-| `action` | string | Action joystick : `UP`, `DOWN`, `LEFT`, `RIGHT`, `ACTION1`, `ACTION2` |
+| Attribut | Type | Défaut | Description |
+|----------|------|--------|-------------|
+| `key` | string | | Touche clavier associée |
+| `event` | string | | Nom de la fonction JavaScript à appeler |
+| `action` | string | | Action joystick : `UP`, `DOWN`, `LEFT`, `RIGHT`, `ACTION1`, `ACTION2` |
+| `player` | int | `0` | Numéro du joueur (0 ou 1) pour le support multi-manettes |
 
 ### Élément `<timer>`
 

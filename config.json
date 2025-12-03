@@ -10,9 +10,25 @@
   "client": {
     "serial_port": "/dev/serial0",
     "serial_baud": 9600,
-    "joystick_device": "/dev/input/js0",
+    "joystick_device_0": "/dev/input/js0",
+    "joystick_device_1": "/dev/input/js1",
     "joystick_enabled": true,
-    "joystick_mapping": {
+    "joystick_mapping_0": {
+      "buttons": {
+        "0": "ACTION1",
+        "1": "ACTION2",
+        "2": "ACTION1",
+        "3": "ACTION2"
+      },
+      "axes": {
+        "0+": "RIGHT",
+        "0-": "LEFT",
+        "1+": "DOWN",
+        "1-": "UP"
+      },
+      "axis_threshold": 16000
+    },
+    "joystick_mapping_1": {
       "buttons": {
         "0": "ACTION1",
         "1": "ACTION2",

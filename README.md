@@ -157,19 +157,17 @@ Le fichier `config.json` contient toute la configuration du serveur et du client
   "client": {
     "serial_port": "/dev/serial0",
     "serial_baud": 9600,
-    "joystick_device": "/dev/input/js0",
+    "joystick_device_0": "/dev/input/js0",
+    "joystick_device_1": "/dev/input/js1",
     "joystick_enabled": true,
-    "joystick_mapping": {
-      "buttons": {
-        "0": "ACTION1",
-        "1": "ACTION2"
-      },
-      "axes": {
-        "0+": "RIGHT",
-        "0-": "LEFT",
-        "1+": "DOWN",
-        "1-": "UP"
-      },
+    "joystick_mapping_0": {
+      "buttons": { "0": "ACTION1", "1": "ACTION2" },
+      "axes": { "0+": "RIGHT", "0-": "LEFT", "1+": "DOWN", "1-": "UP" },
+      "axis_threshold": 16000
+    },
+    "joystick_mapping_1": {
+      "buttons": { "0": "ACTION1", "1": "ACTION2" },
+      "axes": { "0+": "RIGHT", "0-": "LEFT", "1+": "DOWN", "1-": "UP" },
       "axis_threshold": 16000
     }
   }
@@ -187,8 +185,10 @@ Le fichier `config.json` contient toute la configuration du serveur et du client
 | `client.serial_port` | string | Port série du Minitel |
 | `client.serial_baud` | int | Vitesse: 1200, 4800 ou 9600 |
 | `client.joystick_enabled` | bool | Activer le support joystick USB |
-| `client.joystick_device` | string | Périphérique joystick Linux |
-| `client.joystick_mapping` | object | Mapping des boutons/axes |
+| `client.joystick_device_0` | string | Périphérique joystick joueur 0 |
+| `client.joystick_device_1` | string | Périphérique joystick joueur 1 |
+| `client.joystick_mapping_0` | object | Mapping boutons/axes joueur 0 |
+| `client.joystick_mapping_1` | object | Mapping boutons/axes joueur 1 |
 
 ## 🚀 Démarrage Rapide
 

@@ -15,6 +15,7 @@ import org.somanybits.minitel.MinitelConnection;
 import org.somanybits.minitel.Teletel;
 import org.somanybits.minitel.components.vtml.VTMLFormComponent;
 import org.somanybits.minitel.components.vtml.VTMLInputComponent;
+import org.somanybits.minitel.components.vtml.VTMLKeypadComponent;
 import org.somanybits.minitel.components.vtml.VTMLLayersComponent;
 import org.somanybits.minitel.components.vtml.VTMLScriptEngine;
 import org.somanybits.minitel.components.vtml.VTMLStatusComponent;
@@ -80,10 +81,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private Thread gameLoopThread = null;
     private volatile boolean gameLoopRunning = false;
     
-    // Joystick USB
-    private JoystickReader joystick = null;
-    private JoystickMapping joystickMapping = new JoystickMapping();
-    private String[] lastAxisAction = new String[8];  // Pour éviter les répétitions d'axes
+    // Joystick USB - Support 2 joueurs
+    private JoystickReader joystick = null;      // Joueur 1
+    private JoystickReader joystick2 = null;     // Joueur 2
+    private JoystickMapping joystickMapping = new JoystickMapping();   // Mapping joueur 1
+    private JoystickMapping joystickMapping2 = new JoystickMapping();  // Mapping joueur 2
+    private String[] lastAxisAction = new String[8];   // Pour éviter les répétitions d'axes (joueur 1)
+    private String[] lastAxisAction2 = new String[8];  // Pour éviter les répétitions d'axes (joueur 2)
 
     public static void main(String[] args) throws Exception {
 
@@ -386,10 +390,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                         }
                         
                         // 2. Sinon, vérifier les actions de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
-                        String action = currentLayers.getActionForKey(car);
-                        if (action != null) {
-                            String eventFunc = currentLayers.getKeypadEvent(action);
-                            System.out.println("🎮 Action: " + action + " -> " + eventFunc);
+                        // Trouver le keypad correspondant à cette touche pour avoir le bon joueur
+                        VTMLKeypadComponent keypad = currentLayers.getKeypadForKey(car);
+                        if (keypad != null && keypad.hasAction()) {
+                            int player = keypad.getPlayer();
+                            String action = keypad.getAction();
+                            String eventFunc = currentLayers.getKeypadEvent(player, action);
+                            System.out.println("🎮 Player " + player + " Action: " + action + " -> " + eventFunc);
                             if (eventFunc != null) {
                                 try {
                                     // Appeler la fonction JavaScript
@@ -641,81 +648,109 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             return;
         }
         
-        String device = cfg.client.joystick_device;
-        
-        // Vérifier si le périphérique existe
-        if (!JoystickReader.isAvailable(device)) {
-            System.out.println("🎮 Joystick: périphérique " + device + " non disponible");
-            return;
+        // ===== JOYSTICK 0 (Joueur 0) =====
+        String device = cfg.client.joystick_device_0;
+        if (JoystickReader.isAvailable(device)) {
+            joystickMapping.loadFromConfig(cfg.client.joystick_mapping_0);
+            VTMLScriptEngine.getInstance().setVariable("_joystickMapping", joystickMapping);
+            
+            System.out.println("🎮 Joystick 0: utilisation de " + device);
+            
+            joystick = new JoystickReader(device);
+            joystick.addListener(new JoystickListener() {
+                @Override
+                public void onButton(int button, boolean pressed) {
+                    System.out.println("🎮 [P0] Bouton " + button + " = " + pressed);
+                    if (!pressed) return;
+                    handleJoystickButton(0, button);
+                }
+                
+                @Override
+                public void onAxis(int axis, int value) {
+                    if (Math.abs(value) > 10000) {
+                        System.out.println("🎮 [P0] Axe " + axis + " = " + value);
+                    }
+                    handleJoystickAxis(0, axis, value);
+                }
+            });
+            
+            joystick.start();
+            System.out.println("🎮 Joystick 0: thread démarré");
+        } else {
+            System.out.println("🎮 Joystick 0: périphérique " + device + " non disponible");
         }
         
-        // Charger le mapping depuis la config
-        joystickMapping.loadFromConfig(cfg.client.joystick_mapping);
-        
-        // Exposer le mapping au JavaScript
-        VTMLScriptEngine.getInstance().setVariable("_joystickMapping", joystickMapping);
-        
-        System.out.println("🎮 Joystick: utilisation de " + device);
-        
-        joystick = new JoystickReader(device);
-        joystick.addListener(new JoystickListener() {
-            @Override
-            public void onButton(int button, boolean pressed) {
-                System.out.println("🎮 Bouton " + button + " = " + pressed);
-                if (!pressed) return;  // Seulement sur appui
-                handleJoystickButton(button);
-            }
+        // ===== JOYSTICK 1 (Joueur 1) =====
+        String device2 = cfg.client.joystick_device_1;
+        if (JoystickReader.isAvailable(device2)) {
+            joystickMapping2.loadFromConfig(cfg.client.joystick_mapping_1);
+            VTMLScriptEngine.getInstance().setVariable("_joystickMapping2", joystickMapping2);
             
-            @Override
-            public void onAxis(int axis, int value) {
-                // Debug uniquement si valeur significative
-                if (Math.abs(value) > 10000) {
-                    System.out.println("🎮 Axe " + axis + " = " + value);
+            System.out.println("🎮 Joystick 1: utilisation de " + device2);
+            
+            joystick2 = new JoystickReader(device2);
+            joystick2.addListener(new JoystickListener() {
+                @Override
+                public void onButton(int button, boolean pressed) {
+                    System.out.println("🎮 [P1] Bouton " + button + " = " + pressed);
+                    if (!pressed) return;
+                    handleJoystickButton(1, button);
                 }
-                handleJoystickAxis(axis, value);
-            }
-        });
-        
-        joystick.start();
-        System.out.println("🎮 Joystick: thread démarré");
+                
+                @Override
+                public void onAxis(int axis, int value) {
+                    if (Math.abs(value) > 10000) {
+                        System.out.println("🎮 [P1] Axe " + axis + " = " + value);
+                    }
+                    handleJoystickAxis(1, axis, value);
+                }
+            });
+            
+            joystick2.start();
+            System.out.println("🎮 Joystick 1: thread démarré");
+        } else {
+            System.out.println("🎮 Joystick 1: périphérique " + device2 + " non disponible");
+        }
     }
     
-    private void handleJoystickButton(int button) {
+    private void handleJoystickButton(int player, int button) {
         if (!layersHasFocus || currentLayers == null) return;
         
-        // Utiliser le mapping configurable
-        String action = joystickMapping.getButtonAction(button);
+        // Utiliser le mapping configurable selon le joueur
+        JoystickMapping mapping = (player == 0) ? joystickMapping : joystickMapping2;
+        String action = mapping.getButtonAction(button);
         if (action == null) return;
         
-        triggerJoystickAction(action);
+        triggerJoystickAction(player, action);
     }
     
-    private void handleJoystickAxis(int axis, int value) {
+    private void handleJoystickAxis(int player, int axis, int value) {
         if (!layersHasFocus || currentLayers == null) return;
-        if (axis < 0 || axis >= lastAxisAction.length) return;
         
-        // Utiliser le mapping configurable
-        String action = joystickMapping.getAxisAction(axis, value);
+        String[] lastActions = (player == 0) ? lastAxisAction : lastAxisAction2;
+        if (axis < 0 || axis >= lastActions.length) return;
+        
+        // Utiliser le mapping configurable selon le joueur
+        JoystickMapping mapping = (player == 0) ? joystickMapping : joystickMapping2;
+        String action = mapping.getAxisAction(axis, value);
         
         // Éviter les répétitions: ne déclencher que si l'action change
-        String lastAction = lastAxisAction[axis];
+        String lastAction = lastActions[axis];
         if (action == null) {
-            // Retour à la zone morte
-            lastAxisAction[axis] = null;
+            lastActions[axis] = null;
             return;
         }
         
         if (action.equals(lastAction)) {
-            // Même action, ne pas répéter
             return;
         }
         
-        lastAxisAction[axis] = action;
-        triggerJoystickAction(action);
+        lastActions[axis] = action;
+        triggerJoystickAction(player, action);
     }
     
-    private void triggerJoystickAction(String action) {
-        String event = currentLayers.getKeypadEvent(action);
+    private void triggerJoystickAction(int player, String action) {
+        String event = currentLayers.getKeypadEvent(player, action);
         if (event != null) {
             try {
                 VTMLScriptEngine.getInstance().execute(event + "()");

@@ -94,10 +94,10 @@ public class VTMLLayersComponent extends ModelMComponent {
     // Instances de sprites actifs (position, visibilité, frame courante)
     private Map<String, SpriteInstance> spriteInstances = new HashMap<>();
     
-    // Mapping des touches (action -> keypad)
+    // Mapping des touches ("player:action" -> keypad)
     private Map<String, VTMLKeypadComponent> keypads = new HashMap<>();
     
-    // Callbacks JavaScript pour les événements (action -> event)
+    // Callbacks JavaScript pour les événements ("player:action" -> event)
     private Map<String, String> keypadEvents = new HashMap<>();
     
     // Mapping direct des touches (key -> event) pour les touches sans action
@@ -457,10 +457,13 @@ public class VTMLLayersComponent extends ModelMComponent {
     public void addKeypad(VTMLKeypadComponent keypad) {
         if (keypad.hasAction()) {
             // Mode classique : action de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
-            keypads.put(keypad.getAction(), keypad);
+            // Clé composite "player:action" pour supporter multi-joueurs
+            String key = keypad.getPlayer() + ":" + keypad.getAction();
+            keypads.put(key, keypad);
             if (keypad.getEvent() != null) {
-                keypadEvents.put(keypad.getAction(), keypad.getEvent());
+                keypadEvents.put(key, keypad.getEvent());
             }
+            System.out.println("🎮 Keypad: player=" + keypad.getPlayer() + ", action=" + keypad.getAction() + " -> " + keypad.getEvent() + "()");
         } else if (keypad.isDirectKey()) {
             // Mode direct : touche -> event (sans action de jeu)
             char key = Character.toUpperCase(keypad.getKey());
@@ -470,11 +473,25 @@ public class VTMLLayersComponent extends ModelMComponent {
     }
     
     public VTMLKeypadComponent getKeypad(String action) {
-        return keypads.get(action);
+        return getKeypad(0, action);
+    }
+    
+    public VTMLKeypadComponent getKeypad(int player, String action) {
+        return keypads.get(player + ":" + action);
     }
     
     public String getKeypadEvent(String action) {
-        return keypadEvents.get(action);
+        return getKeypadEvent(0, action);
+    }
+    
+    /**
+     * Récupère l'event associé à une action pour un joueur spécifique
+     * @param player Numéro du joueur (0 ou 1)
+     * @param action Action (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
+     * @return Nom de la fonction JavaScript, ou null si non trouvé
+     */
+    public String getKeypadEvent(int player, String action) {
+        return keypadEvents.get(player + ":" + action);
     }
     
     /**
@@ -490,13 +507,38 @@ public class VTMLLayersComponent extends ModelMComponent {
     }
     
     /**
-     * Trouve l'action associée à une touche (pour les keypads avec action)
+     * Trouve l'action associée à une touche pour le joueur 0 (pour les keypads avec action)
      */
     public String getActionForKey(char key) {
+        return getActionForKey(0, key);
+    }
+    
+    /**
+     * Trouve l'action associée à une touche pour un joueur spécifique
+     * @param player Numéro du joueur (0 ou 1)
+     * @param key Touche pressée
+     * @return Action associée ou null si non trouvée
+     */
+    public String getActionForKey(int player, char key) {
+        for (VTMLKeypadComponent keypad : keypads.values()) {
+            if (keypad.getPlayer() == player &&
+                (keypad.getKey() == Character.toUpperCase(key) || 
+                 keypad.getKey() == Character.toLowerCase(key))) {
+                return keypad.getAction();
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Trouve le keypad associé à une touche (tous joueurs confondus)
+     * Retourne le premier keypad trouvé qui correspond à cette touche
+     */
+    public VTMLKeypadComponent getKeypadForKey(char key) {
         for (VTMLKeypadComponent keypad : keypads.values()) {
             if (keypad.getKey() == Character.toUpperCase(key) || 
                 keypad.getKey() == Character.toLowerCase(key)) {
-                return keypad.getAction();
+                return keypad;
             }
         }
         return null;
