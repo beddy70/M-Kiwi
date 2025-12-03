@@ -1,0 +1,72 @@
+<minitel title="Données API">
+  
+  <div name="lstscore" left="8" top="6" width="36" height="20">
+    <row>== MEILLEURS SCORES ==   </row>
+    <br/>
+    
+    <script>
+      // Fonction pour faire une requête HTTP GET
+      
+      var serverscore = "http://192.168.0.119:8080/";
+      output="";
+
+      var GameId = storage.get("GameId");
+      
+      function domReady() {
+
+        // Récupérer les données
+ 
+        var data = fetchUrl(serverscore+"ServerScore.mod?mode=read&gameid="+GameId+"&fields=score,name");
+ 
+         // Parser les valeurs séparées par virgule
+        var items = data.split("&");
+    
+        var container = getElementByName("lstscore");
+  
+        for (var i=0; i < items.length; i++) {
+          var values = items[i].split(",");
+          var myrow = container.createElement("row");
+          myrow.setText(fixedWidth((i+1),2) + " -> "+fixedWidth(values[0].trim(),7)+" "+fixedWidth(values[1].trim(),7)+"\n");
+     
+        }
+       
+      }
+      
+      function fetchUrl(urlString) {
+        
+        var url = new java.net.URL(urlString);
+        var connection = url.openConnection();
+        connection.setRequestMethod("GET");
+        
+        var reader = new java.io.BufferedReader(
+          new java.io.InputStreamReader(connection.getInputStream())
+        );
+        
+        var response = "";
+        var line;
+        while ((line = reader.readLine()) != null) {
+          response += line;
+        }
+        reader.close();
+        return response;
+      }
+   
+      function fixedWidth(text, width) {
+        var s = String(text);
+
+        // Troncature si nécessaire
+        if (s.length > width) {
+          return s.slice(0, width);
+        }
+
+   
+          // align === 'left'
+          return s.padEnd(width, " ");
+    
+      }
+
+    </script>
+    
+  </div>
+  
+</minitel>
