@@ -100,6 +100,8 @@ tetris_038ad74e-772c-43c5-8c5b-d719be30f487
 
 > **Important** : Conservez ce GameId ! Il sera nécessaire pour toutes les opérations suivantes (write, read, top1, top10).
 
+> **Note** : Les champs (nom et nombre) sont définis à la création et ne peuvent pas être modifiés par la suite. Si vous devez changer la structure des champs, il faut créer une nouvelle entrée et récupérer un nouveau GameId.
+
 ---
 
 ## Mode `write` - Enregistrer un score
