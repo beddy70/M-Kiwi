@@ -130,6 +130,29 @@ public class ModelMComponent implements MComponent {
         }
         return child;
     }
+    
+    /**
+     * Retire un enfant du composant - API DOM JavaScript
+     * @param child Le composant enfant à retirer
+     * @return true si l'enfant a été retiré, false sinon
+     */
+    public boolean removeChild(MComponent child) {
+        if (child != null && childs.remove(child)) {
+            child.setParent(null);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Retire tous les enfants du composant - API DOM JavaScript
+     */
+    public void clearChildren() {
+        for (MComponent child : childs) {
+            child.setParent(null);
+        }
+        childs.clear();
+    }
 
     public ArrayList<MComponent> getChilds() {
         return childs;

@@ -908,6 +908,8 @@ L'API DOM permet de créer n'importe quel élément VTML dynamiquement via la m�
 |--------------------------------|-------------------------------------------------------|
 | `container.createElement(tag)` | Crée un élément et l'ajoute automatiquement au container |
 | `container.appendChild(child)` | Ajoute un élément existant (créé ailleurs) au container |
+| `container.removeChild(child)` | Retire un élément enfant du container                 |
+| `container.clearChildren()`    | Retire tous les enfants du container                  |
 
 **Important** : `createElement()` ajoute automatiquement l'élément au container. N'utilisez pas `appendChild()` en plus, sinon l'élément sera ajouté deux fois.
 
@@ -952,7 +954,7 @@ L'API DOM permet de créer n'importe quel élément VTML dynamiquement via la m�
 | `color` | `setInk(color)`, `setBackground(color)`, `setText(text)` |
 | `blink` | `setText(text)`                             |
 | `label` | `setText(text)`, `setX(x)`, `setY(y)`       |
-| Tous    | `setVisible(bool)`, `setId(id)`, `setName(name)`, `createElement(tag)`, `appendChild(child)` |
+| Tous    | `setVisible(bool)`, `setId(id)`, `setName(name)`, `createElement(tag)`, `appendChild(child)`, `removeChild(child)`, `clearChildren()` |
 
 #### Requêtes HTTP
 
