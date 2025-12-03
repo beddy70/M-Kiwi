@@ -175,7 +175,21 @@ Retourne uniquement le meilleur score enregistré.
 ### Requête
 
 ```
-GET /ServerScore.mod?mode=top1&gameid={GameId}
+GET /ServerScore.mod?mode=top1&gameid={GameId}&fields={champ1},{champ2},...
+```
+
+### Paramètres
+
+| Paramètre | Description |
+|-----------|-------------|
+| `mode` | `top1` |
+| `gameid` | Identifiant unique du jeu |
+| `fields` | Champs à retourner, séparés par des virgules. **Le premier champ définit le tri.** |
+
+### Exemple
+
+```
+http://192.168.0.119:8080/ServerScore.mod?mode=top1&gameid=tetris_038ad74e-772c-43c5-8c5b-d719be30f487&fields=score,name
 ```
 
 ### Réponse
@@ -193,7 +207,21 @@ Retourne le 10ème meilleur score (utile pour vérifier si un nouveau score entr
 ### Requête
 
 ```
-GET /ServerScore.mod?mode=top10&gameid={GameId}
+GET /ServerScore.mod?mode=top10&gameid={GameId}&fields={champ1},{champ2},...
+```
+
+### Paramètres
+
+| Paramètre | Description |
+|-----------|-------------|
+| `mode` | `top10` |
+| `gameid` | Identifiant unique du jeu |
+| `fields` | Champs à retourner, séparés par des virgules. **Le premier champ définit le tri.** |
+
+### Exemple
+
+```
+http://192.168.0.119:8080/ServerScore.mod?mode=top10&gameid=tetris_038ad74e-772c-43c5-8c5b-d719be30f487&fields=score,name
 ```
 
 ### Réponse

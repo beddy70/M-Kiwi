@@ -211,13 +211,45 @@ public class ServerScore extends ModelMModule {
                         File fileScore = new File(params.get(GAME_ID) + ".json");
                         JsonNode root = mapper.readTree(fileScore);
                         
+                        // 1. Extraction des listes de champs
+                        List<String> origFields = Arrays.asList(root.path(FIELDS_LIST).asText().split(","));
+                        List<String> reqFields = Arrays.asList(params.get(FIELDS_LIST).split(","));
+                        
                         String rawValues = root.path(VALUES).asText("");
                         if (!rawValues.isEmpty()) {
-                            // Les scores sont déjà triés par ordre décroissant
-                            // Le premier est le meilleur
-                            String[] records = rawValues.split("&");
-                            if (records.length > 0) {
-                                response = records[0];
+                            String[] rawRecords = rawValues.split("&");
+                            
+                            // 2. Construction d'une liste de maps champ→valeur
+                            List<Map<String, String>> records = new ArrayList<>(rawRecords.length);
+                            for (String rec : rawRecords) {
+                                String[] vals = rec.split(",");
+                                Map<String, String> map = new HashMap<>();
+                                for (int i = 0; i < origFields.size() && i < vals.length; i++) {
+                                    map.put(origFields.get(i), vals[i]);
+                                }
+                                records.add(map);
+                            }
+                            
+                            // 3. Tri par le premier champ demandé (descendant)
+                            String sortKey = reqFields.get(0);
+                            records.sort((m1, m2) -> {
+                                String v1 = m1.getOrDefault(sortKey, "");
+                                String v2 = m2.getOrDefault(sortKey, "");
+                                try {
+                                    return Long.compare(Long.parseLong(v2), Long.parseLong(v1));
+                                } catch (NumberFormatException e) {
+                                    return v2.compareTo(v1);
+                                }
+                            });
+                            
+                            // 4. Retourner le premier (meilleur score)
+                            if (!records.isEmpty()) {
+                                Map<String, String> best = records.get(0);
+                                List<String> row = new ArrayList<>(reqFields.size());
+                                for (String key : reqFields) {
+                                    row.add(best.getOrDefault(key, ""));
+                                }
+                                response = String.join(",", row);
                             }
                         }
                     } catch (IOException ex) {
@@ -231,13 +263,46 @@ public class ServerScore extends ModelMModule {
                         File fileScore = new File(params.get(GAME_ID) + ".json");
                         JsonNode root = mapper.readTree(fileScore);
                         
+                        // 1. Extraction des listes de champs
+                        List<String> origFields = Arrays.asList(root.path(FIELDS_LIST).asText().split(","));
+                        List<String> reqFields = Arrays.asList(params.get(FIELDS_LIST).split(","));
+                        
                         String rawValues = root.path(VALUES).asText("");
                         if (!rawValues.isEmpty()) {
-                            String[] records = rawValues.split("&");
-                            if (records.length > 0) {
-                                // Prendre le 10ème ou le dernier si moins de 10
-                                int index = Math.min(9, records.length - 1);
-                                response = records[index];
+                            String[] rawRecords = rawValues.split("&");
+                            
+                            // 2. Construction d'une liste de maps champ→valeur
+                            List<Map<String, String>> records = new ArrayList<>(rawRecords.length);
+                            for (String rec : rawRecords) {
+                                String[] vals = rec.split(",");
+                                Map<String, String> map = new HashMap<>();
+                                for (int i = 0; i < origFields.size() && i < vals.length; i++) {
+                                    map.put(origFields.get(i), vals[i]);
+                                }
+                                records.add(map);
+                            }
+                            
+                            // 3. Tri par le premier champ demandé (descendant)
+                            String sortKey = reqFields.get(0);
+                            records.sort((m1, m2) -> {
+                                String v1 = m1.getOrDefault(sortKey, "");
+                                String v2 = m2.getOrDefault(sortKey, "");
+                                try {
+                                    return Long.compare(Long.parseLong(v2), Long.parseLong(v1));
+                                } catch (NumberFormatException e) {
+                                    return v2.compareTo(v1);
+                                }
+                            });
+                            
+                            // 4. Retourner le 10ème (ou le dernier si moins de 10)
+                            if (!records.isEmpty()) {
+                                int index = Math.min(9, records.size() - 1);
+                                Map<String, String> tenth = records.get(index);
+                                List<String> row = new ArrayList<>(reqFields.size());
+                                for (String key : reqFields) {
+                                    row.add(tenth.getOrDefault(key, ""));
+                                }
+                                response = String.join(",", row);
                             }
                         }
                     } catch (IOException ex) {
