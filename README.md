@@ -1,4 +1,4 @@
-# Minitel-Serveur 🖥️
+# M-Kiwi (Minitel-Serveur) 🖥️
 
 **Serveur Minitel moderne** - Connectez votre Minitel historique à l'Internet moderne via Raspberry Pi
 
