@@ -375,6 +375,23 @@ String niveau = params.get("niveau");            // "admin"
 - **`Chat.mod`** : Système de messagerie simple
 - **`IoT.mod`** : Monitoring capteurs domestiques
 
+### Module natif : ServerScore
+
+**ServerScore** est un module natif de M-Kiwi permettant de gérer des tableaux de scores pour les jeux. Il offre une API HTTP simple pour créer, enregistrer et consulter les meilleurs scores.
+
+```
+http://localhost:8080/ServerScore.mod?mode=read&gameid={GameId}&fields=score,name
+```
+
+Modes disponibles :
+- `create` : Créer un nouveau tableau de scores
+- `write` : Enregistrer un score
+- `read` : Lire tous les scores
+- `top1` : Meilleur score
+- `top10` : 10ème meilleur score
+
+📖 Documentation complète : [docs/ServerScore.md](docs/ServerScore.md)
+
 ## 🎨 Composants Graphiques
 
 ### GraphTel - Affichage Bitmap et QR Codes

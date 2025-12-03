@@ -209,13 +209,22 @@ public class ServerScore extends ModelMModule {
                     // Retourne le meilleur score (premier de la liste triée)
                     try {
                         File fileScore = new File(params.get(GAME_ID) + ".json");
+                        System.out.println("🏆 top1: lecture de " + fileScore.getAbsolutePath());
                         JsonNode root = mapper.readTree(fileScore);
                         
                         // 1. Extraction des listes de champs
                         List<String> origFields = Arrays.asList(root.path(FIELDS_LIST).asText().split(","));
-                        List<String> reqFields = Arrays.asList(params.get(FIELDS_LIST).split(","));
+                        String reqFieldsParam = params.get(FIELDS_LIST);
+                        // Si fields non fourni, utiliser les champs d'origine
+                        List<String> reqFields = (reqFieldsParam != null) 
+                            ? Arrays.asList(reqFieldsParam.split(","))
+                            : origFields;
+                        
+                        System.out.println("🏆 top1: origFields=" + origFields + ", reqFields=" + reqFields);
                         
                         String rawValues = root.path(VALUES).asText("");
+                        System.out.println("🏆 top1: rawValues=" + rawValues);
+                        
                         if (!rawValues.isEmpty()) {
                             String[] rawRecords = rawValues.split("&");
                             
@@ -229,6 +238,8 @@ public class ServerScore extends ModelMModule {
                                 }
                                 records.add(map);
                             }
+                            
+                            System.out.println("🏆 top1: " + records.size() + " records parsés");
                             
                             // 3. Tri par le premier champ demandé (descendant)
                             String sortKey = reqFields.get(0);
@@ -250,10 +261,12 @@ public class ServerScore extends ModelMModule {
                                     row.add(best.getOrDefault(key, ""));
                                 }
                                 response = String.join(",", row);
+                                System.out.println("🏆 top1: response=" + response);
                             }
                         }
-                    } catch (IOException ex) {
-                        System.getLogger(ServerScore.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                    } catch (Exception ex) {
+                        System.err.println("🏆 top1 ERROR: " + ex.getMessage());
+                        ex.printStackTrace();
                     }
                 }
 
@@ -261,11 +274,16 @@ public class ServerScore extends ModelMModule {
                     // Retourne le 10ème meilleur score (ou le dernier si moins de 10)
                     try {
                         File fileScore = new File(params.get(GAME_ID) + ".json");
+                        System.out.println("🏆 top10: lecture de " + fileScore.getAbsolutePath());
                         JsonNode root = mapper.readTree(fileScore);
                         
                         // 1. Extraction des listes de champs
                         List<String> origFields = Arrays.asList(root.path(FIELDS_LIST).asText().split(","));
-                        List<String> reqFields = Arrays.asList(params.get(FIELDS_LIST).split(","));
+                        String reqFieldsParam = params.get(FIELDS_LIST);
+                        // Si fields non fourni, utiliser les champs d'origine
+                        List<String> reqFields = (reqFieldsParam != null) 
+                            ? Arrays.asList(reqFieldsParam.split(","))
+                            : origFields;
                         
                         String rawValues = root.path(VALUES).asText("");
                         if (!rawValues.isEmpty()) {
@@ -303,10 +321,12 @@ public class ServerScore extends ModelMModule {
                                     row.add(tenth.getOrDefault(key, ""));
                                 }
                                 response = String.join(",", row);
+                                System.out.println("🏆 top10: response=" + response);
                             }
                         }
-                    } catch (IOException ex) {
-                        System.getLogger(ServerScore.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                    } catch (Exception ex) {
+                        System.err.println("🏆 top10 ERROR: " + ex.getMessage());
+                        ex.printStackTrace();
                     }
                 }
 

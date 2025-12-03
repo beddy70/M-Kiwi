@@ -16,10 +16,11 @@ Ce guide explique comment créer des jeux interactifs pour Minitel en utilisant 
 8. [Game Loop](#game-loop)
 9. [Collisions](#collisions)
 10. [Interface utilisateur](#interface-utilisateur)
-11. [Exemples complets](#exemples-complets)
-12. [Conseils de performance](#conseils-de-performance)
-13. [Limitations](#limitations)
-14. [Ressources](#ressources)
+11. [Gestion des scores (ServerScore)](#gestion-des-scores-serverscore)
+12. [Exemples complets](#exemples-complets)
+13. [Conseils de performance](#conseils-de-performance)
+14. [Limitations](#limitations)
+15. [Ressources](#ressources)
 
 **Annexes**
 - [Annexe A : Référence des fonctions JavaScript](#annexe-a--référence-des-fonctions-javascript)
@@ -881,6 +882,47 @@ layers.beep();
 ```
 
 **⚠️ Attention** : Le beep est **bloquant**. Pendant la durée du bip, les entrées clavier et joystick sont ignorées. Utilisez-le avec parcimonie pour ne pas gêner la jouabilité.
+
+---
+
+## Gestion des scores (ServerScore)
+
+**ServerScore** est un module natif de M-Kiwi permettant de gérer des tableaux de scores persistants pour vos jeux.
+
+### Fonctionnalités
+
+- Création de tableaux de scores avec champs personnalisables
+- Enregistrement et lecture des scores
+- Récupération du meilleur score (`top1`) ou du seuil d'entrée (`top10`)
+- Tri automatique par score décroissant
+
+### Exemple d'utilisation
+
+```javascript
+var serverscore = "http://192.168.0.119:8080/";
+var GameId = "snake_abc123-def456";
+
+// Sauvegarder un score
+function saveScore(name, score) {
+  fetchUrl(serverscore + "ServerScore.mod?mode=write&gameid=" + GameId + "&values=" + name + "," + score);
+}
+
+// Vérifier si le score entre dans le top 10
+function isHighScore(score) {
+  var top10 = fetchUrl(serverscore + "ServerScore.mod?mode=top10&gameid=" + GameId + "&fields=score,name");
+  var minScore = parseInt(top10.split(",")[0]);
+  return score > minScore;
+}
+
+// Afficher le meilleur score
+function showBestScore() {
+  var best = fetchUrl(serverscore + "ServerScore.mod?mode=top1&gameid=" + GameId + "&fields=score,name");
+  var parts = best.split(",");
+  layers.setText("highscore", "Best: " + parts[0] + " by " + parts[1]);
+}
+```
+
+📖 Documentation complète : [ServerScore.md](ServerScore.md)
 
 ---
 
