@@ -205,6 +205,46 @@ public class ServerScore extends ModelMModule {
 
                 }
 
+                case "top1" -> {
+                    // Retourne le meilleur score (premier de la liste triée)
+                    try {
+                        File fileScore = new File(params.get(GAME_ID) + ".json");
+                        JsonNode root = mapper.readTree(fileScore);
+                        
+                        String rawValues = root.path(VALUES).asText("");
+                        if (!rawValues.isEmpty()) {
+                            // Les scores sont déjà triés par ordre décroissant
+                            // Le premier est le meilleur
+                            String[] records = rawValues.split("&");
+                            if (records.length > 0) {
+                                response = records[0];
+                            }
+                        }
+                    } catch (IOException ex) {
+                        System.getLogger(ServerScore.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                    }
+                }
+
+                case "top10" -> {
+                    // Retourne le 10ème meilleur score (ou le dernier si moins de 10)
+                    try {
+                        File fileScore = new File(params.get(GAME_ID) + ".json");
+                        JsonNode root = mapper.readTree(fileScore);
+                        
+                        String rawValues = root.path(VALUES).asText("");
+                        if (!rawValues.isEmpty()) {
+                            String[] records = rawValues.split("&");
+                            if (records.length > 0) {
+                                // Prendre le 10ème ou le dernier si moins de 10
+                                int index = Math.min(9, records.length - 1);
+                                response = records[index];
+                            }
+                        }
+                    } catch (IOException ex) {
+                        System.getLogger(ServerScore.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                    }
+                }
+
             }
 
         }

@@ -4,9 +4,25 @@ Le module **ServerScore** permet de gérer des tableaux de scores pour les jeux 
 
 ---
 
+## Table des matières
+
+- [Principe de fonctionnement](#principe-de-fonctionnement)
+- [Configuration](#configuration)
+- [API HTTP](#api-http)
+  - [Mode `create` - Créer un tableau de scores](#mode-create---créer-un-tableau-de-scores)
+  - [Mode `write` - Enregistrer un score](#mode-write---enregistrer-un-score)
+  - [Mode `read` - Lire les scores](#mode-read---lire-les-scores)
+  - [Mode `top1` - Meilleur score](#mode-top1---meilleur-score)
+  - [Mode `top10` - 10ème meilleur score](#mode-top10---10ème-meilleur-score)
+- [Exemple d'utilisation en VTML](#exemple-dutilisation-en-vtml)
+- [Bonnes pratiques](#bonnes-pratiques)
+- [Notes techniques](#notes-techniques)
+
+---
+
 ## Principe de fonctionnement
 
-Chaque jeu est identifié par un **GameId** unique (généré manuellement). Le module stocke les scores avec des champs personnalisables (score, nom, date, etc.) et limite le nombre d'enregistrements.
+Chaque jeu est identifié par un **GameId** unique (généré par le module). Le module stocke les scores avec des champs personnalisables (score, nom, date, etc.) et limite le nombre d'enregistrements.
 
 ```
 ┌─────────────────┐           ┌─────────────────┐
@@ -41,10 +57,48 @@ http://[HOST]:8080/ServerScore.mod
 
 | Mode | Description |
 |------|-------------|
+| `create` | Créer un nouveau tableau de scores et obtenir un GameId |
 | `write` | Enregistrer un nouveau score |
 | `read` | Lire tous les scores enregistrés |
 | `top1` | Récupérer le meilleur score |
 | `top10` | Récupérer le 10ème meilleur score (seuil) |
+
+---
+
+## Mode `create` - Créer un tableau de scores
+
+Crée un nouveau tableau de scores pour un jeu et retourne un identifiant unique.
+
+### Requête
+
+```
+GET /ServerScore.mod?mode=create&gamename={nom}&sizerecord={max}&fields={champ1},{champ2},...
+```
+
+### Paramètres
+
+| Paramètre | Description |
+|-----------|-------------|
+| `mode` | `create` |
+| `gamename` | Nom du jeu (ex: `tetris`, `snake`) |
+| `sizerecord` | Nombre maximum de scores à conserver |
+| `fields` | Champs à stocker, séparés par des virgules |
+
+### Exemple
+
+```
+http://localhost:8080/ServerScore.mod?mode=create&gamename=tetris&sizerecord=10&fields=name,score,date
+```
+
+### Réponse
+
+Le module retourne un **GameId** unique :
+
+```
+tetris_038ad74e-772c-43c5-8c5b-d719be30f487
+```
+
+> **Important** : Conservez ce GameId ! Il sera nécessaire pour toutes les opérations suivantes (write, read, top1, top10).
 
 ---
 
