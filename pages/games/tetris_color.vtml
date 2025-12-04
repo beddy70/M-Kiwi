@@ -2,21 +2,23 @@
 <minitel>
   
 
-  <chardef name="charset1" type="mosaic">
-      <char> <-- 2x3
-        <line> #</line>
-        <line># </line>
-        <line> #</line>
-      <char>
-  </chardef>
-  
   <layers id="game" left="0" top="1" width="40" height="22">
+  
+    <!-- Définition du caractère mosaïque (bloc plein) -->
+    <chardef name="charset1" type="mosaic">
+      <!-- Caractère 0 : bloc plein 2x3 -->
+      <char>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+      </char>
+    </chardef>
   
     <!-- Map 0: Décor (bordures) en cyan -->
     <map>
       <row>#          #         Next:</row>
       <row repeat="19">#          #</row>
-        <row><putchar index="0" repeat="12"/></row>
+        <row><putchar index="0" repeat="12" /></row>
         <!--
         <row>############</row>
                 -->
