@@ -31,6 +31,8 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 - [`<layers>`](#layers) - Zone de jeu
 - [`<map>`](#map) - Fond de jeu
 - [`<colormap>`](#colormap) - Couleurs de texte d'une map
+- [`<chardef>`](#chardef) - Définition de caractères mosaïques
+- [`<putchar>`](#putchar) - Insertion de caractères mosaïques
 - [`<spritedef>`](#spritedef) - Définition de sprite
   - [Types de sprites](#types-de-sprites)
 - [`<sprite>`](#sprite) - Frame d'animation
@@ -369,6 +371,68 @@ layers.setMapColor(0, x, y, 3);  // Jaune
 ```
 
 **Note** : Les fonctions `clearMapLine()` et `shiftMap()` gèrent automatiquement les couleurs.
+
+---
+
+### `<chardef>`
+
+Définit un jeu de caractères mosaïques personnalisés (bitmap 2×3 pixels). Ces caractères peuvent ensuite être utilisés dans les maps via `<putchar>`.
+
+| Attribut | Type   | Défaut   | Description                           |
+|----------|--------|----------|---------------------------------------|
+| `name`   | string | -        | Nom du jeu de caractères              |
+| `type`   | string | `mosaic` | Type (seul `mosaic` est supporté)     |
+
+```xml
+<chardef name="blocks" type="mosaic">
+  <!-- Caractère 0 : bloc plein -->
+  <char>
+    <line>##</line>
+    <line>##</line>
+    <line>##</line>
+  </char>
+  <!-- Caractère 1 : bordure gauche -->
+  <char>
+    <line># </line>
+    <line># </line>
+    <line># </line>
+  </char>
+  <!-- Caractère 2 : bordure droite -->
+  <char>
+    <line> #</line>
+    <line> #</line>
+    <line> #</line>
+  </char>
+</chardef>
+```
+
+Chaque `<char>` contient 3 lignes de 2 caractères (`#` = pixel allumé, espace = pixel éteint).
+
+---
+
+### `<putchar>`
+
+Insère un ou plusieurs caractères mosaïques définis dans un `<chardef>`. Utilisable uniquement dans une `<map>`.
+
+| Attribut  | Type   | Défaut | Description                           |
+|-----------|--------|--------|---------------------------------------|
+| `index`   | int    | 0      | Index du caractère dans le chardef    |
+| `repeat`  | int    | 1      | Nombre de répétitions (1-100)         |
+| `chardef` | string | -      | Nom du chardef (optionnel, utilise le dernier défini) |
+
+```xml
+<chardef name="blocks" type="mosaic">
+  <char><line>##</line><line>##</line><line>##</line></char>
+  <char><line># </line><line># </line><line># </line></char>
+</chardef>
+
+<map>
+  <row><putchar index="0" repeat="40"/></row>
+  <row><putchar index="1"/><putchar index="0" repeat="38"/><putchar index="1"/></row>
+</map>
+```
+
+**Avantage** : Permet de définir des décors mosaïques complexes de manière lisible et réutilisable.
 
 ---
 

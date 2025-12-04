@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import org.somanybits.minitel.components.MComponent;
 import org.somanybits.minitel.components.ModelMComponent;
+import org.somanybits.minitel.components.vtml.VTMLChardefComponent;
 import org.somanybits.minitel.components.vtml.VTMLFormComponent;
 import org.somanybits.minitel.components.vtml.VTMLLayersComponent;
 import org.somanybits.minitel.components.vtml.VTMLStatusComponent;
@@ -103,6 +104,29 @@ public class Page {
 
     // Associations touches de fonction -> URL
     private Map<String, String> functionKeyLinks = new LinkedHashMap<>();
+    
+    // Définitions de caractères mosaïques
+    private Map<String, VTMLChardefComponent> chardefs = new LinkedHashMap<>();
+    private VTMLChardefComponent lastChardef = null;  // Dernier chardef ajouté (pour accès par défaut)
+    
+    /**
+     * Ajoute une définition de caractères mosaïques
+     */
+    public void addChardef(String name, VTMLChardefComponent chardef) {
+        chardefs.put(name, chardef);
+        lastChardef = chardef;
+    }
+    
+    /**
+     * Récupère une définition de caractères par son nom
+     * @param name Nom du chardef, ou null pour le dernier ajouté
+     */
+    public VTMLChardefComponent getChardef(String name) {
+        if (name == null || name.isEmpty()) {
+            return lastChardef;
+        }
+        return chardefs.get(name);
+    }
 
     /**
      * Associe une touche de fonction à une URL

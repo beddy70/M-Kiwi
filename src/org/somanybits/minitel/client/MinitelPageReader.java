@@ -226,7 +226,9 @@ public class MinitelPageReader {
                 || component instanceof VTMLSpriteDefComponent
                 || component instanceof VTMLSpriteComponent
                 || component instanceof VTMLColormapComponent
-                || component instanceof VTMLColorspriteComponent;
+                || component instanceof VTMLColorspriteComponent
+                || component instanceof VTMLChardefComponent
+                || component instanceof VTMLCharComponent;
     }
 
     /**
@@ -254,6 +256,17 @@ public class MinitelPageReader {
                 }
             }
         }
+        
+        // Terminer le caractère quand on ferme le tag char
+        if ("char".equals(tagname)) {
+            if (currentComponent instanceof VTMLCharComponent) {
+                MComponent parent = currentComponent.getParent();
+                if (parent instanceof VTMLChardefComponent chardef) {
+                    chardef.endChar();
+                    System.out.println("🎨 Char terminé");
+                }
+            }
+        }
 
         // Ne remonter que si c'était un tag conteneur
         if (isContainerTag(tagname)) {
@@ -276,7 +289,9 @@ public class MinitelPageReader {
                 || "spritedef".equals(tagname)
                 || "sprite".equals(tagname)
                 || "colormap".equals(tagname)
-                || "colorsprite".equals(tagname);
+                || "colorsprite".equals(tagname)
+                || "chardef".equals(tagname)
+                || "char".equals(tagname);
     }
 
     /**
@@ -356,6 +371,18 @@ public class MinitelPageReader {
                 int repeat = parseRepeat(repeatAttr);
                 if (repeatAttr != null) {
                     System.out.println("🔄 Line repeat attr='" + repeatAttr + "' -> " + repeat);
+                }
+                
+                // Si le parent est un char (dans chardef), ajouter la ligne au chardef
+                if (currentComponent instanceof VTMLCharComponent) {
+                    MComponent parent = currentComponent.getParent();
+                    if (parent instanceof VTMLChardefComponent chardef) {
+                        System.out.println("🎨 Chardef line: '" + textContent + "'");
+                        for (int i = 0; i < repeat; i++) {
+                            chardef.addLine(textContent);
+                        }
+                        return null;
+                    }
                 }
                 
                 // Si le parent est une colorsprite, ajouter la ligne de couleur
@@ -622,6 +649,57 @@ public class MinitelPageReader {
                     parent = (parent instanceof ModelMComponent m) ? m.getParent() : null;
                 }
                 return label;
+            }
+
+            case "chardef" -> {
+                String name = attrs.get("name");
+                String type = attrs.get("type");
+                VTMLChardefComponent chardef = new VTMLChardefComponent(name, type);
+                System.out.println("🎨 Chardef créé: name=" + name + ", type=" + type);
+                // Enregistrer dans la page pour accès ultérieur
+                if (name != null) {
+                    page.addChardef(name, chardef);
+                }
+                return chardef;
+            }
+
+            case "char" -> {
+                // Démarrer un nouveau caractère dans le chardef parent
+                if (currentComponent instanceof VTMLChardefComponent chardef) {
+                    chardef.startChar();
+                    System.out.println("🎨 Char démarré dans chardef");
+                }
+                return new VTMLCharComponent();
+            }
+
+            case "putchar" -> {
+                int index = parseInt(attrs.get("index"), 0);
+                int repeat = parseRepeat(attrs.get("repeat"));
+                String chardefName = attrs.get("chardef");  // Optionnel, utilise le dernier chardef si non spécifié
+                
+                // Récupérer le chardef
+                VTMLChardefComponent chardef = page.getChardef(chardefName);
+                if (chardef == null) {
+                    System.err.println("⚠️ putchar: chardef '" + chardefName + "' non trouvé");
+                    return null;
+                }
+                
+                // Générer les caractères
+                char mosaicChar = chardef.getChar(index);
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < repeat; i++) {
+                    sb.append(mosaicChar);
+                }
+                String chars = sb.toString();
+                
+                System.out.println("🎨 Putchar: index=" + index + ", repeat=" + repeat + ", char=0x" + Integer.toHexString(mosaicChar));
+                
+                // Si le parent est une map, ajouter les caractères comme mosaïque
+                if (currentComponent instanceof VTMLMapComponent map) {
+                    map.appendMosaicChars(chars);
+                    return null;
+                }
+                return null;
             }
 
             default -> {

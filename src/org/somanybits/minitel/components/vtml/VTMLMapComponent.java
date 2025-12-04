@@ -82,6 +82,9 @@ public class VTMLMapComponent extends ModelMComponent {
     private int[][] colorData;  // Couleur du texte (ink) pour chaque caractère
     private boolean parsingColormap = false;  // Flag pour savoir si on parse une colormap
     
+    // Buffer pour accumuler les caractères d'une ligne en cours (pour <putchar>)
+    private StringBuilder currentRowBuffer = null;
+    
     public VTMLMapComponent(MapType type) {
         this.type = type;
     }
@@ -105,6 +108,36 @@ public class VTMLMapComponent extends ModelMComponent {
         }
         data = null; // Invalider le cache
         colorData = null;
+    }
+    
+    /**
+     * Démarre une nouvelle ligne (pour accumulation avec putchar)
+     */
+    public void startRow() {
+        currentRowBuffer = new StringBuilder();
+    }
+    
+    /**
+     * Ajoute des caractères mosaïques à la ligne en cours
+     */
+    public void appendMosaicChars(String chars) {
+        if (currentRowBuffer == null) {
+            currentRowBuffer = new StringBuilder();
+        }
+        currentRowBuffer.append(chars);
+    }
+    
+    /**
+     * Termine la ligne en cours et l'ajoute à la map
+     */
+    public void endRow(int repeat) {
+        if (currentRowBuffer != null && currentRowBuffer.length() > 0) {
+            String row = currentRowBuffer.toString();
+            for (int i = 0; i < repeat; i++) {
+                addRow(row);
+            }
+            currentRowBuffer = null;
+        }
     }
     
     /**
