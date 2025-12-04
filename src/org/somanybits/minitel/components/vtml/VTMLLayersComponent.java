@@ -672,8 +672,8 @@ public class VTMLLayersComponent extends ModelMComponent {
                 // Ne dessiner que si non-transparent (espace = transparent pour les areas supérieures)
                 if (c != ' ' || areas.indexOf(area) == 0) {
                     buffer[y][x] = c;
-                    // Copier la couleur seulement si c'est un caractère non-espace et couleur définie
-                    if (c != ' ' && areaColorData != null && y < areaColorData.length && x < areaColorData[y].length) {
+                    // Copier la couleur (même pour les espaces, pour réinitialiser)
+                    if (areaColorData != null && y < areaColorData.length && x < areaColorData[y].length) {
                         int areaColor = areaColorData[y][x];
                         if (areaColor >= 0) {
                             colorBuffer[y][x] = areaColor;
