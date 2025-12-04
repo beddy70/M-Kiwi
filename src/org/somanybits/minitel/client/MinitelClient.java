@@ -383,6 +383,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                 VTMLScriptEngine.getInstance().execute(directEvent + "()");
                                 byte[] update = currentLayers.getDifferentialBytes();
                                 mc.writeBytes(update);
+                                // Vérifier si une navigation ou un focus a été demandé
+                                checkPendingNavigation(pmgr);
+                                checkPendingFocus();
                             } catch (Exception e) {
                                 System.err.println("Erreur JS: " + e.getMessage());
                             }
@@ -405,6 +408,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                     byte[] update = currentLayers.getDifferentialBytes();
                                     System.out.println("🎮 Update: " + update.length + " bytes");
                                     mc.writeBytes(update);
+                                    // Vérifier si une navigation ou un focus a été demandé
+                                    checkPendingNavigation(pmgr);
+                                    checkPendingFocus();
                                 } catch (Exception e) {
                                     System.err.println("Erreur JS: " + e.getMessage());
                                 }
@@ -783,6 +789,89 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             }
         } catch (IOException e) {
             System.err.println("Erreur refresh display: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Vérifie si une navigation a été demandée via gotoPage() et l'exécute
+     */
+    private void checkPendingNavigation(PageManager pmgr) {
+        String pendingUrl = VTMLScriptEngine.getInstance().consumePendingNavigation();
+        if (pendingUrl != null) {
+            try {
+                System.out.println("🔀 Navigation vers: " + pendingUrl);
+                Page newPage = pmgr.navigate(pendingUrl);
+                mc.writeBytes(newPage.getData());
+                updateCurrentForm(newPage);
+            } catch (IOException e) {
+                System.err.println("Erreur navigation gotoPage: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Vérifie si un focus a été demandé via setFocus() et l'applique
+     */
+    private void checkPendingFocus() {
+        String componentName = VTMLScriptEngine.getInstance().consumePendingFocus();
+        if (componentName != null) {
+            try {
+                PageManager pmgr = Kernel.getInstance().getPageManager();
+                Page currentPage = pmgr.getCurrentPage();
+                if (currentPage == null) return;
+                
+                // Chercher le composant par nom
+                Object component = currentPage.getComponentByName(componentName);
+                if (component == null) {
+                    System.err.println("⚠️ Composant non trouvé pour focus: " + componentName);
+                    return;
+                }
+                
+                // Gérer le focus selon le type de composant
+                if (component instanceof VTMLFormComponent) {
+                    VTMLFormComponent form = (VTMLFormComponent) component;
+                    currentForm = form;
+                    formHasFocus = true;
+                    layersHasFocus = false;
+                    form.setInputIndex(0);
+                    VTMLInputComponent firstInput = form.getCurrentInput();
+                    if (firstInput != null) {
+                        mc.writeBytes(firstInput.onFocusGained());
+                        showStatusMessage(">> " + firstInput.getFocusLabel() + " <<");
+                    }
+                    System.out.println("🎯 Focus sur form: " + componentName);
+                } else if (component instanceof VTMLLayersComponent) {
+                    VTMLLayersComponent layers = (VTMLLayersComponent) component;
+                    currentLayers = layers;
+                    layersHasFocus = true;
+                    formHasFocus = false;
+                    showStatusMessage(">> Jeu <<");
+                    System.out.println("🎯 Focus sur layers: " + componentName);
+                } else if (component instanceof VTMLInputComponent) {
+                    // Focus sur un input spécifique dans un form
+                    VTMLInputComponent input = (VTMLInputComponent) component;
+                    // Trouver le form parent
+                    if (currentForm != null) {
+                        java.util.List<VTMLInputComponent> inputs = currentForm.getFocusableInputs();
+                        for (int i = 0; i < inputs.size(); i++) {
+                            if (inputs.get(i) == input || 
+                                (input.getName() != null && input.getName().equals(inputs.get(i).getName()))) {
+                                currentForm.setInputIndex(i);
+                                formHasFocus = true;
+                                layersHasFocus = false;
+                                mc.writeBytes(input.onFocusGained());
+                                showStatusMessage(">> " + input.getFocusLabel() + " <<");
+                                System.out.println("🎯 Focus sur input: " + componentName);
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    System.out.println("⚠️ Type de composant non focusable: " + component.getClass().getSimpleName());
+                }
+            } catch (IOException e) {
+                System.err.println("Erreur setFocus: " + e.getMessage());
+            }
         }
     }
 

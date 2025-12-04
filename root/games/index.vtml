@@ -3,6 +3,7 @@
 	<img src="images/joystick.png" left="0" top="3" width="17" height="11" >
 
 	<menu name="main" left="18" top="4" width="30" height="10" keytype="alpha">
+		<item link="games/kiwisnake/index.vtml">Kiwisnake</item>
 		<item link="games/pong.vtml">Pong</item>
 		<item link="games/snake.vtml">Snake</item>	
 		<item link="games/tetris.vtml">Tetris</item>

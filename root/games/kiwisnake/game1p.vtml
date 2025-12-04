@@ -1,0 +1,374 @@
+<minitel title="Kiwisnake - 1 Joueur">
+  
+  <layers id="game" left="0" top="1" width="40" height="22">
+    
+    <!-- Map 0: Terrain de jeu (bordures) -->
+    <map id="terrain" type="char">
+      <row>########################################</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>#                                      #</row>
+      <row>########################################</row>
+    </map>
+    
+    <!-- Map 1: Corps du serpent -->
+    <map id="snakebody">
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+      <row>                                        </row>
+    </map>
+    
+    <!-- Tête du serpent -->
+    <spritedef id="head" width="1" height="1" type="char">
+      <sprite>
+        <line>@</line>
+        <colorsprite>
+          <line>3</line>
+        </colorsprite>
+      </sprite>
+    </spritedef>
+    
+    <!-- Kiwi (fruit) -->
+    <spritedef id="kiwi" width="1" height="1" type="char">
+      <sprite>
+        <line>K</line>
+        <colorsprite>
+          <line>2</line>
+        </colorsprite>
+      </sprite>
+    </spritedef>
+    
+    <!-- Score et infos -->
+    <label id="score" x="1" y="0" width="14"> Score: 0</label>
+    <label id="length" x="16" y="0" width="10"> Len: 4</label>
+    <label id="timer" x="29" y="0" width="10"> Kiwi: 10</label>
+    
+    <!-- Message de fin -->
+    <label id="gameover" x="8" y="10" width="24" visibility="hidden"><color ink="red">GAME OVER</color></label>
+    
+    <!-- Contrôles J1 -->
+    <keypad action="UP" key="Z" event="goUp"/>
+    <keypad action="DOWN" key="S" event="goDown"/>
+    <keypad action="LEFT" key="Q" event="goLeft"/>
+    <keypad action="RIGHT" key="D" event="goRight"/>
+    
+    <!-- Touches fin de partie -->
+    <keypad key="A" event="saveScore"/>
+    <keypad key="B" event="backToMenu"/>
+    
+    <!-- Game loop -->
+    <timer event="gameLoop" interval="150"></timer>
+    
+  </layers>
+  
+  
+  <script>
+    var serverscore = "http://192.168.0.119:8080/";
+    var GameId = "";
+    var minScoreTop10 = 0;
+    
+    // Direction: 0=droite, 1=bas, 2=gauche, 3=haut
+    var direction = 0;
+    var nextDirection = 0;
+    var score = 0;
+    var gameOver = false;
+    
+    // Position de la tête
+    var headX = 20;
+    var headY = 10;
+    
+    // Corps du serpent
+    var bodyX = [19, 18, 17];
+    var bodyY = [10, 10, 10];
+    var BODY_MAP = 1;
+    var BODY_CHAR = 'O';
+    var MIN_LENGTH = 2;
+    
+    // Position du kiwi
+    var kiwiX = 30;
+    var kiwiY = 5;
+    
+    // Timer kiwi
+    var kiwiTimer = 0;
+    var KIWI_DURATION = 66;
+    
+    function getLayers() {
+      return _currentLayers;
+    }
+    
+    function fetchUrl(urlString) {
+      var url = new java.net.URL(urlString);
+      var connection = url.openConnection();
+      connection.setRequestMethod("GET");
+      var reader = new java.io.BufferedReader(
+        new java.io.InputStreamReader(connection.getInputStream())
+      );
+      var response = "";
+      var line;
+      while ((line = reader.readLine()) != null) {
+        response += line;
+      }
+      reader.close();
+      return response;
+    }
+    
+    function domReady() {
+      // Récupérer le GameId depuis le storage
+      GameId = storage.get("GameId");
+      if (GameId == null || GameId == "") {
+        GameId = "kiwisnake_792d5eb7-8160-4de5-8c11-84e2f7bcfaaa";
+        storage.set("GameId", GameId);
+      }
+      
+      // Récupérer le score minimum du top 10
+      try {
+        var data = fetchUrl(serverscore + "ServerScore.mod?mode=top10&gameid=" + GameId + "&fields=score");
+        if (data != null && data != "") {
+          minScoreTop10 = parseInt(data.split(",")[0]);
+        }
+      } catch(e) {
+        minScoreTop10 = 0;
+      }
+      
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Afficher la tête
+      var head = layers.getSprite("head");
+      if (head != null) {
+        head.show(0);
+        head.move(headX, headY);
+      }
+      
+      // Dessiner le corps initial
+      drawBody(layers);
+      
+      // Afficher le kiwi
+      var kiwi = layers.getSprite("kiwi");
+      if (kiwi != null) {
+        kiwi.show(0);
+        kiwi.move(kiwiX, kiwiY);
+      }
+    }
+    
+    function drawBody(layers) {
+      for (var i = 0; i < bodyX.length; i++) {
+        layers.setMapChar(BODY_MAP, bodyX[i], bodyY[i], BODY_CHAR);
+      }
+    }
+    
+    function clearBodyTail(layers, x, y) {
+      layers.setMapChar(BODY_MAP, x, y, ' ');
+    }
+    
+    function updateInfo(layers) {
+      var len = bodyX.length + 1;
+      var secondsLeft = Math.floor((KIWI_DURATION - kiwiTimer) * 150 / 1000);
+      layers.setText("score", " Score: " + score);
+      layers.setText("length", " Len: " + len);
+      layers.setText("timer", " Kiwi: " + secondsLeft);
+    }
+    
+    function goUp() {
+      if (direction != 1) nextDirection = 3;
+    }
+    
+    function goDown() {
+      if (direction != 3) nextDirection = 1;
+    }
+    
+    function goLeft() {
+      if (direction != 0) nextDirection = 2;
+    }
+    
+    function goRight() {
+      if (direction != 2) nextDirection = 0;
+    }
+    
+    function gameLoop() {
+      if (gameOver) return;
+      
+      var layers = getLayers();
+      if (layers == null) return;
+      
+      // Timer du kiwi
+      kiwiTimer++;
+      updateInfo(layers);
+      
+      if (kiwiTimer >= KIWI_DURATION) {
+        // Le kiwi disparait - pénalité
+        if (bodyX.length > 0) {
+          var lastIdx = bodyX.length - 1;
+          clearBodyTail(layers, bodyX[lastIdx], bodyY[lastIdx]);
+          bodyX.pop();
+          bodyY.pop();
+        }
+        
+        if (bodyX.length < MIN_LENGTH) {
+          endGame(layers, "TROP MAIGRE!");
+          return;
+        }
+        
+        spawnKiwi(layers);
+      }
+      
+      // Appliquer la direction
+      direction = nextDirection;
+      
+      var oldHeadX = headX;
+      var oldHeadY = headY;
+      
+      // Déplacer la tête
+      if (direction == 0) headX++;
+      else if (direction == 1) headY++;
+      else if (direction == 2) headX--;
+      else if (direction == 3) headY--;
+      
+      // Collision murs
+      var hit = layers.checkMapCollisionAt("head", headX, headY);
+      if (hit == 35) {
+        endGame(layers, "GAME OVER!");
+        return;
+      }
+      
+      // Collision corps
+      var bodyHit = layers.getMapChar(BODY_MAP, headX, headY);
+      if (bodyHit == 79) {
+        endGame(layers, "GAME OVER!");
+        return;
+      }
+      
+      // Manger le kiwi
+      var ate = false;
+      if (headX == kiwiX && headY == kiwiY) {
+        ate = true;
+        var secondsLeft = Math.floor((KIWI_DURATION - kiwiTimer) * 150 / 1000);
+        score += 1 + secondsLeft;
+        layers.beep();
+        spawnKiwi(layers);
+      }
+      
+      // Déplacer le corps
+      if (!ate) {
+        if (bodyX.length > 0) {
+          var lastIdx = bodyX.length - 1;
+          clearBodyTail(layers, bodyX[lastIdx], bodyY[lastIdx]);
+        }
+        for (var i = bodyX.length - 1; i > 0; i--) {
+          bodyX[i] = bodyX[i - 1];
+          bodyY[i] = bodyY[i - 1];
+        }
+      } else {
+        bodyX.push(0);
+        bodyY.push(0);
+        for (var i = bodyX.length - 1; i > 0; i--) {
+          bodyX[i] = bodyX[i - 1];
+          bodyY[i] = bodyY[i - 1];
+        }
+      }
+      
+      if (bodyX.length > 0) {
+        bodyX[0] = oldHeadX;
+        bodyY[0] = oldHeadY;
+        layers.setMapChar(BODY_MAP, oldHeadX, oldHeadY, BODY_CHAR);
+      }
+      
+      var head = layers.getSprite("head");
+      if (head != null) {
+        head.move(headX, headY);
+      }
+      
+      updateInfo(layers);
+    }
+    
+    function spawnKiwi(layers) {
+      kiwiTimer = 0;
+      
+      var valid = false;
+      var attempts = 0;
+      while (!valid && attempts < 100) {
+        attempts++;
+        kiwiX = Math.floor(Math.random() * 36) + 2;
+        kiwiY = Math.floor(Math.random() * 18) + 2;
+        
+        valid = true;
+        if (kiwiX == headX && kiwiY == headY) valid = false;
+        
+        if (valid) {
+          var c = layers.getMapChar(BODY_MAP, kiwiX, kiwiY);
+          if (c == 79) valid = false;
+        }
+      }
+      
+      var kiwi = layers.getSprite("kiwi");
+      if (kiwi != null) {
+        kiwi.move(kiwiX, kiwiY);
+      }
+    }
+    
+    function endGame(layers, message) {
+      gameOver = true;
+      layers.setText("gameover", message + " Score:" + score);
+      layers.showLabel("gameover");
+      layers.beep();
+      
+      // Stocker le score pour vérification
+      storage.set("LastScore", String(score));
+      
+      // Vérifier si le score est dans le top 10
+      if (score > minScoreTop10) {
+        // Afficher message pour saisir le nom
+        layers.setText("gameover", "RECORD! [A]Sauver");
+      } else {
+        layers.setText("gameover", message + " [B]Menu");
+      }
+    }
+    
+    function saveScore() {
+      if (gameOver) {
+        gotoPage("games/kiwisnake/savescore.vtml");
+      }
+    }
+    
+    function backToMenu() {
+      if (gameOver) {
+        gotoPage("games/kiwisnake/index.vtml");
+      }
+    }
+  </script>
+  
+</minitel>

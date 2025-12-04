@@ -1,0 +1,84 @@
+<minitel title="Kiwisnake - Score Enregistré">
+  
+  <div left="5" top="5" width="30" height="4">
+    <row><color ink="green">╔═══════════════════════════════╗</color></row>
+    <row><color ink="green">║</color>   <color ink="yellow">SCORE ENREGISTRÉ!</color>       <color ink="green">║</color></row>
+    <row><color ink="green">╚═══════════════════════════════╝</color></row>
+  </div>
+  
+  <div name="result" left="8" top="10" width="24" height="5">
+    <script>
+      var serverscore = "http://192.168.0.119:8080/";
+      
+      function domReady() {
+        var GameId = storage.get("GameId");
+        var lastScore = storage.get("LastScore");
+        var playerName = getParam("playername");
+        
+        if (GameId == null || GameId == "") {
+          GameId = "kiwisnake_792d5eb7-8160-4de5-8c11-84e2f7bcfaaa";
+        }
+        
+        var container = getElementByName("result");
+        
+        if (playerName != null && playerName != "" && lastScore != null && lastScore != "") {
+          // Nettoyer le nom (enlever caractères spéciaux)
+          playerName = playerName.replace(/[,&]/g, "");
+          if (playerName.length > 10) {
+            playerName = playerName.substring(0, 10);
+          }
+          
+          try {
+            // Enregistrer le score
+            var url = serverscore + "ServerScore.mod?mode=write&gameid=" + GameId + "&values=" + playerName + "," + lastScore;
+            fetchUrl(url);
+            
+            var myrow = container.createElement("row");
+            myrow.setText("Joueur: " + playerName + "\n");
+            var myrow2 = container.createElement("row");
+            myrow2.setText("Score: " + lastScore + " pts\n");
+            var myrow3 = container.createElement("row");
+            myrow3.setText("\n");
+            var myrow4 = container.createElement("row");
+            myrow4.setText("Bravo!\n");
+          } catch(e) {
+            var myrow = container.createElement("row");
+            myrow.setText("Erreur d'enregistrement\n");
+          }
+        } else {
+          var myrow = container.createElement("row");
+          myrow.setText("Données manquantes\n");
+        }
+        
+        // Nettoyer le storage
+        storage.set("LastScore", "");
+        storage.set("Winner", "");
+      }
+      
+      function fetchUrl(urlString) {
+        var url = new java.net.URL(urlString);
+        var connection = url.openConnection();
+        connection.setRequestMethod("GET");
+        var reader = new java.io.BufferedReader(
+          new java.io.InputStreamReader(connection.getInputStream())
+        );
+        var response = "";
+        var line;
+        while ((line = reader.readLine()) != null) {
+          response += line;
+        }
+        reader.close();
+        return response;
+      }
+    </script>
+  </div>
+  
+  <div left="5" top="17" width="30" height="2">
+    <row><color ink="cyan">[A] Retour au menu</color></row>
+  </div>
+  
+  <menu name="back" left="10" top="20" width="20" height="2" keytype="alpha">
+    <item link="games/kiwisnake/index.vtml">Retour au menu</item>
+  </menu>
+  
+</minitel>

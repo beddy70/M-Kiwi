@@ -1,0 +1,53 @@
+<minitel title="Kiwisnake - Nouveau Record">
+  
+  <div left="5" top="2" width="30" height="4">
+    <row><color ink="yellow">╔═══════════════════════════════╗</color></row>
+    <row><color ink="yellow">║</color>   <color ink="green">NOUVEAU RECORD!</color>         <color ink="yellow">║</color></row>
+    <row><color ink="yellow">║</color>   <color ink="cyan">Félicitations!</color>          <color ink="yellow">║</color></row>
+    <row><color ink="yellow">╚═══════════════════════════════╝</color></row>
+  </div>
+  
+  <div name="scoreinfo" left="8" top="7" width="24" height="3">
+    <row>Votre score: </row>
+    <script>
+      function domReady() {
+        var lastScore = storage.get("LastScore");
+        var winner = storage.get("Winner");
+        var container = getElementByName("scoreinfo");
+        
+        var score = getElementByName("score");
+        scrore.setText(lastScore);
+
+        setFocus("scoreform");
+
+        if (lastScore != null && lastScore != "") {
+          var myrow = container.createElement("row");
+          if (winner != null && winner != "") {
+            myrow.setText("(" + winner + ") " + lastScore + " points\n");
+          } else {
+            myrow.setText(lastScore + " points\n");
+          }
+        }
+      }
+    </script>
+  </div>
+  
+  <div left="5" top="11" width="30" height="2">
+    <row><color ink="cyan">Entrez votre nom:</color></row>
+  </div>
+  
+  <form name="scoreform" action="/ServerScore.mod?mode=write&gameid="+storage.get("GameId")+"&values={valeur1},{valeur2},..." method="GET" left="8" top="13">
+    <input name="name" left="0" top="0" size="15" label="Nom: "/>
+    <input name="score" visibility="hidden" left="0" top="0" size="15" label="Nom: "/>"
+  </form>
+  
+  <div left="5" top="17" width="30" height="3">
+    <row><color ink="white">Appuyez sur ENVOI pour</color></row>
+    <row><color ink="white">enregistrer votre score</color></row>
+  </div>
+  
+  <menu name="cancel" left="10" top="21" width="20" height="2" keytype="alpha">
+    <item link="games/kiwisnake/index.vtml">Annuler</item>
+  </menu>
+  
+</minitel>

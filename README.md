@@ -235,6 +235,30 @@ java -jar Minitel.jar localhost 8080
 ./startclient.sh
 ```
 
+### 4. Test des Joysticks USB
+
+Un utilitaire de diagnostic permet de tester les joysticks et d'identifier les numéros de boutons/axes :
+
+```bash
+# Lancer l'utilitaire de test
+./test_joystick.sh
+```
+
+L'utilitaire propose de tester :
+- **0** : Joystick 0 uniquement (`/dev/input/js0`)
+- **1** : Joystick 1 uniquement (`/dev/input/js1`)
+- **2** : Les deux joysticks simultanément
+
+**Exemple de sortie :**
+```
+[J0] 🔘 BOUTON 0 PRESSÉ
+[J0]    → Config: "0": "ACTION1" ou "ACTION2"
+[J0] 🕹️  AXE 0 = 32767 (+) →
+[J0]    → Config: "0+": "RIGHT"
+```
+
+Utilisez ces informations pour configurer le mapping dans `config.json`.
+
 ## 📝 Format VTML (Videotex Markup Language)
 
 VTML est un langage de markup spécialement conçu pour les contraintes du Minitel (40×25 caractères).

@@ -186,12 +186,28 @@ public class VTMLScriptEngine {
                     + "  },\n"
                     + "  remove: function(key) { delete _storage[key]; },\n"
                     + "  clear: function() { _storage = {}; }\n"
-                    + "};\n";
+                    + "};\n"
+                    + "\n"
+                    + "// Navigation programmatique\n"
+                    + "var _pendingNavigation = null;\n"
+                    + "\n"
+                    + "function gotoPage(url) {\n"
+                    + "  _pendingNavigation = url;\n"
+                    + "}\n"
+                    + "\n"
+                    + "// Focus programmatique\n"
+                    + "var _pendingFocus = null;\n"
+                    + "\n"
+                    + "function setFocus(componentName) {\n"
+                    + "  _pendingFocus = componentName;\n"
+                    + "}\n";
 
             cx.evaluateString(scope, initScript, "init", 1, null);
+            System.out.println("✅ Script d'initialisation JS exécuté (gotoPage disponible)");
 
         } catch (Exception e) {
-            System.err.println("Erreur exposition classes Java: " + e.getMessage());
+            System.err.println("❌ Erreur exposition classes Java: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -261,6 +277,36 @@ public class VTMLScriptEngine {
             } finally {
                 Context.exit();
             }
+        }
+        return null;
+    }
+
+    /**
+     * Récupère et consomme la navigation en attente (appelée par gotoPage)
+     * @return L'URL de navigation ou null si aucune navigation en attente
+     */
+    public String consumePendingNavigation() {
+        Object pending = getVariable("_pendingNavigation");
+        if (pending != null && !pending.toString().equals("null")) {
+            String url = pending.toString();
+            setVariable("_pendingNavigation", null);
+            System.out.println("🔀 Navigation consommée: " + url);
+            return url;
+        }
+        return null;
+    }
+    
+    /**
+     * Récupère et consomme le focus en attente (appelé par setFocus)
+     * @return Le nom du composant à focus ou null si aucun focus en attente
+     */
+    public String consumePendingFocus() {
+        Object pending = getVariable("_pendingFocus");
+        if (pending != null && !pending.toString().equals("null")) {
+            String componentName = pending.toString();
+            setVariable("_pendingFocus", null);
+            System.out.println("🎯 Focus consommé: " + componentName);
+            return componentName;
         }
         return null;
     }
