@@ -87,7 +87,7 @@ Le développement a été accompagné par **Claude** (Anthropic), une intelligen
 
 Cette collaboration homme-machine illustre comment l'IA peut accompagner les développeurs solo dans leurs projets ambitieux, en apportant une aide à la fois technique et créative.
 
-Remercîments à mon ami Daniel Da Cunha pour ses précieux conseils.   
+<i>Remercîments à mon ami Daniel Da Cunha pour ses précieux conseils.</i>   
 
 ---
 
