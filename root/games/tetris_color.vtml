@@ -18,7 +18,7 @@
     <map>
       <row>#          #         Next:</row>
       <row repeat="19">#          #</row>
-        <row><putchar index="0" repeat="12"/></row>
+        <row><putchar index="0" repeat="12" /></row>
         <!--
         <row>############</row>
                 -->

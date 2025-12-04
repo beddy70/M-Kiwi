@@ -701,6 +701,8 @@ public class MinitelPageReader {
             }
 
             case "putchar" -> {
+                // Debug: afficher tous les attributs
+                System.out.println("🎨 Putchar attrs: " + attrs);
                 int index = parseInt(attrs.get("index"), 0);
                 int repeat = parseRepeat(attrs.get("repeat"));
                 String chardefName = attrs.get("chardef");  // Optionnel, utilise le dernier chardef si non spécifié
