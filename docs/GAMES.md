@@ -626,6 +626,7 @@ Le système supporte les joysticks USB standards via `/dev/input/js*`.
 | PlayStation 3 (PS3) | ✅ | |
 | FOYU Compatible PS2 | ✅ | |
 | Megadrive 2.4GHz Wireless | ✅ | |
+| Manette Free | ✅ | |
 | Atari CX40+ Wireless | ✅ | Un seul bouton |
 | Nintendo Switch Pro | ❌ | |
 | PlayStation 4 (PS4) | ❌ | |
