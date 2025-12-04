@@ -237,6 +237,10 @@
       L.setMapChar(GAME_MAP, x, y, ' ');
       L.setMapChar(GAME_MAP, x+1, y, ' ');
       L.setMapChar(GAME_MAP, x+2, y, ' ');
+      // Réinitialiser les couleurs (blanc par défaut)
+      L.setMapColor(GAME_MAP, x, y, 7);
+      L.setMapColor(GAME_MAP, x+1, y, 7);
+      L.setMapColor(GAME_MAP, x+2, y, 7);
     }
     
     function drawInvaders(L) {
