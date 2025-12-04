@@ -277,7 +277,13 @@ public class MinitelPageReader {
                     map.endRow(row.getRepeat());
                     System.out.println("📝 Row terminé avec putchar");
                 }
+                // Remonter au parent seulement si c'était un VTMLRowComponent
+                if (currentComponent.getParent() != null) {
+                    currentComponent = currentComponent.getParent();
+                }
             }
+            // Ne pas remonter si le row n'était pas un conteneur (cas du row avec texte direct)
+            return;
         }
 
         // Ne remonter que si c'était un tag conteneur
