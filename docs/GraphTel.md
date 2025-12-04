@@ -1,5 +1,29 @@
 # GraphTel - Gestionnaire de graphiques semi-graphiques pour Minitel
 
+## Table des matières
+
+- [Description](#description)
+- [Système de coordonnées](#système-de-coordonnées)
+- [Palette de couleurs](#palette-de-couleurs)
+- [Constructeurs](#constructeurs)
+- [Méthodes principales](#méthodes-principales)
+  - [Gestion des couleurs](#gestion-des-couleurs)
+  - [Primitives de dessin](#primitives-de-dessin)
+  - [Manipulation du buffer](#manipulation-du-buffer)
+  - [Chargement d'images](#chargement-dimages)
+- [Modes de conversion d'images](#modes-de-conversion-dimages)
+  - [Algorithme Floyd-Steinberg (Dithering)](#algorithme-floyd-steinberg-dithering)
+- [Affichage](#affichage)
+- [Getters](#getters)
+- [Exemple complet](#exemple-complet)
+- [Utilisation avec VTML](#utilisation-avec-vtml)
+- [Notes techniques](#notes-techniques)
+  - [Caractères semi-graphiques](#caractères-semi-graphiques)
+  - [Gestion des couleurs par bloc](#gestion-des-couleurs-par-bloc)
+- [Voir aussi](#voir-aussi)
+
+---
+
 ## Description
 
 `GraphTel` est une classe qui gère un buffer graphique en mémoire et le convertit en caractères semi-graphiques Minitel. Le Minitel utilise des caractères spéciaux où chaque caractère représente un bloc de **2×3 pixels** (6 pixels par caractère).
