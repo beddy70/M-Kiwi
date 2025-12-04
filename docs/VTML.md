@@ -427,10 +427,14 @@ Insère un ou plusieurs caractères mosaïques définis dans un `<chardef>`. Uti
 </chardef>
 
 <map>
-  <row><putchar index="0" repeat="40"/></row>
-  <row><putchar index="1"/><putchar index="0" repeat="38"/><putchar index="1"/></row>
+  <row><putchar index="0" repeat="40" /></row>
+  <row><putchar index="1" /><putchar index="0" repeat="38" /><putchar index="1" /></row>
+  <!-- Mélange texte et mosaïque -->
+  <row><putchar index="0" />          <putchar index="0" />          Next:</row>
 </map>
 ```
+
+**Note** : On peut mélanger texte normal et caractères mosaïques dans un même `<row>`.
 
 **Avantage** : Permet de définir des décors mosaïques complexes de manière lisible et réutilisable.
 
