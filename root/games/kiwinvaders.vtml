@@ -324,7 +324,6 @@
             L.setMapColor(GAME_MAP, x+1, y, 3);
             clearInvader(L, x, y);
             bulletActive = false;
-            L.beep();
             if (alive <= 0) {
               gameOver = true;
               L.setText("gameover", "  VICTOIRE!  ");
@@ -356,8 +355,8 @@
           b.on = false;
           lives--;
           L.setText("lives", "Vies: " + lives);
-          L.beep();
           if (lives <= 0) {
+            L.beep();
             gameOver = true;
             L.setText("gameover", " GAME OVER! ");
             L.showLabel("gameover");
