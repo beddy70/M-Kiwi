@@ -228,7 +228,8 @@ public class MinitelPageReader {
                 || component instanceof VTMLColormapComponent
                 || component instanceof VTMLColorspriteComponent
                 || component instanceof VTMLChardefComponent
-                || component instanceof VTMLCharComponent;
+                || component instanceof VTMLCharComponent
+                || component instanceof VTMLRowComponent;  // row peut contenir des putchar
     }
 
     /**
@@ -267,6 +268,17 @@ public class MinitelPageReader {
                 }
             }
         }
+        
+        // Terminer le row quand on ferme le tag row (pour les putchar)
+        if ("row".equals(tagname)) {
+            if (currentComponent instanceof VTMLRowComponent row) {
+                MComponent parent = currentComponent.getParent();
+                if (parent instanceof VTMLMapComponent map) {
+                    map.endRow(row.getRepeat());
+                    System.out.println("📝 Row terminé avec putchar");
+                }
+            }
+        }
 
         // Ne remonter que si c'était un tag conteneur
         if (isContainerTag(tagname)) {
@@ -291,7 +303,8 @@ public class MinitelPageReader {
                 || "colormap".equals(tagname)
                 || "colorsprite".equals(tagname)
                 || "chardef".equals(tagname)
-                || "char".equals(tagname);
+                || "char".equals(tagname)
+                || "row".equals(tagname);  // row peut contenir des putchar
     }
 
     /**
@@ -336,13 +349,22 @@ public class MinitelPageReader {
                         return null;
                     }
                 }
-                // Si le parent est une map, ajouter la ligne
-                if (currentComponent instanceof VTMLMapComponent area) {
-                    System.out.println("📝 Map row: '" + textContent + "' x" + repeat);
-                    for (int i = 0; i < repeat; i++) {
-                        area.addRow(textContent);
+                // Si le parent est une map
+                if (currentComponent instanceof VTMLMapComponent map) {
+                    // Si le row a du contenu texte direct, l'ajouter immédiatement
+                    if (textContent != null && !textContent.isEmpty()) {
+                        System.out.println("📝 Map row: '" + textContent + "' x" + repeat);
+                        for (int i = 0; i < repeat; i++) {
+                            map.addRow(textContent);
+                        }
+                        return null;
                     }
-                    return null;
+                    // Sinon, démarrer un row qui sera rempli par des <putchar>
+                    map.startRow();
+                    System.out.println("📝 Map row démarré (attente putchar)");
+                    VTMLRowComponent row = new VTMLRowComponent("");
+                    row.setRepeat(repeat);
+                    return row;
                 }
                 return new VTMLRowComponent(textContent);
             }
@@ -694,11 +716,17 @@ public class MinitelPageReader {
                 
                 System.out.println("🎨 Putchar: index=" + index + ", repeat=" + repeat + ", char=0x" + Integer.toHexString(mosaicChar));
                 
-                // Si le parent est une map, ajouter les caractères comme mosaïque
-                if (currentComponent instanceof VTMLMapComponent map) {
-                    map.appendMosaicChars(chars);
-                    return null;
+                // Chercher la map parente (peut être le parent direct ou via un row)
+                MComponent parent = currentComponent;
+                while (parent != null) {
+                    if (parent instanceof VTMLMapComponent map) {
+                        map.appendMosaicChars(chars);
+                        System.out.println("🎨 Putchar ajouté à la map: '" + chars + "'");
+                        return null;
+                    }
+                    parent = (parent instanceof ModelMComponent m) ? m.getParent() : null;
                 }
+                System.err.println("⚠️ putchar: pas de map parente trouvée");
                 return null;
             }
 

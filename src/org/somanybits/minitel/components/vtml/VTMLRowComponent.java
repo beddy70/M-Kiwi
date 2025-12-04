@@ -15,6 +15,7 @@ import org.somanybits.minitel.components.ModelMComponent;
 public class VTMLRowComponent extends ModelMComponent {
 
     private String text;
+    private int repeat = 1;  // Pour les rows avec putchar
 
     public VTMLRowComponent() {
         super();
@@ -31,6 +32,14 @@ public class VTMLRowComponent extends ModelMComponent {
 
     public void setText(String text) {
         this.text = text;
+    }
+    
+    public int getRepeat() {
+        return repeat;
+    }
+    
+    public void setRepeat(int repeat) {
+        this.repeat = repeat;
     }
 
     @Override

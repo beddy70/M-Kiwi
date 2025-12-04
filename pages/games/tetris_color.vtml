@@ -1,52 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <minitel>
+  
+
+  <chardef name="charset1" type="mosaic">
+      <char> <-- 2x3
+        <line> #</line>
+        <line># </line>
+        <line> #</line>
+      <char>
+  </chardef>
+  
   <layers id="game" left="0" top="1" width="40" height="22">
-    
+  
     <!-- Map 0: Décor (bordures) en cyan -->
     <map>
       <row>#          #         Next:</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>############</row>
+      <row repeat="19">#          #</row>
+        <row><putchar index="0" repeat="12"/></row>
+        <!--
+        <row>############</row>
+                -->
       <colormap>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
-        <row>6          6</row>
+        <row repeat="20">6          6</row>
         <row>666666666666</row>
+
       </colormap>
     </map>
     
@@ -332,7 +309,7 @@
         if (isLineFull(layers, y)) {
           cleared++;
           // Décaler les lignes vers le bas (caractères + couleurs)
-          layers.shiftMap(PIECES_MAP, "DOWN", 0, y);
+          layers.shiftMap(PIECES_MAP,"DOWN", 1, y);
           y++;  // Revérifier cette ligne
         }
       }
