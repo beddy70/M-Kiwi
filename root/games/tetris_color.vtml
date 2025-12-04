@@ -5,6 +5,8 @@
     <!-- Map 0: Décor (bordures) en cyan -->
     <map>
       <row>#          #         Next:</row>
+      <row repeat="19">#          #</row>
+      <!--<row>#          #</row>
       <row>#          #</row>
       <row>#          #</row>
       <row>#          #</row>
@@ -21,9 +23,7 @@
       <row>#          #</row>
       <row>#          #</row>
       <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
-      <row>#          #</row>
+      <row>#          #</row>-->
       <row>############</row>
       <colormap>
         <row>6          6</row>
@@ -332,7 +332,7 @@
         if (isLineFull(layers, y)) {
           cleared++;
           // Décaler les lignes vers le bas (caractères + couleurs)
-          layers.shiftMap(PIECES_MAP, "DOWN", 0, y);
+          layers.shiftMap(PIECES_MAP,"DOWN", 1, y);
           y++;  // Revérifier cette ligne
         }
       }

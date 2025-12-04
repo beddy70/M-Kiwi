@@ -268,7 +268,7 @@
         if (isLineFull(layers, y)) {
           cleared++;
           // Décaler les lignes vers le bas dans la map
-          layers.shiftMap(PIECES_MAP, "DOWN", 0, y);
+          layers.shiftMap(PIECES_MAP,"DOWN", 1, y);
           y++;  // Revérifier cette ligne
         }
       }

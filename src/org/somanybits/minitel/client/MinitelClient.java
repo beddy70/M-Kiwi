@@ -756,13 +756,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     }
     
     private void triggerJoystickAction(int player, String action) {
+        if (currentLayers == null) return;
         String event = currentLayers.getKeypadEvent(player, action);
         if (event != null) {
             try {
                 VTMLScriptEngine.getInstance().execute(event + "()");
                 refreshLayersDisplay();
-            } catch (Exception e) {
-                System.err.println("Erreur joystick event: " + e.getMessage());
+            } catch (Throwable t) {
+                // Catch Throwable pour ne jamais bloquer le thread joystick
+                System.err.println("❌ Erreur joystick event: " + t.getClass().getSimpleName() + " - " + t.getMessage());
             }
         }
     }
@@ -787,8 +789,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             if (currentLayers.consumeBeep()) {
                 mc.writeBytes(GetTeletelCode.beep());
             }
-        } catch (IOException e) {
-            System.err.println("Erreur refresh display: " + e.getMessage());
+        } catch (Throwable t) {
+            // Catch Throwable pour ne jamais bloquer (ArrayIndexOutOfBounds, etc.)
+            System.err.println("❌ Erreur refresh display: " + t.getClass().getSimpleName() + " - " + t.getMessage());
         }
     }
     

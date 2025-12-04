@@ -303,7 +303,11 @@ public class MinitelPageReader {
 
             case "row" -> {
                 // Gérer l'attribut repeat (1-100, défaut 1)
-                int repeat = parseRepeat(attrs.get("repeat"));
+                String repeatAttr = attrs.get("repeat");
+                int repeat = parseRepeat(repeatAttr);
+                if (repeatAttr != null) {
+                    System.out.println("🔄 Row repeat attr='" + repeatAttr + "' -> " + repeat);
+                }
                 
                 // Si le parent est une colormap, ajouter la ligne à la map parente
                 if (currentComponent instanceof VTMLColormapComponent) {
@@ -348,7 +352,11 @@ public class MinitelPageReader {
 
             case "line" -> {
                 // Gérer l'attribut repeat (1-100, défaut 1)
-                int repeat = parseRepeat(attrs.get("repeat"));
+                String repeatAttr = attrs.get("repeat");
+                int repeat = parseRepeat(repeatAttr);
+                if (repeatAttr != null) {
+                    System.out.println("🔄 Line repeat attr='" + repeatAttr + "' -> " + repeat);
+                }
                 
                 // Si le parent est une colorsprite, ajouter la ligne de couleur
                 System.out.println("📝 Data tag - currentComponent=" + currentComponent.getClass().getSimpleName() + ", text='" + textContent + "' x" + repeat);

@@ -160,8 +160,9 @@ public class JoystickReader implements Runnable {
         for (JoystickListener l : listeners) {
             try {
                 l.onButton(button, pressed);
-            } catch (Exception e) {
-                System.err.println("Erreur listener joystick: " + e.getMessage());
+            } catch (Throwable t) {
+                // Catch Throwable pour ne jamais tuer le thread joystick
+                System.err.println("❌ Erreur listener joystick (button): " + t.getClass().getSimpleName() + " - " + t.getMessage());
             }
         }
     }
@@ -170,8 +171,9 @@ public class JoystickReader implements Runnable {
         for (JoystickListener l : listeners) {
             try {
                 l.onAxis(axis, value);
-            } catch (Exception e) {
-                System.err.println("Erreur listener joystick: " + e.getMessage());
+            } catch (Throwable t) {
+                // Catch Throwable pour ne jamais tuer le thread joystick
+                System.err.println("❌ Erreur listener joystick (axis): " + t.getClass().getSimpleName() + " - " + t.getMessage());
             }
         }
     }
