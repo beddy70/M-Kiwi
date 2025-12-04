@@ -302,20 +302,27 @@ public class MinitelPageReader {
             }
 
             case "row" -> {
+                // Gérer l'attribut repeat (1-100, défaut 1)
+                int repeat = parseRepeat(attrs.get("repeat"));
+                
                 // Si le parent est une colormap, ajouter la ligne à la map parente
                 if (currentComponent instanceof VTMLColormapComponent) {
                     // Remonter à la map parente
                     MComponent parent = currentComponent.getParent();
                     if (parent instanceof VTMLMapComponent map) {
-                        System.out.println("🎨 Colormap row: '" + textContent + "'");
-                        map.addRow(textContent);  // addRow gère le mode colormap
+                        System.out.println("🎨 Colormap row: '" + textContent + "' x" + repeat);
+                        for (int i = 0; i < repeat; i++) {
+                            map.addRow(textContent);  // addRow gère le mode colormap
+                        }
                         return null;
                     }
                 }
                 // Si le parent est une map, ajouter la ligne
                 if (currentComponent instanceof VTMLMapComponent area) {
-                    System.out.println("📝 Map row: '" + textContent + "'");
-                    area.addRow(textContent);
+                    System.out.println("📝 Map row: '" + textContent + "' x" + repeat);
+                    for (int i = 0; i < repeat; i++) {
+                        area.addRow(textContent);
+                    }
                     return null;
                 }
                 return new VTMLRowComponent(textContent);
@@ -340,21 +347,28 @@ public class MinitelPageReader {
             }
 
             case "line" -> {
+                // Gérer l'attribut repeat (1-100, défaut 1)
+                int repeat = parseRepeat(attrs.get("repeat"));
+                
                 // Si le parent est une colorsprite, ajouter la ligne de couleur
-                System.out.println("📝 Data tag - currentComponent=" + currentComponent.getClass().getSimpleName() + ", text='" + textContent + "'");
+                System.out.println("📝 Data tag - currentComponent=" + currentComponent.getClass().getSimpleName() + ", text='" + textContent + "' x" + repeat);
                 if (currentComponent instanceof VTMLColorspriteComponent) {
                     // Remonter au sprite parent
                     MComponent parent = currentComponent.getParent();
                     if (parent instanceof VTMLSpriteComponent sprite) {
-                        System.out.println("🎨 Colorsprite line: '" + textContent + "'");
-                        sprite.addLine(textContent);  // addLine gère le mode colorsprite
+                        System.out.println("🎨 Colorsprite line: '" + textContent + "' x" + repeat);
+                        for (int i = 0; i < repeat; i++) {
+                            sprite.addLine(textContent);  // addLine gère le mode colorsprite
+                        }
                         return null;
                     }
                 }
                 // Si le parent est un sprite, ajouter la ligne
                 if (currentComponent instanceof VTMLSpriteComponent sprite) {
-                    System.out.println("📝 Sprite data added: '" + textContent + "'");
-                    sprite.addLine(textContent);
+                    System.out.println("📝 Sprite data added: '" + textContent + "' x" + repeat);
+                    for (int i = 0; i < repeat; i++) {
+                        sprite.addLine(textContent);
+                    }
                     return null;
                 }
                 return null;
@@ -725,6 +739,26 @@ public class MinitelPageReader {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
             return defaultValue;
+        }
+    }
+    
+    /**
+     * Parse l'attribut repeat avec garde-fou (1-100, défaut 1)
+     */
+    private int parseRepeat(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return 1;
+        }
+        try {
+            int repeat = Integer.parseInt(value.trim());
+            if (repeat < 1) return 1;
+            if (repeat > 100) {
+                System.err.println("⚠️ repeat=" + repeat + " trop grand, limité à 100");
+                return 100;
+            }
+            return repeat;
+        } catch (NumberFormatException e) {
+            return 1;
         }
     }
 

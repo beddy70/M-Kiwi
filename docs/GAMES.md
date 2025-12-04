@@ -163,11 +163,12 @@ Les maps sont des grilles de caractères qui forment le décor du jeu.
 ```xml
 <map>
   <row>########################################</row>
-  <row>#                                      #</row>
-  <row>#                                      #</row>
+  <row repeat="18">#                                      #</row>
   <row>########################################</row>
 </map>
 ```
+
+L'attribut `repeat` permet de répéter une ligne plusieurs fois (1-100), ce qui allège considérablement les définitions de maps.
 
 ### Empilement de maps
 

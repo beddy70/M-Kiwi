@@ -129,9 +129,16 @@ Conteneur de positionnement. Définit une zone rectangulaire sur l'écran.
 
 Ligne de texte. Le texte est affiché à la position courante.
 
+| Attribut | Type | Défaut | Description |
+|----------|------|--------|-------------|
+| `repeat` | int | 1 | Nombre de répétitions de la ligne (1-100) |
+
 ```xml
 <row>Bonjour Minitel!</row>
 <row>Deuxième ligne</row>
+
+<!-- Répéter une ligne (utile pour les maps) -->
+<row repeat="10">#                                      #</row>
 ```
 
 **Note** : Les espaces multiples sont préservés.
@@ -528,8 +535,15 @@ Formule : `largeur_couleur = ceil(largeur_pixels / 2)`, `hauteur_couleur = ceil(
 
 Ligne de données dans un `<sprite>` ou `<colorsprite>`. Définit une ligne de l'apparence ou des couleurs du sprite.
 
+| Attribut | Type | Défaut | Description |
+|----------|------|--------|-------------|
+| `repeat` | int | 1 | Nombre de répétitions de la ligne (1-100) |
+
 ```xml
 <line>###</line>
+
+<!-- Répéter une ligne (utile pour les grands sprites) -->
+<line repeat="5">##########</line>
 ```
 
 **Note** : Utilisez `<line>` dans les sprites et `<row>` dans les maps.
@@ -629,38 +643,17 @@ Définit une boucle de jeu (game loop) qui appelle une fonction JavaScript à in
   
   <layers id="game" left="0" top="1" width="40" height="22">
     
-    <!-- Fond du terrain -->
+    <!-- Fond du terrain (utilisation de repeat pour alléger le code) -->
     <map id="terrain" type="char">
       <row>########################################</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
+      <row repeat="19">#                                      #</row>
       <row>########################################</row>
     </map>
     
-    <!-- Sprite de la raquette -->
+    <!-- Sprite de la raquette (utilisation de repeat) -->
     <spritedef id="paddle" width="1" height="4" type="char">
       <sprite>
-        <line>|</line>
-        <line>|</line>
-        <line>|</line>
-        <line>|</line>
+        <line repeat="4">|</line>
       </sprite>
     </spritedef>
     
