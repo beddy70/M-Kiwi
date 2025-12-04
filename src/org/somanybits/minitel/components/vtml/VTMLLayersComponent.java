@@ -618,6 +618,7 @@ public class VTMLLayersComponent extends ModelMComponent {
     private void drawArea(VTMLMapComponent area) {
         char[][] areaData = area.getData();
         int[][] areaColorData = area.getColorData();
+        boolean[][] areaMosaicData = area.getMosaicData();
         if (areaData == null) return;
         
         for (int y = 0; y < areaData.length && y < height; y++) {
@@ -632,6 +633,10 @@ public class VTMLLayersComponent extends ModelMComponent {
                         if (areaColor >= 0) {
                             colorBuffer[y][x] = areaColor;
                         }
+                    }
+                    // Copier le mode mosaïque si défini
+                    if (areaMosaicData != null && y < areaMosaicData.length && x < areaMosaicData[y].length) {
+                        mosaicMode[y][x] = areaMosaicData[y][x];
                     }
                 }
             }
