@@ -13,6 +13,7 @@ import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 import org.somanybits.log.LogManager;
@@ -94,6 +95,22 @@ public class MinitelPageReader {
 
                         // Créer le composant et l'ajouter à l'arbre
                         buildComponentFromElement(el.normalName(), depth, attrs, textContent);
+                    }
+                } else if (node instanceof TextNode textNode) {
+                    // Capturer le texte entre les tags (ex: entre <putchar> dans un <row>)
+                    if (depth >= MINITEL_TAG_DEPTH) {
+                        String text = textNode.getWholeText();
+                        if (!text.isEmpty() && currentComponent instanceof VTMLRowComponent) {
+                            // Chercher la map parente
+                            MComponent parent = currentComponent;
+                            while (parent != null) {
+                                if (parent instanceof VTMLMapComponent map) {
+                                    map.appendTextChars(text);
+                                    break;
+                                }
+                                parent = (parent instanceof ModelMComponent m) ? m.getParent() : null;
+                            }
+                        }
                     }
                 }
             }

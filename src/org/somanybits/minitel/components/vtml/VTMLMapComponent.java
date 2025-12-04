@@ -148,6 +148,22 @@ public class VTMLMapComponent extends ModelMComponent {
     }
     
     /**
+     * Ajoute des caractères normaux (non-mosaïques) à la ligne en cours
+     */
+    public void appendTextChars(String chars) {
+        if (currentRowBuffer == null) {
+            currentRowBuffer = new StringBuilder();
+            currentRowMosaicFlags = new StringBuilder();
+        }
+        System.out.println("📝 appendTextChars: '" + chars + "' (len=" + chars.length() + ")");
+        currentRowBuffer.append(chars);
+        // Marquer tous ces caractères comme normaux
+        for (int i = 0; i < chars.length(); i++) {
+            currentRowMosaicFlags.append('0');
+        }
+    }
+    
+    /**
      * Termine la ligne en cours et l'ajoute à la map
      */
     public void endRow(int repeat) {
