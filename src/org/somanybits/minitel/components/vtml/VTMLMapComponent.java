@@ -138,11 +138,13 @@ public class VTMLMapComponent extends ModelMComponent {
             currentRowBuffer = new StringBuilder();
             currentRowMosaicFlags = new StringBuilder();
         }
+        System.out.println("🎨 appendMosaicChars: '" + chars + "' (len=" + chars.length() + ")");
         currentRowBuffer.append(chars);
         // Marquer tous ces caractères comme mosaïques
         for (int i = 0; i < chars.length(); i++) {
             currentRowMosaicFlags.append('1');
         }
+        System.out.println("🎨 currentRowBuffer now: len=" + currentRowBuffer.length());
     }
     
     /**
