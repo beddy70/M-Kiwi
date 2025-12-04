@@ -567,7 +567,7 @@ Associe une touche du clavier à une fonction JavaScript. Deux modes d'utilisati
 
 | Attribut | Type   | Défaut | Description                           |
 |----------|--------|--------|---------------------------------------|
-| `action` | string | -      | Action : LEFT, RIGHT, UP, DOWN, ACTION1, ACTION2 |
+| `action` | string | -      | Action : LEFT, RIGHT, UP, DOWN, ACTION1-ACTION6 |
 | `key`    | string | -      | Touche du clavier (une lettre)        |
 | `event`  | string | -      | Nom de la fonction JavaScript à appeler |
 

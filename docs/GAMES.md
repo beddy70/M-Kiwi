@@ -575,6 +575,10 @@ Le paramètre `player` permet d'associer des touches à différents joueurs :
 | `RIGHT` | Droite |
 | `ACTION1` | Action principale (tir, saut...) |
 | `ACTION2` | Action secondaire |
+| `ACTION3` | Action supplémentaire 3 |
+| `ACTION4` | Action supplémentaire 4 |
+| `ACTION5` | Action supplémentaire 5 |
+| `ACTION6` | Action supplémentaire 6 |
 
 ### Mode touche directe
 
@@ -644,7 +648,7 @@ Le système lit `/dev/input/js0` et `/dev/input/js1` (si disponibles) et traduit
 
 **Support 2 joueurs** : Deux joysticks peuvent être connectés simultanément. Le joystick 0 déclenche les events du player 0, le joystick 1 ceux du player 1.
 
-**Aucune configuration nécessaire** : si vous avez défini des `<keypad>` pour UP/DOWN/LEFT/RIGHT et ACTION1/ACTION2, le joystick les déclenchera automatiquement.
+**Aucune configuration nécessaire** : si vous avez défini des `<keypad>` pour UP/DOWN/LEFT/RIGHT et ACTION1-ACTION6, le joystick les déclenchera automatiquement.
 
 ### Mapping par défaut
 
@@ -1247,7 +1251,7 @@ function showBestScore() {
 |----------|------|--------|-------------|
 | `key` | string | | Touche clavier associée |
 | `event` | string | | Nom de la fonction JavaScript à appeler |
-| `action` | string | | Action joystick : `UP`, `DOWN`, `LEFT`, `RIGHT`, `ACTION1`, `ACTION2` |
+| `action` | string | | Action joystick : `UP`, `DOWN`, `LEFT`, `RIGHT`, `ACTION1`-`ACTION6` |
 | `player` | int | `0` | Numéro du joueur (0 ou 1) pour le support multi-manettes |
 
 ### Élément `<timer>`
@@ -1295,3 +1299,7 @@ function showBestScore() {
 | `RIGHT` | Direction droite | D, → |
 | `ACTION1` | Action principale | Espace, Entrée |
 | `ACTION2` | Action secondaire | Shift, Ctrl |
+| `ACTION3` | Action 3 | - |
+| `ACTION4` | Action 4 | - |
+| `ACTION5` | Action 5 | - |
+| `ACTION6` | Action 6 | - |

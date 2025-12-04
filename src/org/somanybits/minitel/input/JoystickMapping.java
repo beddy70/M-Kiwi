@@ -11,7 +11,7 @@ import java.util.Map;
  * Mapping des boutons et axes du joystick vers les actions VTML.
  * <p>
  * Cette classe gère la correspondance entre les entrées physiques du joystick
- * et les actions de jeu VTML (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2).
+ * et les actions de jeu VTML (UP, DOWN, LEFT, RIGHT, ACTION1-ACTION6).
  * Le mapping peut être modifié dynamiquement via JavaScript.
  * </p>
  * 
@@ -97,7 +97,7 @@ public class JoystickMapping {
     /**
      * Mapper un bouton vers une action
      * @param button Numéro du bouton (0, 1, 2, ...)
-     * @param action Action VTML (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
+     * @param action Action VTML (UP, DOWN, LEFT, RIGHT, ACTION1-ACTION6)
      */
     public void mapButton(int button, String action) {
         if (action == null || action.isEmpty()) {

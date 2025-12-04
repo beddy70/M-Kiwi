@@ -19,7 +19,7 @@ import org.somanybits.minitel.components.ModelMComponent;
  * <keypad action="ACTION1" key=" " event="fire"/>
  * <keypad action="UP" key="O" event="moveUp2" player="1"/>
  * }</pre>
- * <p>Actions disponibles : UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2</p>
+ * <p>Actions disponibles : UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2, ACTION3, ACTION4, ACTION5, ACTION6</p>
  * <p>Le paramètre player (0 ou 1) permet d'associer le keypad à un joueur spécifique
  * pour le support multi-manettes.</p>
  * 
@@ -42,8 +42,12 @@ public class VTMLKeypadComponent extends ModelMComponent {
     public static final String ACTION_DOWN = "DOWN";
     public static final String ACTION_ACTION1 = "ACTION1";
     public static final String ACTION_ACTION2 = "ACTION2";
+    public static final String ACTION_ACTION3 = "ACTION3";
+    public static final String ACTION_ACTION4 = "ACTION4";
+    public static final String ACTION_ACTION5 = "ACTION5";
+    public static final String ACTION_ACTION6 = "ACTION6";
     
-    private String action;  // LEFT, RIGHT, UP, DOWN, ACTION1, ACTION2
+    private String action;  // LEFT, RIGHT, UP, DOWN, ACTION1-ACTION6
     private char key;       // Touche associée
     private String event;   // Nom de la fonction JavaScript à appeler
     private int player;     // 0 = joueur 1, 1 = joueur 2
