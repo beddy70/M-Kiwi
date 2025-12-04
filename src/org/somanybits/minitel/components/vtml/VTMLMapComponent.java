@@ -78,15 +78,12 @@ public class VTMLMapComponent extends ModelMComponent {
     private MapType type = MapType.CHAR;
     private List<String> rows = new ArrayList<>();
     private List<String> colorRows = new ArrayList<>();
-    private List<boolean[]> mosaicRows = new ArrayList<>();  // true = caractère mosaïque
     private char[][] data;
     private int[][] colorData;  // Couleur du texte (ink) pour chaque caractère
-    private boolean[][] mosaicData;  // true = caractère mosaïque (pour putchar)
     private boolean parsingColormap = false;  // Flag pour savoir si on parse une colormap
     
     // Buffer pour accumuler les caractères d'une ligne en cours (pour <putchar>)
     private StringBuilder currentRowBuffer = null;
-    private List<Boolean> currentRowMosaicFlags = null;  // Flags mosaïque pour la ligne en cours
     
     public VTMLMapComponent(MapType type) {
         this.type = type;
@@ -104,22 +101,13 @@ public class VTMLMapComponent extends ModelMComponent {
      * Ajoute une ligne de contenu
      */
     public void addRow(String row) {
-        addRow(row, null);
-    }
-    
-    /**
-     * Ajoute une ligne de contenu avec flags mosaïque optionnels
-     */
-    public void addRow(String row, boolean[] mosaicFlags) {
         if (parsingColormap) {
             colorRows.add(row);
         } else {
             rows.add(row);
-            mosaicRows.add(mosaicFlags);  // null si pas de mosaïque
         }
         data = null; // Invalider le cache
         colorData = null;
-        mosaicData = null;
     }
     
     /**
@@ -127,7 +115,6 @@ public class VTMLMapComponent extends ModelMComponent {
      */
     public void startRow() {
         currentRowBuffer = new StringBuilder();
-        currentRowMosaicFlags = new ArrayList<>();
     }
     
     /**
@@ -136,13 +123,8 @@ public class VTMLMapComponent extends ModelMComponent {
     public void appendMosaicChars(String chars) {
         if (currentRowBuffer == null) {
             currentRowBuffer = new StringBuilder();
-            currentRowMosaicFlags = new ArrayList<>();
         }
         currentRowBuffer.append(chars);
-        // Marquer tous ces caractères comme mosaïques
-        for (int i = 0; i < chars.length(); i++) {
-            currentRowMosaicFlags.add(true);
-        }
     }
     
     /**
@@ -151,16 +133,10 @@ public class VTMLMapComponent extends ModelMComponent {
     public void endRow(int repeat) {
         if (currentRowBuffer != null && currentRowBuffer.length() > 0) {
             String row = currentRowBuffer.toString();
-            // Convertir les flags en tableau
-            boolean[] flags = new boolean[currentRowMosaicFlags.size()];
-            for (int i = 0; i < flags.length; i++) {
-                flags[i] = currentRowMosaicFlags.get(i);
-            }
             for (int i = 0; i < repeat; i++) {
-                addRow(row, flags);
+                addRow(row);
             }
             currentRowBuffer = null;
-            currentRowMosaicFlags = null;
         }
     }
     
@@ -199,22 +175,10 @@ public class VTMLMapComponent extends ModelMComponent {
         return colorData;
     }
     
-    /**
-     * Retourne les flags mosaïque sous forme de tableau 2D
-     * true = caractère mosaïque (nécessite mode semi-graphique)
-     */
-    public boolean[][] getMosaicData() {
-        if (mosaicData == null) {
-            buildData();
-        }
-        return mosaicData;
-    }
-    
     private void buildData() {
         if (rows.isEmpty()) {
             data = new char[0][0];
             colorData = new int[0][0];
-            mosaicData = new boolean[0][0];
             return;
         }
         
@@ -228,20 +192,14 @@ public class VTMLMapComponent extends ModelMComponent {
         
         data = new char[rows.size()][maxWidth];
         colorData = new int[rows.size()][maxWidth];
-        mosaicData = new boolean[rows.size()][maxWidth];
         
         for (int y = 0; y < rows.size(); y++) {
             String row = rows.get(y);
-            boolean[] rowMosaicFlags = (y < mosaicRows.size()) ? mosaicRows.get(y) : null;
-            
             for (int x = 0; x < maxWidth; x++) {
                 if (x < row.length()) {
                     data[y][x] = row.charAt(x);
-                    // Appliquer le flag mosaïque si défini
-                    mosaicData[y][x] = (rowMosaicFlags != null && x < rowMosaicFlags.length && rowMosaicFlags[x]);
                 } else {
                     data[y][x] = ' ';
-                    mosaicData[y][x] = false;
                 }
                 // -1 = pas de couleur définie (sera ignoré au rendu)
                 colorData[y][x] = -1;
