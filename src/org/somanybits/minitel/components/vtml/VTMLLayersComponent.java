@@ -343,18 +343,6 @@ public class VTMLLayersComponent extends ModelMComponent {
     }
     
     /**
-     * Décale les lignes d'une map vers le bas (pour Tetris)
-     * Décale aussi les couleurs
-     * @deprecated Utiliser {@link #shiftMap(int, String, int, int)} avec direction "DOWN"
-     */
-    public void shiftMapDown(int areaIndex, int fromY, int toY) {
-        if (areaIndex >= 0 && areaIndex < areas.size()) {
-            VTMLMapComponent area = areas.get(areaIndex);
-            area.shiftDown(fromY, toY);  // Utilise la nouvelle méthode qui gère aussi les couleurs
-        }
-    }
-    
-    /**
      * Décale le contenu d'une map dans une direction donnée
      * @param areaIndex Index de la map (0 = première map)
      * @param direction Direction du décalage : "UP", "DOWN", "LEFT", "RIGHT"

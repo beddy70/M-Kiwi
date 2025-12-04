@@ -332,7 +332,7 @@
         if (isLineFull(layers, y)) {
           cleared++;
           // Décaler les lignes vers le bas (caractères + couleurs)
-          layers.shiftMapDown(PIECES_MAP, 0, y);
+          layers.shiftMap(PIECES_MAP, "DOWN", 0, y);
           y++;  // Revérifier cette ligne
         }
       }

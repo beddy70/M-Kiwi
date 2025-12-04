@@ -210,8 +210,6 @@ layers.shiftMap(mapIndex, "UP", fromY, toY);    // Décale vers le haut
 layers.shiftMap(mapIndex, "LEFT", fromX, toX);  // Décale vers la gauche
 layers.shiftMap(mapIndex, "RIGHT", fromX, toX); // Décale vers la droite
 
-// Ancienne syntaxe (dépréciée, rétrocompatible)
-layers.shiftMapDown(mapIndex, fromY, toY);
 ```
 
 **Note** : L'index de map correspond à l'ordre de déclaration dans le VTML (0 = première `<map>`).
@@ -1184,7 +1182,6 @@ function showBestScore() {
 | `getMapColor(map, x, y)` | `map`: int, `x`: int, `y`: int | int | Lit la couleur à une position |
 | `clearMapLine(map, y)` | `map`: int, `y`: int | void | Efface une ligne (caractères + couleurs) |
 | `shiftMap(map, dir, from, to)` | `map`: int, `dir`: string, `from`: int, `to`: int | void | Décale dans une direction (UP/DOWN/LEFT/RIGHT) |
-| `shiftMapDown(map, from, to)` | `map`: int, `from`: int, `to`: int | void | *(déprécié)* Décale vers le bas |
 
 ### API Sprite
 
