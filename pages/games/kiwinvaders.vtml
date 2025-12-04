@@ -164,7 +164,14 @@
     // État des envahisseurs
     var invadersDX = 1;  // Direction horizontale
     var invadersAlive = INVADER_ROWS * INVADER_COLS;
-    var invadersGrid = [];
+    // Grille initialisée directement
+    var invadersGrid = [
+      [true, true, true, true, true, true, true, true],
+      [true, true, true, true, true, true, true, true],
+      [true, true, true, true, true, true, true, true],
+      [true, true, true, true, true, true, true, true],
+      [true, true, true, true, true, true, true, true]
+    ];
     
     // État du jeu
     var score = 0;
