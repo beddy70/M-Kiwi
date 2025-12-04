@@ -759,13 +759,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         if (currentLayers == null) return;
         String event = currentLayers.getKeypadEvent(player, action);
         if (event != null) {
-            try {
-                VTMLScriptEngine.getInstance().execute(event + "()");
-                refreshLayersDisplay();
-            } catch (Throwable t) {
-                // Catch Throwable pour ne jamais bloquer le thread joystick
-                System.err.println("❌ Erreur joystick event: " + t.getClass().getSimpleName() + " - " + t.getMessage());
-            }
+            // Exécuter dans un thread séparé pour ne jamais bloquer le thread joystick
+            new Thread(() -> {
+                try {
+                    VTMLScriptEngine.getInstance().execute(event + "()");
+                    refreshLayersDisplay();
+                } catch (Throwable t) {
+                    System.err.println("❌ Erreur joystick event: " + t.getClass().getSimpleName() + " - " + t.getMessage());
+                }
+            }, "JoystickAction").start();
         }
     }
     
