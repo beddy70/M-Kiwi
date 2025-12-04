@@ -409,7 +409,9 @@
         }
       }
       
-      clearAllInvaders(L);
+      // Sauvegarder l'ancienne position pour effacer correctement
+      var oldStartX = START_X;
+      var oldStartY = START_Y;
       
       if (needReverse) {
         dx = -dx;
@@ -422,6 +424,20 @@
         }
       } else {
         START_X += dx;
+      }
+      
+      // Effacer à l'ANCIENNE position
+      for (var r = 0; r < ROWS; r++) {
+        var y = oldStartY + r * 2;
+        for (var c = 0; c < COLS; c++) {
+          var x = oldStartX + c * SPACING;
+          L.setMapChar(GAME_MAP, x, y, ' ');
+          L.setMapChar(GAME_MAP, x+1, y, ' ');
+          L.setMapChar(GAME_MAP, x+2, y, ' ');
+          L.setMapColor(GAME_MAP, x, y, 7);
+          L.setMapColor(GAME_MAP, x+1, y, 7);
+          L.setMapColor(GAME_MAP, x+2, y, 7);
+        }
       }
       
       drawInvaders(L);
