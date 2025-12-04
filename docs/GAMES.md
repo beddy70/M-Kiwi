@@ -30,6 +30,7 @@ Ce guide explique comment créer des jeux interactifs pour Minitel en utilisant 
   - [Actions disponibles](#actions-disponibles)
   - [Mode touche directe](#mode-touche-directe)
 - [Joystick USB](#joystick-usb)
+  - [Compatibilité des manettes](#compatibilité-des-manettes)
   - [Fonctionnement](#fonctionnement)
   - [Mapping par défaut](#mapping-par-défaut)
   - [Configuration via config.json](#configuration-via-configjson)
@@ -613,7 +614,22 @@ function fire() {
 
 ## Joystick USB
 
-Sur Raspberry Pi, un joystick USB est automatiquement détecté et utilisable.
+Le système supporte les joysticks USB standards via `/dev/input/js*`.
+
+### Compatibilité des manettes
+
+| Manette | Compatible | Notes |
+|---------|:----------:|-------|
+| Generic USB | ✅ | |
+| Xbox 360 / Xbox One | ✅ | |
+| PlayStation 2 (PS2) | ✅ | |
+| PlayStation 3 (PS3) | ✅ | |
+| FOYU Compatible PS2 | ✅ | |
+| Megadrive 2.4GHz Wireless | ✅ | |
+| Atari CX40+ Wireless | ✅ | Un seul bouton |
+| Nintendo Switch Pro | ❌ | |
+| PlayStation 4 (PS4) | ❌ | |
+| Under Control X/S (Xbox) | ❌ | |
 
 ### Fonctionnement
 
