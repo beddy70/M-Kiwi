@@ -4,35 +4,98 @@
     
     <!-- Définition des caractères mosaïques -->
     <chardef name="sprites" type="mosaic">
-      <!-- 0: Envahisseur (bloc plein) -->
+      <!-- Envahisseur type 1 (6x3 = 3 chars): pieuvre -->
+      <!-- 0: gauche -->
       <char>
-        <line>##</line>
-        <line>##</line>
-        <line>##</line>
-      </char>
-      <!-- 1: Vaisseau gauche -->
-      <char>
-        <line>  </line>
         <line> #</line>
-        <line>##</line>
+        <line># </line>
+        <line># </line>
       </char>
-      <!-- 2: Vaisseau centre -->
+      <!-- 1: centre -->
       <char>
         <line>##</line>
         <line>##</line>
-        <line>##</line>
-      </char>
-      <!-- 3: Vaisseau droite -->
-      <char>
         <line>  </line>
+      </char>
+      <!-- 2: droite -->
+      <char>
+        <line># </line>
+        <line> #</line>
+        <line> #</line>
+      </char>
+      
+      <!-- Envahisseur type 2 (6x3 = 3 chars): crabe -->
+      <!-- 3: gauche -->
+      <char>
         <line># </line>
         <line>##</line>
+        <line> #</line>
       </char>
-      <!-- 4: Tir -->
+      <!-- 4: centre -->
+      <char>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+      </char>
+      <!-- 5: droite -->
+      <char>
+        <line> #</line>
+        <line>##</line>
+        <line># </line>
+      </char>
+      
+      <!-- Envahisseur type 3 (6x3 = 3 chars): méduse -->
+      <!-- 6: gauche -->
+      <char>
+        <line> #</line>
+        <line>##</line>
+        <line># </line>
+      </char>
+      <!-- 7: centre -->
+      <char>
+        <line>##</line>
+        <line>##</line>
+        <line>##</line>
+      </char>
+      <!-- 8: droite -->
+      <char>
+        <line># </line>
+        <line>##</line>
+        <line> #</line>
+      </char>
+      
+      <!-- Vaisseau (6x3 = 3 chars) -->
+      <!-- 9: gauche -->
+      <char>
+        <line>  </line>
+        <line>  </line>
+        <line>##</line>
+      </char>
+      <!-- 10: centre -->
+      <char>
+        <line> #</line>
+        <line>##</line>
+        <line>##</line>
+      </char>
+      <!-- 11: droite -->
+      <char>
+        <line>  </line>
+        <line>  </line>
+        <line>##</line>
+      </char>
+      
+      <!-- 12: Tir -->
       <char>
         <line> #</line>
         <line> #</line>
         <line> #</line>
+      </char>
+      
+      <!-- 13: Explosion -->
+      <char>
+        <line># </line>
+        <line> #</line>
+        <line># </line>
       </char>
     </chardef>
     
@@ -84,35 +147,39 @@
   
   <script>
     // Dimensions
-    var FIELD_LEFT = 2;
-    var FIELD_RIGHT = 37;
+    var FIELD_LEFT = 1;
+    var FIELD_RIGHT = 38;
     var FIELD_TOP = 2;
     var FIELD_BOTTOM = 19;
     var GAME_MAP = 0;
     
-    // Configuration envahisseurs (3 rangées x 6 colonnes = 18)
+    // Configuration envahisseurs (3 rangées x 5 colonnes = 15)
     var ROWS = 3;
-    var COLS = 6;
-    var SPACING = 5;
-    var START_X = 5;
+    var COLS = 5;
+    var INV_WIDTH = 3;  // Largeur d'un envahisseur en caractères
+    var SPACING = 7;    // Espacement entre envahisseurs
+    var START_X = 3;
     var START_Y = 3;
     
+    // Types d'envahisseurs par rangée (index du premier char)
+    var TYPES = [0, 3, 6];  // Pieuvre, Crabe, Méduse
     // Couleurs par rangée
     var COLORS = [5, 6, 2];  // Magenta, Cyan, Vert
     var POINTS = [30, 20, 10];
     
     // Grille des envahisseurs
     var grid = [
-      [true, true, true, true, true, true],
-      [true, true, true, true, true, true],
-      [true, true, true, true, true, true]
+      [true, true, true, true, true],
+      [true, true, true, true, true],
+      [true, true, true, true, true]
     ];
-    var alive = 18;
+    var alive = 15;
     var dx = 1;
     
     // Joueur
     var shipX = 18;
     var shipY = 18;
+    var SHIP_WIDTH = 3;
     
     // Tir joueur
     var bulletX = 0;
@@ -143,11 +210,11 @@
     }
     
     function drawShip(L) {
-      L.setMapPutchar(GAME_MAP, shipX, shipY, "sprites", 1);
+      L.setMapPutchar(GAME_MAP, shipX, shipY, "sprites", 9);
       L.setMapColor(GAME_MAP, shipX, shipY, 7);
-      L.setMapPutchar(GAME_MAP, shipX+1, shipY, "sprites", 2);
+      L.setMapPutchar(GAME_MAP, shipX+1, shipY, "sprites", 10);
       L.setMapColor(GAME_MAP, shipX+1, shipY, 7);
-      L.setMapPutchar(GAME_MAP, shipX+2, shipY, "sprites", 3);
+      L.setMapPutchar(GAME_MAP, shipX+2, shipY, "sprites", 11);
       L.setMapColor(GAME_MAP, shipX+2, shipY, 7);
     }
     
@@ -157,25 +224,41 @@
       L.setMapChar(GAME_MAP, shipX+2, shipY, ' ');
     }
     
+    function drawInvader(L, x, y, type, color) {
+      L.setMapPutchar(GAME_MAP, x, y, "sprites", type);
+      L.setMapColor(GAME_MAP, x, y, color);
+      L.setMapPutchar(GAME_MAP, x+1, y, "sprites", type+1);
+      L.setMapColor(GAME_MAP, x+1, y, color);
+      L.setMapPutchar(GAME_MAP, x+2, y, "sprites", type+2);
+      L.setMapColor(GAME_MAP, x+2, y, color);
+    }
+    
+    function clearInvader(L, x, y) {
+      L.setMapChar(GAME_MAP, x, y, ' ');
+      L.setMapChar(GAME_MAP, x+1, y, ' ');
+      L.setMapChar(GAME_MAP, x+2, y, ' ');
+    }
+    
     function drawInvaders(L) {
       for (var r = 0; r < ROWS; r++) {
+        var type = TYPES[r];
+        var color = COLORS[r];
+        var y = START_Y + r * 2;
         for (var c = 0; c < COLS; c++) {
           if (grid[r][c]) {
             var x = START_X + c * SPACING;
-            var y = START_Y + r * 2;
-            L.setMapPutchar(GAME_MAP, x, y, "sprites", 0);
-            L.setMapColor(GAME_MAP, x, y, COLORS[r]);
+            drawInvader(L, x, y, type, color);
           }
         }
       }
     }
     
-    function clearInvaders(L) {
+    function clearAllInvaders(L) {
       for (var r = 0; r < ROWS; r++) {
+        var y = START_Y + r * 2;
         for (var c = 0; c < COLS; c++) {
           var x = START_X + c * SPACING;
-          var y = START_Y + r * 2;
-          L.setMapChar(GAME_MAP, x, y, ' ');
+          clearInvader(L, x, y);
         }
       }
     }
@@ -195,7 +278,7 @@
       if (gameOver) return;
       var L = getLayers();
       if (!L) return;
-      if (shipX < FIELD_RIGHT - 3) {
+      if (shipX < FIELD_RIGHT - SHIP_WIDTH) {
         clearShip(L);
         shipX++;
         drawShip(L);
@@ -209,7 +292,7 @@
       bulletActive = true;
       bulletX = shipX + 1;
       bulletY = shipY - 1;
-      L.setMapPutchar(GAME_MAP, bulletX, bulletY, "sprites", 4);
+      L.setMapPutchar(GAME_MAP, bulletX, bulletY, "sprites", 12);
       L.setMapColor(GAME_MAP, bulletX, bulletY, 7);
     }
     
@@ -230,13 +313,18 @@
         for (var c = 0; c < COLS; c++) {
           if (!grid[r][c]) continue;
           var x = START_X + c * SPACING;
-          if (bulletX == x) {
+          // L'envahisseur fait 3 chars de large
+          if (bulletX >= x && bulletX < x + INV_WIDTH) {
             grid[r][c] = false;
             alive--;
             score += POINTS[r];
             L.setText("score", "Score: " + score);
-            L.setMapChar(GAME_MAP, x, y, ' ');
+            // Explosion
+            L.setMapPutchar(GAME_MAP, x+1, y, "sprites", 13);
+            L.setMapColor(GAME_MAP, x+1, y, 3);
+            clearInvader(L, x, y);
             bulletActive = false;
+            L.beep();
             if (alive <= 0) {
               gameOver = true;
               L.setText("gameover", "  VICTOIRE!  ");
@@ -247,7 +335,7 @@
         }
       }
       
-      L.setMapPutchar(GAME_MAP, bulletX, bulletY, "sprites", 4);
+      L.setMapPutchar(GAME_MAP, bulletX, bulletY, "sprites", 12);
       L.setMapColor(GAME_MAP, bulletX, bulletY, 7);
     }
     
@@ -264,7 +352,7 @@
         }
         
         // Collision joueur
-        if (b.y == shipY && b.x >= shipX && b.x <= shipX + 2) {
+        if (b.y == shipY && b.x >= shipX && b.x < shipX + SHIP_WIDTH) {
           b.on = false;
           lives--;
           L.setText("lives", "Vies: " + lives);
@@ -277,25 +365,23 @@
           continue;
         }
         
-        L.setMapPutchar(GAME_MAP, b.x, b.y, "sprites", 4);
+        L.setMapPutchar(GAME_MAP, b.x, b.y, "sprites", 12);
         L.setMapColor(GAME_MAP, b.x, b.y, 1);
       }
     }
     
     function enemyFire(L) {
-      // Trouver slot libre
       var slot = -1;
       for (var i = 0; i < 4; i++) {
         if (!eBullets[i].on) { slot = i; break; }
       }
       if (slot < 0) return;
       
-      // Choisir un envahisseur au hasard
       var shooters = [];
       for (var r = 0; r < ROWS; r++) {
         for (var c = 0; c < COLS; c++) {
           if (grid[r][c]) {
-            shooters.push({x: START_X + c * SPACING, y: START_Y + r * 2});
+            shooters.push({x: START_X + c * SPACING + 1, y: START_Y + r * 2});
           }
         }
       }
@@ -314,13 +400,13 @@
         for (var c = 0; c < COLS; c++) {
           if (grid[r][c]) {
             var x = START_X + c * SPACING;
-            if (dx > 0 && x >= FIELD_RIGHT - 2) needReverse = true;
-            if (dx < 0 && x <= FIELD_LEFT + 1) needReverse = true;
+            if (dx > 0 && x + INV_WIDTH >= FIELD_RIGHT) needReverse = true;
+            if (dx < 0 && x <= FIELD_LEFT) needReverse = true;
           }
         }
       }
       
-      clearInvaders(L);
+      clearAllInvaders(L);
       
       if (needReverse) {
         dx = -dx;
@@ -348,12 +434,10 @@
       updateBullet(L);
       updateEnemyBullets(L);
       
-      // Mouvement envahisseurs tous les 8 ticks
       if (tick % 8 == 0) {
         moveInvaders(L);
       }
       
-      // Tir ennemi tous les 15 ticks
       if (tick % 15 == 0) {
         enemyFire(L);
       }
