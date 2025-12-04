@@ -68,19 +68,19 @@
       <!-- 9: gauche -->
       <char>
         <line>  </line>
-        <line>  </line>
+        <line> #</line>
         <line>##</line>
       </char>
       <!-- 10: centre -->
       <char>
-        <line> #</line>
+        <line>##</line>
         <line>##</line>
         <line>##</line>
       </char>
       <!-- 11: droite -->
       <char>
         <line>  </line>
-        <line>  </line>
+        <line># </line>
         <line>##</line>
       </char>
       
@@ -434,11 +434,11 @@
       updateBullet(L);
       updateEnemyBullets(L);
       
-      if (tick % 8 == 0) {
+      if (tick % 12 == 0) {
         moveInvaders(L);
       }
       
-      if (tick % 15 == 0) {
+      if (tick % 20 == 0) {
         enemyFire(L);
       }
     }
