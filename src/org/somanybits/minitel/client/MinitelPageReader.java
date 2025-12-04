@@ -588,8 +588,9 @@ public class MinitelPageReader {
                 int width = parseInt(attrs.get("width"), 40);
                 int height = parseInt(attrs.get("height"), 24);
                 VTMLLayersComponent layers = new VTMLLayersComponent(left, top, width, height);
-                // Enregistrer le layers dans la page
+                // Enregistrer le layers dans la page et vice-versa
                 page.setLayers(layers);
+                layers.setPage(page);
                 return layers;
             }
 

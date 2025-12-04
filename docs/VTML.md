@@ -438,6 +438,22 @@ Insère un ou plusieurs caractères mosaïques définis dans un `<chardef>`. Uti
 
 **Avantage** : Permet de définir des décors mosaïques complexes de manière lisible et réutilisable.
 
+#### Utilisation en JavaScript
+
+Pour placer dynamiquement un caractère mosaïque dans une map :
+
+```javascript
+// Place le caractère 0 du chardef "blocks" à la position (5, 3) de la map 0
+layers.setMapPutchar(0, 5, 3, "blocks", 0);
+
+// Dessiner une ligne de blocs
+for (var x = 0; x < 12; x++) {
+    layers.setMapPutchar(0, x, 20, "blocks", 0);
+}
+```
+
+Cette méthode active automatiquement le mode semi-graphique pour la cellule.
+
 ---
 
 ### `<spritedef>`

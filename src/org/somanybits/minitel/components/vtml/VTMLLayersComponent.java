@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.somanybits.minitel.GetTeletelCode;
+import org.somanybits.minitel.client.Page;
 import org.somanybits.minitel.components.MComponent;
 import org.somanybits.minitel.components.ModelMComponent;
 
@@ -85,6 +86,9 @@ public class VTMLLayersComponent extends ModelMComponent {
     private boolean[][] mosaicMode;  // true = caractère semi-graphique
     private boolean[][] previousMosaicMode;
     
+    // Référence à la page pour accéder aux chardefs
+    private Page page;
+    
     // Liste des areas (ordre = z-index, 0 = fond)
     private List<VTMLMapComponent> areas = new ArrayList<>();
     
@@ -136,6 +140,16 @@ public class VTMLLayersComponent extends ModelMComponent {
                 previousColorBuffer[y][x] = -1;
             }
         }
+    }
+    
+    // ========== RÉFÉRENCE PAGE ==========
+    
+    public void setPage(Page page) {
+        this.page = page;
+    }
+    
+    public Page getPage() {
+        return page;
     }
     
     // ========== GESTION DES AREAS ==========
@@ -327,6 +341,37 @@ public class VTMLLayersComponent extends ModelMComponent {
             char[][] data = area.getData();
             if (data != null && y >= 0 && y < data.length && x >= 0 && x < data[y].length) {
                 data[y][x] = c;
+            }
+        }
+    }
+    
+    /**
+     * Place un caractère mosaïque défini dans un chardef (appelable depuis JavaScript)
+     * @param areaIndex Index de la map (0 = première map)
+     * @param x Position X dans la map
+     * @param y Position Y dans la map
+     * @param chardefName Nom du chardef (ou null pour le dernier défini)
+     * @param charIndex Index du caractère dans le chardef
+     */
+    public void setMapPutchar(int areaIndex, int x, int y, String chardefName, int charIndex) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            VTMLMapComponent area = areas.get(areaIndex);
+            char[][] data = area.getData();
+            boolean[][] mosaic = area.getMosaicData();
+            
+            if (data != null && y >= 0 && y < data.length && x >= 0 && x < data[y].length) {
+                // Récupérer le chardef depuis la page
+                VTMLChardefComponent chardef = page.getChardef(chardefName);
+                if (chardef != null) {
+                    char c = chardef.getChar(charIndex);
+                    data[y][x] = c;
+                    // Activer le mode mosaïque pour cette cellule
+                    if (mosaic != null && y < mosaic.length && x < mosaic[y].length) {
+                        mosaic[y][x] = true;
+                    }
+                } else {
+                    System.err.println("⚠️ setMapPutchar: chardef '" + chardefName + "' non trouvé");
+                }
             }
         }
     }
