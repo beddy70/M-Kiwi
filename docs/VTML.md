@@ -361,7 +361,7 @@ layers.setMapChar(0, x, y, '#');
 layers.setMapColor(0, x, y, 3);  // Jaune
 ```
 
-**Note** : Les fonctions `clearMapLine()` et `shiftMapDown()` gèrent automatiquement les couleurs.
+**Note** : Les fonctions `clearMapLine()` et `shiftMap()` gèrent automatiquement les couleurs.
 
 ---
 
@@ -837,8 +837,9 @@ layers.setMapChar(mapIndex, x, y, '#');
 // Effacer une ligne d'une map (utile pour Tetris)
 layers.clearMapLine(mapIndex, y);
 
-// Décaler les lignes vers le bas (utile pour Tetris)
-layers.shiftMapDown(mapIndex, fromY, toY);
+// Décaler le contenu dans une direction (UP/DOWN/LEFT/RIGHT)
+layers.shiftMap(mapIndex, "DOWN", fromY, toY);  // Vers le bas
+layers.shiftMap(mapIndex, "LEFT", fromX, toX);  // Vers la gauche
 
 // Émettre un bip sonore
 layers.beep();

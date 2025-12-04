@@ -60,7 +60,8 @@ import org.somanybits.minitel.components.ModelMComponent;
  * layers.setMapColor(0, x, y, 1);    // Modifier la couleur (1=rouge)
  * layers.getMapColor(0, x, y);       // Lire la couleur
  * layers.clearMapLine(0, y);         // Effacer une ligne
- * layers.shiftMapDown(0, 0, 10);     // Décaler vers le bas
+ * layers.shiftMap(0, "DOWN", 0, 10); // Décaler vers le bas
+ * layers.shiftMap(0, "LEFT", 0, 39); // Décaler vers la gauche
  * }</pre>
  * 
  * @author Eddy Briere
@@ -282,6 +283,72 @@ public class VTMLMapComponent extends ModelMComponent {
             for (int x = 0; x < data[fromY].length; x++) {
                 data[fromY][x] = ' ';
                 colorData[fromY][x] = -1;  // Pas de couleur
+            }
+        }
+    }
+    
+    /**
+     * Décale les lignes vers le haut (caractères et couleurs)
+     */
+    public void shiftUp(int fromY, int toY) {
+        if (data == null) {
+            buildData();
+        }
+        for (int y = fromY; y < toY; y++) {
+            if (y >= 0 && y < data.length && y+1 < data.length) {
+                System.arraycopy(data[y+1], 0, data[y], 0, data[y].length);
+                System.arraycopy(colorData[y+1], 0, colorData[y], 0, colorData[y].length);
+            }
+        }
+        // Vider la ligne du bas
+        if (toY >= 0 && toY < data.length) {
+            for (int x = 0; x < data[toY].length; x++) {
+                data[toY][x] = ' ';
+                colorData[toY][x] = -1;  // Pas de couleur
+            }
+        }
+    }
+    
+    /**
+     * Décale les colonnes vers la gauche (caractères et couleurs)
+     */
+    public void shiftLeft(int fromX, int toX) {
+        if (data == null) {
+            buildData();
+        }
+        for (int y = 0; y < data.length; y++) {
+            for (int x = fromX; x < toX; x++) {
+                if (x >= 0 && x < data[y].length && x+1 < data[y].length) {
+                    data[y][x] = data[y][x+1];
+                    colorData[y][x] = colorData[y][x+1];
+                }
+            }
+            // Vider la colonne de droite
+            if (toX >= 0 && toX < data[y].length) {
+                data[y][toX] = ' ';
+                colorData[y][toX] = -1;  // Pas de couleur
+            }
+        }
+    }
+    
+    /**
+     * Décale les colonnes vers la droite (caractères et couleurs)
+     */
+    public void shiftRight(int fromX, int toX) {
+        if (data == null) {
+            buildData();
+        }
+        for (int y = 0; y < data.length; y++) {
+            for (int x = toX; x > fromX; x--) {
+                if (x >= 0 && x < data[y].length && x-1 >= 0) {
+                    data[y][x] = data[y][x-1];
+                    colorData[y][x] = colorData[y][x-1];
+                }
+            }
+            // Vider la colonne de gauche
+            if (fromX >= 0 && fromX < data[y].length) {
+                data[y][fromX] = ' ';
+                colorData[y][fromX] = -1;  // Pas de couleur
             }
         }
     }

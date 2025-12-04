@@ -201,8 +201,16 @@ layers.setMapChar(mapIndex, x, y, '#');
 // Effacer une ligne entière (remplace par des espaces)
 layers.clearMapLine(mapIndex, y);
 
-// Décaler les lignes vers le bas (pour Tetris)
-// Décale les lignes de fromY à toY, vide la ligne fromY
+// Décaler le contenu de la map dans une direction
+// Direction: "UP", "DOWN", "LEFT", "RIGHT"
+// Pour UP/DOWN: from/to = positions Y
+// Pour LEFT/RIGHT: from/to = positions X
+layers.shiftMap(mapIndex, "DOWN", fromY, toY);  // Décale vers le bas
+layers.shiftMap(mapIndex, "UP", fromY, toY);    // Décale vers le haut
+layers.shiftMap(mapIndex, "LEFT", fromX, toX);  // Décale vers la gauche
+layers.shiftMap(mapIndex, "RIGHT", fromX, toX); // Décale vers la droite
+
+// Ancienne syntaxe (dépréciée, rétrocompatible)
 layers.shiftMapDown(mapIndex, fromY, toY);
 ```
 
@@ -259,7 +267,7 @@ layers.setMapChar(0, x, y, '#');
 layers.setMapColor(0, x, y, 3);  // Jaune
 ```
 
-**Note** : Les fonctions `clearMapLine()` et `shiftMapDown()` gèrent automatiquement les couleurs (remise à blanc pour les lignes effacées, décalage des couleurs avec les caractères).
+**Note** : Les fonctions `clearMapLine()` et `shiftMap()` gèrent automatiquement les couleurs (remise à blanc pour les lignes/colonnes effacées, décalage des couleurs avec les caractères).
 
 ---
 
@@ -840,8 +848,11 @@ if (charCode != 0 && charCode != 32) {  // Pas vide ni espace
 // Effacer une ligne entière (pour Tetris) - efface aussi les couleurs
 layers.clearMapLine(mapIndex, y);
 
-// Décaler les lignes vers le bas (pour Tetris) - décale aussi les couleurs
-layers.shiftMapDown(mapIndex, fromY, toY);
+// Décaler le contenu dans une direction - décale aussi les couleurs
+layers.shiftMap(mapIndex, "DOWN", fromY, toY);   // Vers le bas
+layers.shiftMap(mapIndex, "UP", fromY, toY);     // Vers le haut
+layers.shiftMap(mapIndex, "LEFT", fromX, toX);   // Vers la gauche
+layers.shiftMap(mapIndex, "RIGHT", fromX, toX);  // Vers la droite
 ```
 
 ### Codes couleur
@@ -1172,7 +1183,8 @@ function showBestScore() {
 | `setMapColor(map, x, y, color)` | `map`: int, `x`: int, `y`: int, `color`: int | void | Définit la couleur à une position |
 | `getMapColor(map, x, y)` | `map`: int, `x`: int, `y`: int | int | Lit la couleur à une position |
 | `clearMapLine(map, y)` | `map`: int, `y`: int | void | Efface une ligne (caractères + couleurs) |
-| `shiftMapDown(map, from, to)` | `map`: int, `from`: int, `to`: int | void | Décale les lignes vers le bas |
+| `shiftMap(map, dir, from, to)` | `map`: int, `dir`: string, `from`: int, `to`: int | void | Décale dans une direction (UP/DOWN/LEFT/RIGHT) |
+| `shiftMapDown(map, from, to)` | `map`: int, `from`: int, `to`: int | void | *(déprécié)* Décale vers le bas |
 
 ### API Sprite
 
