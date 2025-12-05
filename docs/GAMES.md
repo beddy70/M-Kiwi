@@ -42,6 +42,7 @@ Ce guide explique comment créer des jeux interactifs pour Minitel en utilisant 
   - [Collision sprite vs sprite](#collision-sprite-vs-sprite)
   - [Collision sprite vs map](#collision-sprite-vs-map)
   - [Modification dynamique des maps](#modification-dynamique-des-maps)
+  - [Caractères mosaïques (putchar)](#caractères-mosaïques-putchar)
 - [Interface utilisateur](#interface-utilisateur)
   - [Labels dynamiques](#labels-dynamiques)
   - [API JavaScript des labels](#api-javascript-des-labels)
@@ -858,6 +859,97 @@ layers.shiftMap(mapIndex, "LEFT", fromX, toX);   // Vers la gauche
 layers.shiftMap(mapIndex, "RIGHT", fromX, toX);  // Vers la droite
 ```
 
+### Caractères mosaïques (putchar)
+
+Les caractères mosaïques permettent de créer des graphismes plus détaillés en utilisant les caractères semi-graphiques du Minitel (blocs 2×3 pixels).
+
+#### Définition d'un chardef
+
+D'abord, définissez vos caractères personnalisés dans un `<chardef>` :
+
+```xml
+<chardef name="blocks" type="mosaic">
+  <!-- Caractère 0 : bloc plein -->
+  <char>
+    <line>##</line>
+    <line>##</line>
+    <line>##</line>
+  </char>
+  <!-- Caractère 1 : demi-bloc gauche -->
+  <char>
+    <line># </line>
+    <line># </line>
+    <line># </line>
+  </char>
+  <!-- Caractère 2 : triangle -->
+  <char>
+    <line> #</line>
+    <line>##</line>
+    <line>##</line>
+  </char>
+</chardef>
+```
+
+Chaque `<char>` définit un caractère de 2×3 pixels. `#` = pixel allumé, espace = pixel éteint.
+
+#### Utilisation dans une map (VTML)
+
+```xml
+<map>
+  <!-- Ligne de blocs pleins -->
+  <row><putchar index="0" repeat="12" /></row>
+  <!-- Mélange texte et mosaïque -->
+  <row><putchar index="1" />Score: 0</row>
+</map>
+```
+
+#### Placement dynamique en JavaScript
+
+```javascript
+// Placer un caractère mosaïque dans une map
+// layers.setMapPutchar(mapIndex, x, y, chardefName, charIndex)
+layers.setMapPutchar(0, 5, 3, "blocks", 0);  // Bloc plein à (5,3)
+
+// Dessiner une ligne de blocs
+for (var x = 0; x < 12; x++) {
+    layers.setMapPutchar(0, x, 20, "blocks", 0);
+}
+
+// Dessiner un mur avec différents caractères
+layers.setMapPutchar(0, 0, 5, "blocks", 1);   // Demi-bloc gauche
+layers.setMapPutchar(0, 1, 5, "blocks", 0);   // Bloc plein
+layers.setMapPutchar(0, 2, 5, "blocks", 0);   // Bloc plein
+```
+
+#### Exemple : Bordures de jeu stylisées
+
+```xml
+<chardef name="border" type="mosaic">
+  <!-- Coin haut-gauche -->
+  <char>
+    <line>  </line>
+    <line> #</line>
+    <line> #</line>
+  </char>
+  <!-- Barre horizontale -->
+  <char>
+    <line>  </line>
+    <line>##</line>
+    <line>  </line>
+  </char>
+  <!-- Coin haut-droit -->
+  <char>
+    <line>  </line>
+    <line># </line>
+    <line># </line>
+  </char>
+</chardef>
+
+<map>
+  <row><putchar index="0"/><putchar index="1" repeat="10"/><putchar index="2"/></row>
+</map>
+```
+
 ### Codes couleur
 
 | Code | Couleur |
@@ -1187,6 +1279,7 @@ function showBestScore() {
 | `getMapColor(map, x, y)` | `map`: int, `x`: int, `y`: int | int | Lit la couleur à une position |
 | `clearMapLine(map, y)` | `map`: int, `y`: int | void | Efface une ligne (caractères + couleurs) |
 | `shiftMap(map, dir, from, to)` | `map`: int, `dir`: string, `from`: int, `to`: int | void | Décale dans une direction (UP/DOWN/LEFT/RIGHT) |
+| `setMapPutchar(map, x, y, chardef, index)` | `map`: int, `x`: int, `y`: int, `chardef`: string, `index`: int | void | Place un caractère mosaïque |
 
 ### API Sprite
 
