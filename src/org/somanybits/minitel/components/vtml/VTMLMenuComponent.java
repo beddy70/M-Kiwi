@@ -108,15 +108,15 @@ public class VTMLMenuComponent extends ModelMComponent {
         // Cas lettres A-Z
         if (c >= 'A' && c <= 'Z') {
             if (c == 'Z') {
-                return null;       // ou retourner "A" si tu veux boucler
+                return null;       // Fin de l'alphabet
             }
             return String.valueOf((char) (c + 1));
         }
 
-        // Cas chiffres 0-9
+        // Cas chiffres 1-9 : après 9, on continue avec A-Z
         if (c >= '0' && c <= '9') {
             if (c == '9') {
-                return null;       // ou retourner "0" si tu veux boucler
+                return "A";        // Après 9, on passe à A
             }
             return String.valueOf((char) (c + 1));
         }
