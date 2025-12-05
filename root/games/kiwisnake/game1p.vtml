@@ -5,6 +5,8 @@
     <!-- Map 0: Terrain de jeu (bordures) -->
     <map id="terrain" type="char">
       <row>########################################</row>
+      <row repeat="17">#                                      #</row>
+      <!--<row>#                                      #</row>
       <row>#                                      #</row>
       <row>#                                      #</row>
       <row>#                                      #</row>
@@ -21,9 +23,7 @@
       <row>#                                      #</row>
       <row>#                                      #</row>
       <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
-      <row>#                                      #</row>
+      <row>#                                      #</row>-->
       <row>########################################</row>
     </map>
     

@@ -1,0 +1,19 @@
+<minitel title="config">
+	
+	<script>
+		// Définir une variable globale
+	
+		storage.set("GameId","tetris_038ad74e-772c-43c5-8c5b-d719be30f487");
+	
+
+	</script>
+
+
+	<menu name="main" left="8" top="4" width="30" height="10" keytype="alpha">
+		<!--<item link="ServerScore.mod?mode=create&gamename=tetris&sizerecord=10&fields=name,score">Record Tetris score</item>-->
+		<item link="config/readscore.vtml">Read Tetris score</item>
+		<item link="mo5.vtml">MO5 LOGO</item>
+	</menu>	
+
+
+</minitel>

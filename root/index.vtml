@@ -22,6 +22,7 @@
 		<item link="ServerStatus.mod?val1=69&val2=hello">Info Serveur</item>
 		<item link="games/">Jeux</item> 
 		<item link="wifi/">Notre Wifi</item>	
+		<item link="config/">Config</item>
 	</menu> 
 	
 	<!-- 

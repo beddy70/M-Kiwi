@@ -1,0 +1,10 @@
+<minitel title="MO5">
+
+	<!--<img src="images/logo_mo5_2.png" left="1" top="1" width="38" height="23" >-->
+<img src="images/brickout2.png" left="0" top="1" width="20" height="11" >
+	<div name="banner" left="2" top="24" width="40" height="1">
+		<row>Ouvre son musee du jeu video a Paris</row>
+	</div>
+
+
+</minitel>

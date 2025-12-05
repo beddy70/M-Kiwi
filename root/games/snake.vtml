@@ -13,7 +13,7 @@
       <row>#                                      #</row>
       <row>#                                      #</row>
       <row>#                                      #</row>
-      <row>#                                      #</row>
+      <row>#          ################            #</row>
       <row>#                                      #</row>
       <row>#                                      #</row>
       <row>#                                      #</row>
@@ -72,6 +72,16 @@
       </sprite>
     </spritedef>
     
+    <!-- Pomme magique (sprite) -->
+    <spritedef id="magicApple" width="1" height="1" type="char">
+      <sprite>
+        <line>O</line>
+        <colorsprite>
+          <line>5</line>
+        </colorsprite>
+      </sprite>
+    </spritedef>
+    
     <!-- Score et infos sur ligne 0 du layers -->
     <label id="score" x="1" y="0" width="14"> Score: 0</label>
     <label id="length" x="16" y="0" width="10"> Len: 4</label>
@@ -121,6 +131,15 @@
     var appleTimer = 0;
     var APPLE_DURATION = 66;
     
+    // Pomme magique
+    var magicAppleX = -1;
+    var magicAppleY = -1;
+    var magicAppleVisible = false;
+    var magicAppleTimer = 0;
+    var MAGIC_APPLE_DURATION = 40;     // ~6 secondes visible
+    var applesEaten = 0;               // Compteur de pommes mangées
+    var MAGIC_APPLE_FREQUENCY = 20;    // Apparait toutes les 20 pommes
+    
     function getLayers() {
       return _currentLayers;
     }
@@ -144,6 +163,12 @@
       if (apple != null) {
         apple.show(0);
         apple.move(appleX, appleY);
+      }
+      
+      // Cacher la pomme magique au départ
+      var magicApple = layers.getSprite("magicApple");
+      if (magicApple != null) {
+        magicApple.hide();
       }
     }
     
@@ -242,6 +267,7 @@
       
       // Vérifier si on mange la pomme
       var ate = false;
+      var growAmount = 1;
       if (headX == appleX && headY == appleY) {
         ate = true;
         // Score = 1 + temps restant (plus on mange vite, plus on gagne)
@@ -249,6 +275,23 @@
         score += 1 + secondsLeft;
         layers.beep();
         spawnApple(layers);
+        
+        // Compteur pour pomme magique
+        applesEaten++;
+        if (applesEaten >= MAGIC_APPLE_FREQUENCY && !magicAppleVisible) {
+          applesEaten = 0;
+          spawnMagicApple(layers);
+        }
+      }
+      
+      // Vérifier si on mange la pomme magique
+      if (magicAppleVisible && headX == magicAppleX && headY == magicAppleY) {
+        ate = true;
+        growAmount = 10;  // +5 segments
+        score += 10;     // +10 points
+        hideMagicApple(layers);
+        layers.beep();
+        layers.beep();
       }
       
       // Déplacer le corps
@@ -264,9 +307,11 @@
           bodyY[i] = bodyY[i - 1];
         }
       } else {
-        // Ajouter un segment (décaler et ajouter)
-        bodyX.push(0);
-        bodyY.push(0);
+        // Ajouter des segments (décaler et ajouter)
+        for (var g = 0; g < growAmount; g++) {
+          bodyX.push(0);
+          bodyY.push(0);
+        }
         for (var i = bodyX.length - 1; i > 0; i--) {
           bodyX[i] = bodyX[i - 1];
           bodyY[i] = bodyY[i - 1];
@@ -288,6 +333,57 @@
       }
       
       updateInfo(layers);
+      
+      // Gérer la pomme magique
+      updateMagicApple(layers);
+    }
+    
+    function updateMagicApple(layers) {
+      if (magicAppleVisible) {
+        magicAppleTimer++;
+        if (magicAppleTimer >= MAGIC_APPLE_DURATION) {
+          hideMagicApple(layers);
+        }
+      }
+    }
+    
+    function spawnMagicApple(layers) {
+      var valid = false;
+      var attempts = 0;
+      while (!valid && attempts < 100) {
+        attempts++;
+        magicAppleX = Math.floor(Math.random() * 36) + 2;
+        magicAppleY = Math.floor(Math.random() * 18) + 2;
+        
+        valid = true;
+        if (magicAppleX == headX && magicAppleY == headY) valid = false;
+        if (magicAppleX == appleX && magicAppleY == appleY) valid = false;
+        
+        if (valid) {
+          var c = layers.getMapChar(BODY_MAP, magicAppleX, magicAppleY);
+          if (c == 79) valid = false;
+        }
+      }
+      
+      if (valid) {
+        magicAppleVisible = true;
+        magicAppleTimer = 0;
+        var magicApple = layers.getSprite("magicApple");
+        if (magicApple != null) {
+          magicApple.show(0);
+          magicApple.move(magicAppleX, magicAppleY);
+        }
+      }
+    }
+    
+    function hideMagicApple(layers) {
+      magicAppleVisible = false;
+      magicAppleX = -1;
+      magicAppleY = -1;
+      var magicApple = layers.getSprite("magicApple");
+      if (magicApple != null) {
+        magicApple.hide();
+      }
     }
     
     function spawnApple(layers) {

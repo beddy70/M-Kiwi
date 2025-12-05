@@ -9,16 +9,36 @@
       <!-- Caractère 0 : bloc plein 2x3 -->
       <char>
         <line>##</line>
-        <line>##</line>
-        <line>##</line>
+        <line>  </line>
+        <line>  </line>
+      </char>
+           <char>
+        <line> #</line>
+        <line> #</line>
+        <line> #</line>
+      </char>
+      <char>
+        <line># </line>
+        <line># </line>
+        <line># </line>
+      </char>
+       <char>
+        <line> #</line>
+        <line>  </line>
+        <line>  </line>
+      </char>
+       <char>
+        <line># </line>
+        <line>  </line>
+        <line>  </line>
       </char>
     </chardef>
   
     <!-- Map 0: Décor (bordures) en cyan -->
     <map>
-      <row>#          #         Next:</row>
-      <row repeat="19">#          #</row>
-        <row><putchar index="0" repeat="12" /></row>
+      <row><putchar index="1" />          <putchar index="2" />          Next:</row>
+      <row repeat="19"><putchar index="1" />          <putchar index="2" /> </row>
+        <row><putchar index="3" /><putchar index="0" repeat="10" /><putchar index="4" /> </row>
         <!--
         <row>############</row>
                 -->

@@ -52,7 +52,15 @@ public class VTMLRowComponent extends ModelMComponent {
             divdata.write(GetTeletelCode.setCursor(getParent().getX(), getParent().getY()));
             parent.setY(getParent().getY() + 1);
             
-            divdata.write(text.getBytes());
+            // Écrire le texte s'il existe
+            if (text != null && !text.isEmpty()) {
+                divdata.write(text.getBytes());
+            }
+            
+            // Traiter les enfants (comme <color>, <blink>, etc.)
+            for (var child : getChilds()) {
+                divdata.write(child.getBytes());
+            }
 
             return divdata.toByteArray();
         } catch (IOException ex) {
