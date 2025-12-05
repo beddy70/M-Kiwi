@@ -863,11 +863,31 @@ layers.shiftMap(mapIndex, "RIGHT", fromX, toX);  // Vers la droite
 
 Les caractères mosaïques permettent de créer des graphismes plus détaillés en utilisant les caractères semi-graphiques du Minitel (blocs 2×3 pixels).
 
-Il existe **deux modes** d'utilisation :
+Il existe **deux approches** pour travailler avec les caractères mosaïques. Choisissez celle qui correspond à votre besoin :
+
+#### Comparaison des deux approches
+
+| Critère | Mode direct (code) | Mode chardef |
+|---------|-------------------|--------------|
+| **Définition préalable** | Aucune | Nécessite un `<chardef>` |
+| **Lisibilité du code** | Codes numériques (ex: `127`) | Noms explicites (ex: `"blocks"`, index `0`) |
+| **Conception visuelle** | Non, il faut connaître les codes | Oui, dessin en ASCII art |
+| **Cas d'usage** | Prototypage rapide, effets simples | Jeux complexes, graphismes élaborés |
+| **Signature JS** | `setMapPutchar(map, x, y, code)` | `setMapPutchar(map, x, y, "name", index)` |
+
+**⚠️ Important** : Les deux modes sont **mutuellement exclusifs**. Si vous n'avez pas défini de `<chardef>`, vous devez utiliser le mode direct. Si vous utilisez un chardef, référencez-le par son nom.
+
+---
 
 #### Mode 1 : Code direct (sans chardef)
 
-Le plus simple : utilisez directement le code du caractère semi-graphique Minitel.
+**Quand l'utiliser ?**
+- Prototypage rapide
+- Effets simples (lignes, bordures basiques)
+- Quand vous connaissez déjà les codes semi-graphiques
+
+**Avantages** : Pas de définition préalable, code compact.
+**Inconvénients** : Codes peu lisibles, difficile de visualiser le rendu.
 
 **En VTML :**
 ```xml
@@ -880,31 +900,62 @@ Le plus simple : utilisez directement le code du caractère semi-graphique Minit
 
 **En JavaScript :**
 ```javascript
-// Placer un caractère semi-graphique par son code
-// layers.setMapPutchar(mapIndex, x, y, charCode)
+// Signature : layers.setMapPutchar(mapIndex, x, y, charCode)
+// ⚠️ 4 paramètres = mode direct
+
 layers.setMapPutchar(0, 5, 3, 127);  // Bloc plein (0x7F) à (5,3)
 
 // Dessiner une ligne de blocs
 for (var x = 0; x < 12; x++) {
     layers.setMapPutchar(0, x, 20, 127);  // 127 = bloc plein
 }
+
+// Effacer un caractère mosaïque (espace mosaïque)
+layers.setMapPutchar(0, 5, 3, 32);  // 32 = vide
 ```
 
 **Codes semi-graphiques courants :**
 
-| Code | Hex | Description |
-|------|-----|-------------|
-| 32 | 0x20 | Vide (espace mosaïque) |
-| 96 | 0x60 | Pixel bas-droite |
-| 127 | 0x7F | Bloc plein (6 pixels) |
-| 124 | 0x7C | Colonne droite |
-| 99 | 0x63 | Ligne du bas |
+| Code | Hex | Pixels | Description |
+|------|-----|--------|-------------|
+| 32 | 0x20 | `⠀⠀` | Vide (espace mosaïque) |
+| 33 | 0x21 | `▘⠀` | Pixel haut-gauche |
+| 34 | 0x22 | `⠀▝` | Pixel haut-droite |
+| 36 | 0x24 | `▖⠀` | Pixel milieu-gauche |
+| 40 | 0x28 | `▗⠀` | Pixel bas-gauche |
+| 96 | 0x60 | `⠀▗` | Pixel bas-droite |
+| 99 | 0x63 | `▄▄` | Ligne du bas |
+| 124 | 0x7C | `⠀█` | Colonne droite |
+| 127 | 0x7F | `██` | Bloc plein (6 pixels) |
 
-Les codes vont de 0x20 à 0x3F et de 0x60 à 0x7F. Chaque bit correspond à un pixel dans la grille 2×3.
+**Calcul des codes** : Chaque caractère mosaïque est une grille 2×3 pixels. Chaque pixel correspond à un bit :
+
+```
+┌───┬───┐
+│ 1 │ 2 │  Bits : 0x01, 0x02
+├───┼───┤
+│ 4 │ 8 │  Bits : 0x04, 0x08
+├───┼───┤
+│16 │32 │  Bits : 0x10, 0x20
+└───┴───┘
+```
+
+Code = 0x20 + somme des bits des pixels allumés (pour 0x20-0x3F)
+Code = 0x60 + somme des bits des pixels allumés (pour 0x60-0x7F, avec bit 0x40 en plus)
+
+---
 
 #### Mode 2 : Avec chardef (pour la lisibilité)
 
-Définissez vos caractères visuellement avec un `<chardef>` :
+**Quand l'utiliser ?**
+- Jeux avec graphismes élaborés
+- Quand vous voulez visualiser vos caractères
+- Travail en équipe (code plus lisible)
+
+**Avantages** : Conception visuelle, code auto-documenté, réutilisable.
+**Inconvénients** : Nécessite une définition préalable.
+
+**Étape 1 : Définir le chardef dans le VTML**
 
 ```xml
 <chardef name="blocks" type="mosaic">
@@ -931,27 +982,39 @@ Définissez vos caractères visuellement avec un `<chardef>` :
 
 Chaque `<char>` définit un caractère de 2×3 pixels. `#` = pixel allumé, espace = pixel éteint.
 
-**En VTML :**
+**Étape 2 : Utiliser dans une map (VTML)**
+
 ```xml
 <map>
-  <!-- Ligne de blocs pleins -->
+  <!-- Ligne de blocs pleins (caractère 0 du chardef "blocks") -->
   <row><putchar index="0" repeat="12" /></row>
   <!-- Mélange texte et mosaïque -->
   <row><putchar index="1" />Score: 0</row>
+  <!-- Spécifier explicitement le chardef (utile si plusieurs chardefs) -->
+  <row><putchar chardef="blocks" index="2" /></row>
 </map>
 ```
 
-**En JavaScript :**
-```javascript
-// Placer un caractère mosaïque depuis un chardef
-// layers.setMapPutchar(mapIndex, x, y, chardefName, charIndex)
-layers.setMapPutchar(0, 5, 3, "blocks", 0);  // Bloc plein à (5,3)
+**Étape 3 : Manipuler en JavaScript**
 
-// Dessiner une ligne de blocs
+```javascript
+// Signature : layers.setMapPutchar(mapIndex, x, y, chardefName, charIndex)
+// ⚠️ 5 paramètres = mode chardef
+
+layers.setMapPutchar(0, 5, 3, "blocks", 0);  // Caractère 0 de "blocks" à (5,3)
+
+// Dessiner une ligne avec le caractère 0
 for (var x = 0; x < 12; x++) {
     layers.setMapPutchar(0, x, 20, "blocks", 0);
 }
+
+// Utiliser différents caractères du même chardef
+layers.setMapPutchar(0, 0, 5, "blocks", 1);   // Demi-bloc gauche
+layers.setMapPutchar(0, 1, 5, "blocks", 0);   // Bloc plein
+layers.setMapPutchar(0, 2, 5, "blocks", 2);   // Triangle
 ```
+
+**⚠️ Erreur courante** : Si vous appelez `setMapPutchar(0, x, y, "blocks", 0)` sans avoir défini le chardef "blocks" dans votre VTML, vous obtiendrez l'erreur : `chardef 'blocks' non trouvé`
 
 #### Exemple : Bordures de jeu stylisées
 
