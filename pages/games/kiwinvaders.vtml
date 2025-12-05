@@ -430,36 +430,21 @@
         START_X += dx;
       }
       
-      // D'abord dessiner à la NOUVELLE position
-      drawInvaders(L);
+      // Effacer TOUTE la zone des envahisseurs (ancienne ET nouvelle position)
+      var minY = Math.min(oldStartY, START_Y);
+      var maxY = Math.max(oldStartY, START_Y) + (ROWS - 1) * 2;
+      var minX = Math.min(oldStartX, START_X);
+      var maxX = Math.max(oldStartX, START_X) + (COLS - 1) * SPACING + INV_WIDTH;
       
-      // Puis effacer les traces à l'ANCIENNE position (seulement ce qui dépasse)
-      for (var r = 0; r < ROWS; r++) {
-        var oldY = oldStartY + r * 2;
-        var newY = START_Y + r * 2;
-        for (var c = 0; c < COLS; c++) {
-          var oldX = oldStartX + c * SPACING;
-          var newX = START_X + c * SPACING;
-          
-          // Si la ligne a changé (descente), effacer toute l'ancienne ligne
-          if (oldY != newY) {
-            L.setMapChar(GAME_MAP, oldX, oldY, ' ');
-            L.setMapChar(GAME_MAP, oldX+1, oldY, ' ');
-            L.setMapChar(GAME_MAP, oldX+2, oldY, ' ');
-            L.setMapColor(GAME_MAP, oldX, oldY, 7);
-            L.setMapColor(GAME_MAP, oldX+1, oldY, 7);
-            L.setMapColor(GAME_MAP, oldX+2, oldY, 7);
-          } else if (dx > 0) {
-            // Déplacement vers la droite: effacer le bord gauche
-            L.setMapChar(GAME_MAP, oldX, oldY, ' ');
-            L.setMapColor(GAME_MAP, oldX, oldY, 7);
-          } else if (dx < 0) {
-            // Déplacement vers la gauche: effacer le bord droit
-            L.setMapChar(GAME_MAP, oldX+2, oldY, ' ');
-            L.setMapColor(GAME_MAP, oldX+2, oldY, 7);
-          }
+      for (var y = minY; y <= maxY; y += 2) {
+        for (var x = minX; x < maxX; x++) {
+          L.setMapChar(GAME_MAP, x, y, ' ');
+          L.setMapColor(GAME_MAP, x, y, 7);
         }
       }
+      
+      // Puis dessiner à la nouvelle position
+      drawInvaders(L);
     }
     
     function gameLoop() {
