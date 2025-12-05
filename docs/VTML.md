@@ -166,15 +166,34 @@ Conteneur de menu interactif avec navigation par touches.
 | Attribut  | Type   | Défaut | Description                           |
 |-----------|--------|--------|---------------------------------------|
 | `name`    | string | -      | Nom du menu                           |
-| `keytype` | string | -      | Type de touches (`numeric`, `alpha`)  |
+| `keytype` | string | `number` | Type de touches (`number`, `alpha`)  |
 | `left`    | int    | 0      | Position X                            |
 | `top`     | int    | 0      | Position Y                            |
 
+#### Types de touches (keytype)
+
+| Valeur | Séquence | Description |
+|--------|----------|-------------|
+| `number` | 1, 2, 3... 9, A, B, C... Z | Commence par les chiffres, puis continue avec les lettres (jusqu'à 35 items) |
+| `alpha` | A, B, C... Z | Lettres uniquement (jusqu'à 26 items) |
+
 ```xml
-<menu name="principal" keytype="numeric" left="2" top="5">
+<menu name="principal" keytype="number" left="2" top="5">
   <item link="page1.vtml">Option 1</item>
   <item link="page2.vtml">Option 2</item>
   <item link="page3.vtml">Option 3</item>
+</menu>
+```
+
+**Exemple avec plus de 9 items :**
+
+```xml
+<menu name="liste" keytype="number" left="2" top="3">
+  <item link="item1.vtml">Premier</item>    <!-- Touche 1 -->
+  <item link="item2.vtml">Deuxième</item>   <!-- Touche 2 -->
+  <!-- ... items 3 à 9 ... -->
+  <item link="item10.vtml">Dixième</item>   <!-- Touche A -->
+  <item link="item11.vtml">Onzième</item>   <!-- Touche B -->
 </menu>
 ```
 
