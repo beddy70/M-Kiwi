@@ -48,7 +48,7 @@ import org.somanybits.minitel.VTMLContants;
 public class StaticFileServer {
     
     public static final String PAGE_INDEX = "index." + VTMLContants.VTML_EXTENSION;
-    public static final String VERSION = "0.3";
+    public static final String VERSION = "0.4";
     
     private static HashMap<String, String> paramlist;
     private static LogManager logmgr;

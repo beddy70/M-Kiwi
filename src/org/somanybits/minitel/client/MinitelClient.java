@@ -26,6 +26,8 @@ import org.somanybits.minitel.events.KeyPressedListener;
 import org.somanybits.minitel.input.JoystickListener;
 import org.somanybits.minitel.input.JoystickMapping;
 import org.somanybits.minitel.input.JoystickReader;
+import org.somanybits.minitel.input.JoystickRumble;
+import org.somanybits.minitel.input.JoystickWatcher;
 import org.somanybits.minitel.kernel.Config;
 import org.somanybits.minitel.kernel.Kernel;
 
@@ -60,7 +62,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.6";
+    private static final String VERSION = "0.7";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -84,13 +86,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     // Verrou pour synchroniser l'accès au script engine et au layers
     private final Object scriptLock = new Object();
     
-    // Joystick USB - Support 2 joueurs
+    // Joystick USB - Support 2 joueurs avec plug & play
     private JoystickReader joystick = null;      // Joueur 1
     private JoystickReader joystick2 = null;     // Joueur 2
+    private JoystickRumble joystickRumble = null;  // Rumble joueur 1
     private JoystickMapping joystickMapping = new JoystickMapping();   // Mapping joueur 1
     private JoystickMapping joystickMapping2 = new JoystickMapping();  // Mapping joueur 2
     private String[] lastAxisAction = new String[8];   // Pour éviter les répétitions d'axes (joueur 1)
     private String[] lastAxisAction2 = new String[8];  // Pour éviter les répétitions d'axes (joueur 2)
+    private JoystickWatcher joystickWatcher = null;    // Surveillance plug & play
 
     public static void main(String[] args) throws Exception {
 
@@ -663,68 +667,97 @@ t.setEcho(false);
             return;
         }
         
-        // ===== JOYSTICK 0 (Joueur 0) =====
-        String device = cfg.client.joystick_device_0;
-        if (JoystickReader.isAvailable(device)) {
-            joystickMapping.loadFromConfig(cfg.client.joystick_mapping_0);
-            VTMLScriptEngine.getInstance().setVariable("_joystickMapping", joystickMapping);
+        String device0 = cfg.client.joystick_device_0;
+        String device1 = cfg.client.joystick_device_1;
+        
+        // Charger les mappings
+        joystickMapping.loadFromConfig(cfg.client.joystick_mapping_0);
+        joystickMapping2.loadFromConfig(cfg.client.joystick_mapping_1);
+        VTMLScriptEngine.getInstance().setVariable("_joystickMapping", joystickMapping);
+        VTMLScriptEngine.getInstance().setVariable("_joystickMapping2", joystickMapping2);
+        
+        // Initialiser les joysticks déjà connectés
+        connectJoystick(0, device0);
+        connectJoystick(1, device1);
+        
+        // Démarrer la surveillance plug & play
+        joystickWatcher = new JoystickWatcher(device0, device1);
+        joystickWatcher.setListener(new JoystickWatcher.JoystickConnectionListener() {
+            @Override
+            public void onJoystickConnected(int index, String devicePath) {
+                connectJoystick(index, devicePath);
+            }
             
-            System.out.println("🎮 Joystick 0: utilisation de " + device);
-            
-            joystick = new JoystickReader(device);
-            joystick.addListener(new JoystickListener() {
-                @Override
-                public void onButton(int button, boolean pressed) {
-                    System.out.println("🎮 [P0] Bouton " + button + " = " + pressed);
-                    if (!pressed) return;
-                    handleJoystickButton(0, button);
-                }
-                
-                @Override
-                public void onAxis(int axis, int value) {
-                    if (Math.abs(value) > 10000) {
-                        System.out.println("🎮 [P0] Axe " + axis + " = " + value);
-                    }
-                    handleJoystickAxis(0, axis, value);
-                }
-            });
-            
-            joystick.start();
-            System.out.println("🎮 Joystick 0: thread démarré");
-        } else {
-            System.out.println("🎮 Joystick 0: périphérique " + device + " non disponible");
+            @Override
+            public void onJoystickDisconnected(int index, String devicePath) {
+                disconnectJoystick(index);
+            }
+        });
+        joystickWatcher.start();
+    }
+    
+    /**
+     * Connecte un joystick à l'index spécifié.
+     */
+    private void connectJoystick(int index, String device) {
+        if (!JoystickReader.isAvailable(device)) {
+            System.out.println("🎮 Joystick " + index + ": " + device + " non disponible");
+            return;
         }
         
-        // ===== JOYSTICK 1 (Joueur 1) =====
-        String device2 = cfg.client.joystick_device_1;
-        if (JoystickReader.isAvailable(device2)) {
-            joystickMapping2.loadFromConfig(cfg.client.joystick_mapping_1);
-            VTMLScriptEngine.getInstance().setVariable("_joystickMapping2", joystickMapping2);
+        // Déconnecter l'ancien si présent
+        disconnectJoystick(index);
+        
+        System.out.println("🎮 Joystick " + index + ": connexion à " + device);
+        
+        JoystickReader reader = new JoystickReader(device);
+        final int playerIndex = index;
+        
+        reader.addListener(new JoystickListener() {
+            @Override
+            public void onButton(int button, boolean pressed) {
+                System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
+                if (!pressed) return;
+                handleJoystickButton(playerIndex, button);
+            }
             
-            System.out.println("🎮 Joystick 1: utilisation de " + device2);
-            
-            joystick2 = new JoystickReader(device2);
-            joystick2.addListener(new JoystickListener() {
-                @Override
-                public void onButton(int button, boolean pressed) {
-                    System.out.println("🎮 [P1] Bouton " + button + " = " + pressed);
-                    if (!pressed) return;
-                    handleJoystickButton(1, button);
+            @Override
+            public void onAxis(int axis, int value) {
+                if (Math.abs(value) > 10000) {
+                    System.out.println("🎮 [P" + playerIndex + "] Axe " + axis + " = " + value);
                 }
-                
-                @Override
-                public void onAxis(int axis, int value) {
-                    if (Math.abs(value) > 10000) {
-                        System.out.println("🎮 [P1] Axe " + axis + " = " + value);
-                    }
-                    handleJoystickAxis(1, axis, value);
-                }
-            });
-            
-            joystick2.start();
-            System.out.println("🎮 Joystick 1: thread démarré");
+                handleJoystickAxis(playerIndex, axis, value);
+            }
+        });
+        
+        reader.start();
+        
+        if (index == 0) {
+            joystick = reader;
+            // Initialiser le rumble
+            joystickRumble = new JoystickRumble(device);
+            VTMLScriptEngine.getInstance().setVariable("_joystickRumble", joystickRumble);
         } else {
-            System.out.println("🎮 Joystick 1: périphérique " + device2 + " non disponible");
+            joystick2 = reader;
+        }
+        
+        System.out.println("🎮 Joystick " + index + ": connecté ✓");
+    }
+    
+    /**
+     * Déconnecte un joystick.
+     */
+    private void disconnectJoystick(int index) {
+        if (index == 0 && joystick != null) {
+            joystick.stop();
+            joystick = null;
+            joystickRumble = null;
+            VTMLScriptEngine.getInstance().setVariable("_joystickRumble", null);
+            System.out.println("🎮 Joystick 0: déconnecté");
+        } else if (index == 1 && joystick2 != null) {
+            joystick2.stop();
+            joystick2 = null;
+            System.out.println("🎮 Joystick 1: déconnecté");
         }
     }
     
