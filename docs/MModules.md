@@ -69,10 +69,12 @@ public class ServerScore extends ModelMModule {
     public String getResponse() {
         // Charger la configuration depuis mmodules_config/ServerScore.json
         JsonNode config = readConfig();
-        
+        int maxRecords;
+        String dataPath;
+
         if (config != null) {
-            int maxRecords = config.get("maxRecords").asInt();
-            String dataPath = config.get("dataPath").asText();
+            maxRecords = config.get("maxRecords").asInt();
+            dataPath = config.get("dataPath").asText();
             
             // Utiliser les valeurs...
         }
