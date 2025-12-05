@@ -377,6 +377,30 @@ public class VTMLLayersComponent extends ModelMComponent {
     }
     
     /**
+     * Place un caractère semi-graphique directement par son code (appelable depuis JavaScript)
+     * Permet d'utiliser les caractères mosaïques sans définir de chardef.
+     * @param areaIndex Index de la map (0 = première map)
+     * @param x Position X dans la map
+     * @param y Position Y dans la map
+     * @param charCode Code du caractère semi-graphique Minitel (0x20-0x3F ou 0x60-0x7F)
+     */
+    public void setMapPutchar(int areaIndex, int x, int y, int charCode) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            VTMLMapComponent area = areas.get(areaIndex);
+            char[][] data = area.getData();
+            boolean[][] mosaic = area.getMosaicData();
+            
+            if (data != null && y >= 0 && y < data.length && x >= 0 && x < data[y].length) {
+                data[y][x] = (char) charCode;
+                // Activer le mode mosaïque pour cette cellule
+                if (mosaic != null && y < mosaic.length && x < mosaic[y].length) {
+                    mosaic[y][x] = true;
+                }
+            }
+        }
+    }
+    
+    /**
      * Efface une ligne entière d'une map (pour Tetris)
      * Efface aussi les couleurs (remet à blanc)
      */

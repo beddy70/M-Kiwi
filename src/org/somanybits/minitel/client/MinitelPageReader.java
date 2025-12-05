@@ -723,24 +723,33 @@ public class MinitelPageReader {
                 System.out.println("🎨 Putchar attrs: " + attrs);
                 int index = parseInt(attrs.get("index"), 0);
                 int repeat = parseRepeat(attrs.get("repeat"));
-                String chardefName = attrs.get("chardef");  // Optionnel, utilise le dernier chardef si non spécifié
+                String chardefName = attrs.get("chardef");  // Optionnel
+                String codeAttr = attrs.get("code");  // Code direct du caractère semi-graphique
                 
-                // Récupérer le chardef
-                VTMLChardefComponent chardef = page.getChardef(chardefName);
-                if (chardef == null) {
-                    System.err.println("⚠️ putchar: chardef '" + chardefName + "' non trouvé");
-                    return null;
+                char mosaicChar;
+                
+                if (codeAttr != null) {
+                    // Mode direct : utiliser le code semi-graphique fourni
+                    int code = parseInt(codeAttr, 0x20);
+                    mosaicChar = (char) code;
+                    System.out.println("🎨 Putchar direct: code=0x" + Integer.toHexString(code) + ", repeat=" + repeat);
+                } else {
+                    // Mode chardef : récupérer le caractère depuis le chardef
+                    VTMLChardefComponent chardef = page.getChardef(chardefName);
+                    if (chardef == null) {
+                        System.err.println("⚠️ putchar: chardef '" + chardefName + "' non trouvé et pas de code direct");
+                        return null;
+                    }
+                    mosaicChar = chardef.getChar(index);
+                    System.out.println("🎨 Putchar chardef: index=" + index + ", repeat=" + repeat + ", char=0x" + Integer.toHexString(mosaicChar));
                 }
                 
                 // Générer les caractères
-                char mosaicChar = chardef.getChar(index);
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < repeat; i++) {
                     sb.append(mosaicChar);
                 }
                 String chars = sb.toString();
-                
-                System.out.println("🎨 Putchar: index=" + index + ", repeat=" + repeat + ", char=0x" + Integer.toHexString(mosaicChar));
                 
                 // Chercher la map parente (peut être le parent direct ou via un row)
                 MComponent parent = currentComponent;
