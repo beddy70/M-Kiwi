@@ -47,6 +47,20 @@ public class ServerScore extends ModelMModule {
 
         String response = "";
         String mode = params.get(MODE);
+        String dataPath = "";
+
+        JsonNode config = readConfig();
+
+        if (config != null && config.has("dataPath")) {
+            String configDataPath = config.get("dataPath").asText();
+            // Résoudre le chemin relatif par rapport au répertoire racine du serveur
+            if (configDataPath.startsWith("./") || !configDataPath.startsWith("/")) {
+                dataPath = docRoot.getParent().resolve(configDataPath).normalize().toString() + "/";
+            } else {
+                dataPath = configDataPath;
+            }
+        }
+        System.out.println("[ServerScore] config=" + config + " dataPath=" + dataPath);
 
         String method = ex.getRequestMethod();
         String game_id = null;
@@ -64,7 +78,7 @@ public class ServerScore extends ModelMModule {
                         }
 
                         // Création du fichier json
-                        File outFile = new File(game_id + ".json");
+                        File outFile = new File(dataPath + game_id + ".json");
                         // 3. Création du JsonGenerator
 
                         params.remove(MODE);
@@ -88,7 +102,7 @@ public class ServerScore extends ModelMModule {
                     try {
                         ObjectMapper mapper1 = new ObjectMapper();
 
-                        File file_score = new File(params.get(GAME_ID) + ".json");
+                        File file_score = new File(dataPath + params.get(GAME_ID) + ".json");
                         JsonNode root = mapper1.readTree(file_score);
 
                         // 1. Extraction des listes de champs
@@ -144,7 +158,7 @@ public class ServerScore extends ModelMModule {
 
                     try {
                         // 1. Chargement du fichier JSON
-                        File fileScore = new File(params.get(GAME_ID) + ".json");
+                        File fileScore = new File(dataPath + params.get(GAME_ID) + ".json");
 
                         JsonNode root = mapper.readTree(fileScore);
                         if (!(root instanceof ObjectNode)) {
@@ -208,26 +222,26 @@ public class ServerScore extends ModelMModule {
                 case "top1" -> {
                     // Retourne le meilleur score (premier de la liste triée)
                     try {
-                        File fileScore = new File(params.get(GAME_ID) + ".json");
+                        File fileScore = new File(dataPath + params.get(GAME_ID) + ".json");
                         System.out.println("🏆 top1: lecture de " + fileScore.getAbsolutePath());
                         JsonNode root = mapper.readTree(fileScore);
-                        
+
                         // 1. Extraction des listes de champs
                         List<String> origFields = Arrays.asList(root.path(FIELDS_LIST).asText().split(","));
                         String reqFieldsParam = params.get(FIELDS_LIST);
                         // Si fields non fourni, utiliser les champs d'origine
-                        List<String> reqFields = (reqFieldsParam != null) 
-                            ? Arrays.asList(reqFieldsParam.split(","))
-                            : origFields;
-                        
+                        List<String> reqFields = (reqFieldsParam != null)
+                                ? Arrays.asList(reqFieldsParam.split(","))
+                                : origFields;
+
                         System.out.println("🏆 top1: origFields=" + origFields + ", reqFields=" + reqFields);
-                        
+
                         String rawValues = root.path(VALUES).asText("");
                         System.out.println("🏆 top1: rawValues=" + rawValues);
-                        
+
                         if (!rawValues.isEmpty()) {
                             String[] rawRecords = rawValues.split("&");
-                            
+
                             // 2. Construction d'une liste de maps champ→valeur
                             List<Map<String, String>> records = new ArrayList<>(rawRecords.length);
                             for (String rec : rawRecords) {
@@ -238,9 +252,9 @@ public class ServerScore extends ModelMModule {
                                 }
                                 records.add(map);
                             }
-                            
+
                             System.out.println("🏆 top1: " + records.size() + " records parsés");
-                            
+
                             // 3. Tri par le premier champ demandé (descendant)
                             String sortKey = reqFields.get(0);
                             records.sort((m1, m2) -> {
@@ -252,7 +266,7 @@ public class ServerScore extends ModelMModule {
                                     return v2.compareTo(v1);
                                 }
                             });
-                            
+
                             // 4. Retourner le premier (meilleur score)
                             if (!records.isEmpty()) {
                                 Map<String, String> best = records.get(0);
@@ -273,22 +287,22 @@ public class ServerScore extends ModelMModule {
                 case "top10" -> {
                     // Retourne le 10ème meilleur score (ou le dernier si moins de 10)
                     try {
-                        File fileScore = new File(params.get(GAME_ID) + ".json");
+                        File fileScore = new File(dataPath + params.get(GAME_ID) + ".json");
                         System.out.println("🏆 top10: lecture de " + fileScore.getAbsolutePath());
                         JsonNode root = mapper.readTree(fileScore);
-                        
+
                         // 1. Extraction des listes de champs
                         List<String> origFields = Arrays.asList(root.path(FIELDS_LIST).asText().split(","));
                         String reqFieldsParam = params.get(FIELDS_LIST);
                         // Si fields non fourni, utiliser les champs d'origine
-                        List<String> reqFields = (reqFieldsParam != null) 
-                            ? Arrays.asList(reqFieldsParam.split(","))
-                            : origFields;
-                        
+                        List<String> reqFields = (reqFieldsParam != null)
+                                ? Arrays.asList(reqFieldsParam.split(","))
+                                : origFields;
+
                         String rawValues = root.path(VALUES).asText("");
                         if (!rawValues.isEmpty()) {
                             String[] rawRecords = rawValues.split("&");
-                            
+
                             // 2. Construction d'une liste de maps champ→valeur
                             List<Map<String, String>> records = new ArrayList<>(rawRecords.length);
                             for (String rec : rawRecords) {
@@ -299,7 +313,7 @@ public class ServerScore extends ModelMModule {
                                 }
                                 records.add(map);
                             }
-                            
+
                             // 3. Tri par le premier champ demandé (descendant)
                             String sortKey = reqFields.get(0);
                             records.sort((m1, m2) -> {
@@ -311,7 +325,7 @@ public class ServerScore extends ModelMModule {
                                     return v2.compareTo(v1);
                                 }
                             });
-                            
+
                             // 4. Retourner le 10ème (ou le dernier si moins de 10)
                             if (!records.isEmpty()) {
                                 int index = Math.min(9, records.size() - 1);

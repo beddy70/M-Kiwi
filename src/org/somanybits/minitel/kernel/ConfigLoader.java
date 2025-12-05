@@ -39,6 +39,7 @@ public final class ConfigLoader {
         // Normalisation des chemins (résolution + nettoyage)
         cfg.path.root_path    = normalize(cfg.path.root_path);
         cfg.path.plugins_path = normalize(cfg.path.plugins_path);
+        cfg.path.mmodules_config_path = normalize(cfg.path.mmodules_config_path);
 
         return cfg;
     }

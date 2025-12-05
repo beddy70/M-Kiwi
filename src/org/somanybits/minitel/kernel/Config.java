@@ -20,7 +20,8 @@ package org.somanybits.minitel.kernel;
  *   },
  *   "path": {
  *     "root_path": "./root/",
- *     "plugins_path": "./plugins/"
+ *     "plugins_path": "./plugins/",
+ *     "mmodules_config_path": "./mmodules_config/"
  *   },
  *   "client": {
  *     "serial_port": "/dev/serial0",
@@ -65,6 +66,8 @@ public class Config {
         public String root_path = "./root/";
         /** Répertoire des plugins MModules */
         public String plugins_path = "./plugins/";
+        /** Répertoire des fichiers de configuration JSON des MModules */
+        public String mmodules_config_path = "./mmodules_config/";
     }
     
     /**
