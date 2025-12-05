@@ -81,6 +81,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private Thread gameLoopThread = null;
     private volatile boolean gameLoopRunning = false;
     
+    // Verrou pour synchroniser l'accès au script engine et au layers
+    private final Object scriptLock = new Object();
+    
     // Joystick USB - Support 2 joueurs
     private JoystickReader joystick = null;      // Joueur 1
     private JoystickReader joystick2 = null;     // Joueur 2
@@ -375,44 +378,47 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     
                     // Si focus sur layers : capturer les touches pour le jeu
                     if (layersHasFocus && currentLayers != null) {
-                        // 1. Vérifier d'abord les touches directes (sans action de jeu)
-                        String directEvent = currentLayers.getDirectKeyEvent(car);
-                        if (directEvent != null) {
-                            System.out.println("🎮 Touche directe: '" + car + "' -> " + directEvent + "()");
-                            try {
-                                VTMLScriptEngine.getInstance().execute(directEvent + "()");
-                                byte[] update = currentLayers.getDifferentialBytes();
-                                mc.writeBytes(update);
-                                // Vérifier si une navigation ou un focus a été demandé
-                                checkPendingNavigation(pmgr);
-                                checkPendingFocus();
-                            } catch (Exception e) {
-                                System.err.println("Erreur JS: " + e.getMessage());
-                            }
-                            break;
-                        }
-                        
-                        // 2. Sinon, vérifier les actions de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
-                        // Trouver le keypad correspondant à cette touche pour avoir le bon joueur
-                        VTMLKeypadComponent keypad = currentLayers.getKeypadForKey(car);
-                        if (keypad != null && keypad.hasAction()) {
-                            int player = keypad.getPlayer();
-                            String action = keypad.getAction();
-                            String eventFunc = currentLayers.getKeypadEvent(player, action);
-                            System.out.println("🎮 Player " + player + " Action: " + action + " -> " + eventFunc);
-                            if (eventFunc != null) {
+                        // Synchroniser avec le game loop et les actions joystick
+                        synchronized (scriptLock) {
+                            // 1. Vérifier d'abord les touches directes (sans action de jeu)
+                            String directEvent = currentLayers.getDirectKeyEvent(car);
+                            if (directEvent != null) {
+                                System.out.println("🎮 Touche directe: '" + car + "' -> " + directEvent + "()");
                                 try {
-                                    // Appeler la fonction JavaScript
-                                    VTMLScriptEngine.getInstance().execute(eventFunc + "()");
-                                    // Rafraîchir l'affichage du layers
+                                    VTMLScriptEngine.getInstance().execute(directEvent + "()");
                                     byte[] update = currentLayers.getDifferentialBytes();
-                                    System.out.println("🎮 Update: " + update.length + " bytes");
                                     mc.writeBytes(update);
                                     // Vérifier si une navigation ou un focus a été demandé
                                     checkPendingNavigation(pmgr);
                                     checkPendingFocus();
                                 } catch (Exception e) {
                                     System.err.println("Erreur JS: " + e.getMessage());
+                                }
+                                break;
+                            }
+                            
+                            // 2. Sinon, vérifier les actions de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
+                            // Trouver le keypad correspondant à cette touche pour avoir le bon joueur
+                            VTMLKeypadComponent keypad = currentLayers.getKeypadForKey(car);
+                            if (keypad != null && keypad.hasAction()) {
+                                int player = keypad.getPlayer();
+                                String action = keypad.getAction();
+                                String eventFunc = currentLayers.getKeypadEvent(player, action);
+                                System.out.println("🎮 Player " + player + " Action: " + action + " -> " + eventFunc);
+                                if (eventFunc != null) {
+                                    try {
+                                        // Appeler la fonction JavaScript
+                                        VTMLScriptEngine.getInstance().execute(eventFunc + "()");
+                                        // Rafraîchir l'affichage du layers
+                                        byte[] update = currentLayers.getDifferentialBytes();
+                                        System.out.println("🎮 Update: " + update.length + " bytes");
+                                        mc.writeBytes(update);
+                                        // Vérifier si une navigation ou un focus a été demandé
+                                        checkPendingNavigation(pmgr);
+                                        checkPendingFocus();
+                                    } catch (Exception e) {
+                                        System.err.println("Erreur JS: " + e.getMessage());
+                                    }
                                 }
                             }
                         }
@@ -596,21 +602,24 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         gameLoopThread = new Thread(() -> {
             while (gameLoopRunning && currentLayers != null) {
                 try {
-                    // Appeler la fonction JavaScript
-                    VTMLScriptEngine.getInstance().execute(tickFunc + "()");
-                    
-                    // Rafraîchir l'affichage
-                    byte[] update = currentLayers.getDifferentialBytes();
-                    if (update.length > 0) {
-                        synchronized (mc) {
-                            mc.writeBytes(update);
+                    // Synchroniser avec les actions joystick et les touches clavier
+                    synchronized (scriptLock) {
+                        // Appeler la fonction JavaScript
+                        VTMLScriptEngine.getInstance().execute(tickFunc + "()");
+                        
+                        // Rafraîchir l'affichage
+                        byte[] update = currentLayers.getDifferentialBytes();
+                        if (update.length > 0) {
+                            synchronized (mc) {
+                                mc.writeBytes(update);
+                            }
                         }
-                    }
-                    
-                    // Gérer le beep si demandé
-                    if (currentLayers.consumeBeep()) {
-                        synchronized (mc) {
-                            mc.writeBytes(GetTeletelCode.beep());
+                        
+                        // Gérer le beep si demandé
+                        if (currentLayers.consumeBeep()) {
+                            synchronized (mc) {
+                                mc.writeBytes(GetTeletelCode.beep());
+                            }
                         }
                     }
                     
@@ -761,11 +770,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         if (event != null) {
             // Exécuter dans un thread séparé pour ne jamais bloquer le thread joystick
             new Thread(() -> {
-                try {
-                    VTMLScriptEngine.getInstance().execute(event + "()");
-                    refreshLayersDisplay();
-                } catch (Throwable t) {
-                    System.err.println("❌ Erreur joystick event: " + t.getClass().getSimpleName() + " - " + t.getMessage());
+                // Synchroniser avec le game loop et les touches clavier
+                synchronized (scriptLock) {
+                    try {
+                        VTMLScriptEngine.getInstance().execute(event + "()");
+                        refreshLayersDisplay();
+                    } catch (Throwable t) {
+                        System.err.println("❌ Erreur joystick event: " + t.getClass().getSimpleName() + " - " + t.getMessage());
+                    }
                 }
             }, "JoystickAction").start();
         }
