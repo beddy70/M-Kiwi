@@ -10,7 +10,7 @@
   },
   "client": {
     "serial_port": "/dev/serial0",
-    "serial_baud": 9600,
+    "serial_baud": 4800,
     "joystick_device_0": "/dev/input/js0",
     "joystick_device_1": "/dev/input/js1",
     "joystick_enabled": true,

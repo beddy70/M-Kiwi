@@ -24,18 +24,18 @@ import org.somanybits.minitel.events.KeyPressedListener;
 /**
  * Connexion série vers un terminal Minitel.
  * <p>
- * Cette classe gère la communication bas niveau avec le Minitel via le port série.
- * Elle configure automatiquement le port en mode 7E1 (7 bits, parité paire, 1 stop bit)
- * conformément au protocole Videotex.
+ * Cette classe gère la communication bas niveau avec le Minitel via le port
+ * série. Elle configure automatiquement le port en mode 7E1 (7 bits, parité
+ * paire, 1 stop bit) conformément au protocole Videotex.
  * </p>
- * 
+ *
  * <h2>Vitesses supportées</h2>
  * <ul>
- *   <li>{@link #BAUD_1200} - Minitel 1 standard</li>
- *   <li>{@link #BAUD_4800} - Minitel 2 vitesse moyenne</li>
- *   <li>{@link #BAUD_9600} - Minitel 2 haute vitesse</li>
+ * <li>{@link #BAUD_1200} - Minitel 1 standard</li>
+ * <li>{@link #BAUD_4800} - Minitel 2 vitesse moyenne</li>
+ * <li>{@link #BAUD_9600} - Minitel 2 haute vitesse</li>
  * </ul>
- * 
+ *
  * <h2>Exemple d'utilisation</h2>
  * <pre>{@code
  * MinitelConnection mc = new MinitelConnection("/dev/serial0", MinitelConnection.BAUD_9600);
@@ -44,7 +44,7 @@ import org.somanybits.minitel.events.KeyPressedListener;
  * mc.writeBytes(GetTeletelCode.clearScreen());
  * mc.close();
  * }</pre>
- * 
+ *
  * @author Eddy Briere
  * @version 0.3
  * @see Teletel
@@ -52,11 +52,17 @@ import org.somanybits.minitel.events.KeyPressedListener;
  */
 public class MinitelConnection implements Closeable {
 
-    /** Vitesse standard Minitel 1 : 1200 bauds */
+    /**
+     * Vitesse standard Minitel 1 : 1200 bauds
+     */
     public static final int BAUD_1200 = 1200;
-    /** Vitesse moyenne Minitel 2 : 4800 bauds */
+    /**
+     * Vitesse moyenne Minitel 2 : 4800 bauds
+     */
     public static final int BAUD_4800 = 4800;
-    /** Haute vitesse Minitel 2 : 9600 bauds */
+    /**
+     * Haute vitesse Minitel 2 : 9600 bauds
+     */
     public static final int BAUD_9600 = 9600;
 
     private String device = "/dev/serial0";
@@ -74,7 +80,7 @@ public class MinitelConnection implements Closeable {
 
     private ArrayList<KeyPressedListener> listkeypressedlistener = new ArrayList<>();
     private ArrayList<CodeSequenceListener> listcodesequencelistener = new ArrayList<>();
-    
+
     // Détection de désynchronisation de vitesse
     private int consecutiveZeroCount = 0;
     private static final int ZERO_THRESHOLD = 5;  // Nombre de 0 consécutifs pour déclencher la resync
@@ -99,12 +105,12 @@ public class MinitelConnection implements Closeable {
         this.out = new BufferedOutputStream(new FileOutputStream(raf.getFD()));
         startReader();
     }
-    
+
     /**
-     * Force la vitesse du Minitel en envoyant la séquence PRO2 appropriée.
-     * Le Minitel doit être en 1200 bauds par défaut, donc on reconfigure
+     * Force la vitesse du Minitel en envoyant la séquence PRO2 appropriée. Le
+     * Minitel doit être en 1200 bauds par défaut, donc on reconfigure
      * temporairement le port série en 1200 bauds pour envoyer la commande.
-     * 
+     *
      * @throws IOException si erreur de communication
      * @throws InterruptedException si le processus stty est interrompu
      */
@@ -113,62 +119,86 @@ public class MinitelConnection implements Closeable {
             System.out.println("⚡ Vitesse déjà à 1200 bauds, pas de changement nécessaire");
             return;
         }
-        
+
         System.out.println("⚡ Détection désynchronisation - Forçage vitesse Minitel vers " + baud + " bauds");
-        
+
         // 1. Arrêter le reader
         running = false;
         if (rxThread != null) {
             rxThread.interrupt();
-            try { rxThread.join(500); } catch (InterruptedException e) { }
+            try {
+                rxThread.join(500);
+            } catch (InterruptedException e) {
+            }
         }
-        
+
         // 2. Fermer les streams actuels
-        try { if (in != null) in.close(); } catch (Exception e) { }
-        try { if (out != null) out.close(); } catch (Exception e) { }
-        try { if (raf != null) raf.close(); } catch (Exception e) { }
-        
+        try {
+            if (in != null) {
+                in.close();
+            }
+        } catch (Exception e) {
+        }
+        try {
+            if (out != null) {
+                out.close();
+            }
+        } catch (Exception e) {
+        }
+        try {
+            if (raf != null) {
+                raf.close();
+            }
+        } catch (Exception e) {
+        }
+
         // 3. Reconfigurer en 1200 bauds (vitesse par défaut du Minitel)
         int targetBaud = this.baud;
         this.baud = BAUD_1200;
         configureLine_7E1();
-        
+
         // 4. Rouvrir le port
         this.raf = new RandomAccessFile(device, "rw");
         this.out = new BufferedOutputStream(new FileOutputStream(raf.getFD()));
-        
+
         // 5. Envoyer la séquence de changement de vitesse
         byte[] speedCmd = getSpeedChangeSequence(targetBaud);
         System.out.println("⚡ Envoi séquence vitesse: " + toHex(speedCmd));
         out.write(speedCmd);
         out.flush();
-        
+
         // 6. Attendre que le Minitel traite la commande
         Thread.sleep(200);
-        
+
         // 7. Fermer et reconfigurer à la vitesse cible
-        try { out.close(); } catch (Exception e) { }
-        try { raf.close(); } catch (Exception e) { }
-        
+        try {
+            out.close();
+        } catch (Exception e) {
+        }
+        try {
+            raf.close();
+        } catch (Exception e) {
+        }
+
         this.baud = targetBaud;
         configureLine_7E1();
-        
+
         // 8. Rouvrir complètement
         this.raf = new RandomAccessFile(device, "rw");
         this.in = new BufferedInputStream(new FileInputStream(raf.getFD()));
         this.out = new BufferedOutputStream(new FileOutputStream(raf.getFD()));
-        
+
         // 9. Reset du compteur et redémarrage du reader
         consecutiveZeroCount = 0;
         startReader();
-        
+
         System.out.println("⚡ Vitesse Minitel forcée à " + baud + " bauds - OK");
     }
-    
+
     /**
      * Détecte si les données reçues indiquent une désynchronisation de vitesse.
      * Une série de 0x00 consécutifs est typique d'une mauvaise vitesse.
-     * 
+     *
      * @param frame les données reçues
      * @return true si désynchronisation détectée
      */
@@ -186,22 +216,20 @@ public class MinitelConnection implements Closeable {
         }
         return false;
     }
-    
+
     /**
-     * Retourne la séquence PRO2 pour changer la vitesse du Minitel.
-     * Séquences: ESC PRO2 PROG vitesse
-     * - 4800 bauds: 1B 3A 6A 7F
-     * - 9600 bauds: 1B 3A 6B 7F
+     * Retourne la séquence PRO2 pour changer la vitesse du Minitel. Séquences:
+     * ESC PRO2 PROG vitesse - 4800 bauds: 1B 3A 6A 7F - 9600 bauds: 1B 3A 6B 7F
      */
     private byte[] getSpeedChangeSequence(int targetBaud) {
         switch (targetBaud) {
             case BAUD_4800:
-                return new byte[] { 0x1B, 0x3A, 0x6A, 0x7F };
+                return new byte[]{0x1B, 0x3A, 0x6A, 0x7F};
             case BAUD_9600:
-                return new byte[] { 0x1B, 0x3A, 0x6B, 0x7F };
+                return new byte[]{0x1B, 0x3A, 0x6B, 0x7F};
             default:
                 // 1200 bauds par défaut (pas de changement)
-                return new byte[] { 0x1B, 0x3A, 0x64, 0x7F };
+                return new byte[]{0x1B, 0x3A, 0x64, 0x7F};
         }
     }
 
@@ -211,7 +239,7 @@ public class MinitelConnection implements Closeable {
 
         // IMPORTANT: ne pas utiliser 'raw' (forcerait cs8 -parenb)
         String cmd = String.format(
-                "stty -F %s %d cs7 parenb -parodd -cstopb %s %s -echo -icanon -opost",
+                "stty -F %s %d cs7 parenb -parodd -cstopb %s %s  -icanon",
                 device, baud, flowHw, flowSw
         );
 
@@ -267,7 +295,7 @@ public class MinitelConnection implements Closeable {
                     }
 
                     byte[] frame = Arrays.copyOf(buf, n);
-                    
+
                     // Détection de désynchronisation: série de 0x00
                     if (detectSpeedMismatch(frame)) {
                         System.out.println("⚠️ Désynchronisation détectée (" + consecutiveZeroCount + " zéros)");

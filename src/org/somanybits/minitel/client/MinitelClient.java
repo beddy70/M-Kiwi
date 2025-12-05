@@ -188,7 +188,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         //currentpage = mtr.get("");
         pmgr.navigate("");
-
+t.setEcho(false);
         mc.writeBytes(pmgr.getCurrentPage().getData());
         
         // Initialiser le système de focus pour la première page

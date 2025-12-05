@@ -9,3 +9,6 @@ src/**/*.class
 # Fichiers temporaires
 *.tmp
 *.temp
+
+# Dossier de mise à jour du site web
+/website_update/
