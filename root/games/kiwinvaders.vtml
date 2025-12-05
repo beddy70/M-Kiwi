@@ -430,21 +430,36 @@
         START_X += dx;
       }
       
-      // Effacer à l'ANCIENNE position
+      // D'abord dessiner à la NOUVELLE position
+      drawInvaders(L);
+      
+      // Puis effacer les traces à l'ANCIENNE position (seulement ce qui dépasse)
       for (var r = 0; r < ROWS; r++) {
-        var y = oldStartY + r * 2;
+        var oldY = oldStartY + r * 2;
+        var newY = START_Y + r * 2;
         for (var c = 0; c < COLS; c++) {
-          var x = oldStartX + c * SPACING;
-          L.setMapChar(GAME_MAP, x, y, ' ');
-          L.setMapChar(GAME_MAP, x+1, y, ' ');
-          L.setMapChar(GAME_MAP, x+2, y, ' ');
-          L.setMapColor(GAME_MAP, x, y, 7);
-          L.setMapColor(GAME_MAP, x+1, y, 7);
-          L.setMapColor(GAME_MAP, x+2, y, 7);
+          var oldX = oldStartX + c * SPACING;
+          var newX = START_X + c * SPACING;
+          
+          // Si la ligne a changé (descente), effacer toute l'ancienne ligne
+          if (oldY != newY) {
+            L.setMapChar(GAME_MAP, oldX, oldY, ' ');
+            L.setMapChar(GAME_MAP, oldX+1, oldY, ' ');
+            L.setMapChar(GAME_MAP, oldX+2, oldY, ' ');
+            L.setMapColor(GAME_MAP, oldX, oldY, 7);
+            L.setMapColor(GAME_MAP, oldX+1, oldY, 7);
+            L.setMapColor(GAME_MAP, oldX+2, oldY, 7);
+          } else if (dx > 0) {
+            // Déplacement vers la droite: effacer le bord gauche
+            L.setMapChar(GAME_MAP, oldX, oldY, ' ');
+            L.setMapColor(GAME_MAP, oldX, oldY, 7);
+          } else if (dx < 0) {
+            // Déplacement vers la gauche: effacer le bord droit
+            L.setMapChar(GAME_MAP, oldX+2, oldY, ' ');
+            L.setMapColor(GAME_MAP, oldX+2, oldY, 7);
+          }
         }
       }
-      
-      drawInvaders(L);
     }
     
     function gameLoop() {
