@@ -822,12 +822,12 @@ Le système supporte les joysticks USB standards via `/dev/input/js*`.
 | Xbox 360 / Xbox One | ✅ | |
 | PlayStation 2 (PS2) | ❌ | |
 | PlayStation 3 (PS3) | ✅ | |
+| PlayStation 4 (PS4) | ✅ | |
 | FOYU Compatible PS2 | ✅ | |
 | Megadrive 2.4GHz Wireless | ✅ | |
 | Manette Free | ✅ | |
 | Atari CX40+ Wireless | ✅ | Un seul bouton |
 | Nintendo Switch Pro | ❌ | |
-| PlayStation 4 (PS4) | ✅ | |
 | Under Control X/S (Xbox) | ❌ | |
 
 ### Fonctionnement
