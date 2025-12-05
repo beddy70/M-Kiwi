@@ -872,7 +872,14 @@ public class MinitelPageReader {
         for (MComponent child : ((ModelMComponent) menu).getChilds()) {
             if (child instanceof VTMLItemComponent item) {
                 page.addMenu(String.valueOf(key), item.getLink());
-                key++;
+                // Incrémenter la touche : après '9' passer à 'A', après 'Z' s'arrêter
+                if (key == '9') {
+                    key = 'A';
+                } else if (key == 'Z') {
+                    break;  // Plus de touches disponibles
+                } else {
+                    key++;
+                }
             }
         }
     }
