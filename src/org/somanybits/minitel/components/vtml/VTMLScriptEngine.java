@@ -217,6 +217,15 @@ public class VTMLScriptEngine {
                     + "\n"
                     + "function setFocus(componentName) {\n"
                     + "  _pendingFocus = componentName;\n"
+                    + "}\n"
+                    + "\n"
+                    + "// Protection ligne 0\n"
+                    + "function enableLineZero(enabled) {\n"
+                    + "  GetTeletelCode.enableLineZero(enabled);\n"
+                    + "}\n"
+                    + "\n"
+                    + "function isLineZeroEnabled() {\n"
+                    + "  return GetTeletelCode.isLineZeroEnabled();\n"
                     + "}\n";
 
             cx.evaluateString(scope, initScript, "init", 1, null);

@@ -122,6 +122,14 @@ public class Teletel {
 
     }
 
+    /**
+     * Positionne le curseur aux coordonnées spécifiées.
+     * Par défaut, la ligne 0 est protégée et le curseur sera placé en ligne 1.
+     * Utilisez {@link GetTeletelCode#enableLineZero(boolean)} pour autoriser l'écriture en ligne 0.
+     * 
+     * @param x Position horizontale (0-39)
+     * @param y Position verticale (0-24, mais 0 est protégée par défaut)
+     */
     public void setCursor(int x, int y) throws IOException {
         if (x < 0) {
             x = 0;
@@ -129,12 +137,15 @@ public class Teletel {
         if (y < 0) {
             y = 0;
         }
+        
+        // Protection ligne 0 : utiliser la config globale de GetTeletelCode
+        if (!GetTeletelCode.isLineZeroEnabled() && y == 0) {
+            y = 1;
+        }
+        
         mterm.writeByte((byte) (0x1f));
-//        mterm.writeByte((byte) (0x1B));
-//        mterm.writeByte((byte) (0x59));
         mterm.writeByte((byte) (y + 0x40));
         mterm.writeByte((byte) (x + 0x40 + 1));
-
     }
 
     public void setCursorHome() throws IOException {

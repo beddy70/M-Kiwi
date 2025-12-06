@@ -44,6 +44,9 @@ public final class GetTeletelCode {
     // Constantes reprises de Teletel
     public static final int PAGE_WIDTH = 40;
     public static final int PAGE_HEIGHT = 24;
+    
+    // Protection ligne 0 - désactivée par défaut (ligne 0 interdite)
+    private static boolean lineZeroEnabled = false;
 
     public static final int COLOR_BLACK = 0x00;
     public static final int COLOR_RED = 0x01;
@@ -94,17 +97,49 @@ public final class GetTeletelCode {
     }
 
     /**
-     * Génère les codes pour positionner le curseur
+     * Génère les codes pour positionner le curseur.
+     * Par défaut, la ligne 0 est protégée et le curseur sera placé en ligne 1.
+     * Utilisez {@link #enableLineZero(boolean)} pour autoriser l'écriture en ligne 0.
+     * 
+     * @param x Position horizontale (0-39)
+     * @param y Position verticale (0-24, mais 0 est protégée par défaut)
+     * @return Séquence de bytes pour positionner le curseur
      */
     public static byte[] setCursor(int x, int y) {
         if (x < 0) x = 0;
         if (y < 0) y = 0;
+        
+        // Protection ligne 0 : si désactivée, forcer y >= 1
+        if (!lineZeroEnabled && y == 0) {
+            y = 1;
+            System.out.println("⚠️ Ligne 0 protégée - curseur déplacé en ligne 1");
+        }
         
         return new byte[] {
             (byte) 0x1f,
             (byte) (y + 0x40),
             (byte) (x + 0x40 + 1)
         };
+    }
+    
+    /**
+     * Active ou désactive l'écriture sur la ligne 0.
+     * La ligne 0 du Minitel est la ligne de status système.
+     * Y écrire peut causer des problèmes d'affichage.
+     * 
+     * @param enabled true pour autoriser l'écriture en ligne 0, false pour l'interdire
+     */
+    public static void enableLineZero(boolean enabled) {
+        lineZeroEnabled = enabled;
+        System.out.println("📺 Ligne 0 " + (enabled ? "activée" : "protégée"));
+    }
+    
+    /**
+     * Vérifie si l'écriture sur la ligne 0 est autorisée.
+     * @return true si la ligne 0 est accessible, false sinon
+     */
+    public static boolean isLineZeroEnabled() {
+        return lineZeroEnabled;
     }
 
     /**

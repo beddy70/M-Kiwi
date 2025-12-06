@@ -578,6 +578,30 @@ Pour développer sans Minitel physique :
 - **Vitesses** : 1200 bauds (standard), 4800/9600 bauds (Minitel 2)
 - **Séquences d'échappement** : Compatible norme française
 
+### Protection Ligne 0
+
+La ligne 0 du Minitel est la ligne de status système. Y écrire peut causer des problèmes d'affichage. Par défaut, l'écriture sur la ligne 0 est **interdite** et le curseur est automatiquement déplacé en ligne 1.
+
+**En JavaScript :**
+```javascript
+// Autoriser l'écriture sur la ligne 0
+enableLineZero(true);
+
+// Vérifier si la ligne 0 est accessible
+if (isLineZeroEnabled()) {
+  // ...
+}
+
+// Réactiver la protection
+enableLineZero(false);
+```
+
+**En Java :**
+```java
+GetTeletelCode.enableLineZero(true);  // Autoriser
+GetTeletelCode.enableLineZero(false); // Protéger (défaut)
+```
+
 ### Références
 - [Spécifications Videotex CNET](https://www.minitel.org)
 - [Documentation technique Minitel](https://github.com/cquest/minitel)
