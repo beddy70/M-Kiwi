@@ -131,7 +131,7 @@ Le Minitel fonctionne en logique 5V tandis que le Raspberry Pi utilise du 3.3V. 
    3.3V (Pin 1) ┼──────┬──────┼──────────────────┤ LV            HV    ├──────────────────┼── 5V        │
                 │      │      │                  │                     │                  │             │
    GND (Pin 6) ─┼──────┼──────┼──────────────────┤ GND          GND    ├──────────────────┼── GND       │
-                │      │      │                  │                     │                  │  (DIN 2,5)  │
+                │      │      │                  │                     │                  │  (DIN 2)    │
                 │      │      │                  │                     │                  │             │
    Pin 8 (TX) ──┼──────┼──────┼──────────────────┤ LV1          HV1    ├──────────────────┼──► RX       │
    GPIO14       │      │      │                  │                     │                  │  (DIN 1)    │
@@ -162,8 +162,8 @@ Le Minitel fonctionne en logique 5V tandis que le Raspberry Pi utilise du 3.3V. 
                                   1  │ RX (entrée) │ ← HV1 (depuis RPi TX)
                                   2  │ GND         │ → GND commun
                                   3  │ TX (sortie) │ → HV2 (vers RPi RX)
-                                  4  │ 8-12V       │ ⚠️ NON CONNECTÉ
-                                  5  │ GND         │ → GND commun
+                                  4  │ Device RDY  │ NON CONNECTÉ
+                                  5  │ 8-12V       │ ⚠️ NON CONNECTÉ
 ```
 
 | Raspberry Pi | Level Shifter LV | Level Shifter HV | Minitel DIN |
