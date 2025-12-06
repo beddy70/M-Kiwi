@@ -326,9 +326,11 @@ while True:
 
 ## Fichiers de conception
 
-- `pcb/schematic.kicad_sch` - Schéma KiCad (à venir)
-- `pcb/pcb.kicad_pcb` - Layout PCB (à venir)
-- `pcb/gerber/` - Fichiers de fabrication (à venir)
+- `pcb/minitel_hat.kicad_pro` - Projet KiCad 8.0
+- `pcb/minitel_hat.kicad_sch` - Schéma électronique
+- `pcb/minitel_hat.kicad_pcb` - Layout PCB (65x56mm, format HAT)
+- `pcb/gerber/` - Fichiers Gerber pour fabrication (à générer depuis KiCad)
+- `pcb/README.md` - Instructions d'utilisation des fichiers KiCad
 
 ---
 

@@ -1,0 +1,383 @@
+(kicad_sch
+  (version 20231120)
+  (generator "eeschema")
+  (generator_version "8.0")
+  (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+  (paper "A4")
+  (title_block
+    (title "HAT Minitel pour Raspberry Pi")
+    (date "2024-12-06")
+    (rev "1.0")
+    (company "M-Kiwi Project")
+    (comment 1 "PROTOTYPE NON TESTÉ")
+    (comment 2 "Auteur: Eddy BRIERE")
+  )
+
+  (lib_symbols
+  )
+
+  ;; ============================================
+  ;; POWER SUPPLY SECTION
+  ;; ============================================
+  
+  (text "ALIMENTATION 7-12V → 5V"
+    (exclude_from_sim no)
+    (at 30 30 0)
+    (effects
+      (font (size 2 2) (thickness 0.4) bold)
+    )
+    (uuid "text-power-title")
+  )
+
+  (text "DC Jack 7-12V"
+    (exclude_from_sim no)
+    (at 20 50 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-dc-jack")
+  )
+
+  (text "D1: 1N4007"
+    (exclude_from_sim no)
+    (at 45 50 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-d1")
+  )
+
+  (text "U1: AMS1117-5.0"
+    (exclude_from_sim no)
+    (at 70 50 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-u1")
+  )
+
+  (text "C1: 100µF/25V"
+    (exclude_from_sim no)
+    (at 55 65 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-c1")
+  )
+
+  (text "C2: 10µF/10V"
+    (exclude_from_sim no)
+    (at 85 65 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-c2")
+  )
+
+  (text "→ 5V (GPIO Pin 2,4)"
+    (exclude_from_sim no)
+    (at 100 50 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-5v-out")
+  )
+
+  ;; ============================================
+  ;; UART MINITEL SECTION
+  ;; ============================================
+
+  (text "UART MINITEL"
+    (exclude_from_sim no)
+    (at 30 90 0)
+    (effects
+      (font (size 2 2) (thickness 0.4) bold)
+    )
+    (uuid "text-uart-title")
+  )
+
+  (text "GPIO14/TX (Pin 8) ──────────────────► DIN Pin 1 (Minitel RX)"
+    (exclude_from_sim no)
+    (at 30 105 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-tx")
+  )
+
+  (text "GPIO15/RX (Pin 10) ◄──[R1 1kΩ]──┬──── DIN Pin 3 (Minitel TX)"
+    (exclude_from_sim no)
+    (at 30 115 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-rx")
+  )
+
+  (text "                                [R2 2kΩ] (protection 5V→3.3V)"
+    (exclude_from_sim no)
+    (at 30 125 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-rx-protection")
+  )
+
+  (text "GND (Pin 6) ────────────────────► DIN Pin 2,5 (GND)"
+    (exclude_from_sim no)
+    (at 30 135 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-gnd-uart")
+  )
+
+  (text "⚠️ DIN Pin 4 (8-12V) = NON CONNECTÉ"
+    (exclude_from_sim no)
+    (at 30 145 0)
+    (effects (font (size 1.27 1.27) (color 255 0 0 1)))
+    (uuid "text-warning-din4")
+  )
+
+  ;; ============================================
+  ;; BUTTONS SECTION
+  ;; ============================================
+
+  (text "BOUTONS (Active LOW, pull-up interne)"
+    (exclude_from_sim no)
+    (at 30 165 0)
+    (effects
+      (font (size 2 2) (thickness 0.4) bold)
+    )
+    (uuid "text-buttons-title")
+  )
+
+  (text "GPIO17 (Pin 11) ───[BTN1]───► GND"
+    (exclude_from_sim no)
+    (at 30 180 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-btn1")
+  )
+
+  (text "GPIO27 (Pin 13) ───[BTN2]───► GND"
+    (exclude_from_sim no)
+    (at 30 190 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-btn2")
+  )
+
+  (text "GPIO22 (Pin 15) ───[BTN3]───► GND"
+    (exclude_from_sim no)
+    (at 30 200 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-btn3")
+  )
+
+  ;; ============================================
+  ;; LEDS SECTION
+  ;; ============================================
+
+  (text "LEDs"
+    (exclude_from_sim no)
+    (at 30 220 0)
+    (effects
+      (font (size 2 2) (thickness 0.4) bold)
+    )
+    (uuid "text-leds-title")
+  )
+
+  (text "GPIO23 (Pin 16) ───[R3 330Ω]───►|── LED1 ──► GND"
+    (exclude_from_sim no)
+    (at 30 235 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-led1")
+  )
+
+  (text "GPIO24 (Pin 18) ───[R4 330Ω]───►|── LED2 ──► GND"
+    (exclude_from_sim no)
+    (at 30 245 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-led2")
+  )
+
+  ;; ============================================
+  ;; OLED I2C SECTION
+  ;; ============================================
+
+  (text "ÉCRAN OLED SSD1306 I2C"
+    (exclude_from_sim no)
+    (at 150 90 0)
+    (effects
+      (font (size 2 2) (thickness 0.4) bold)
+    )
+    (uuid "text-oled-title")
+  )
+
+  (text "3.3V (Pin 1) ──────► OLED VCC"
+    (exclude_from_sim no)
+    (at 150 105 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-oled-vcc")
+  )
+
+  (text "GND (Pin 9) ───────► OLED GND"
+    (exclude_from_sim no)
+    (at 150 115 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-oled-gnd")
+  )
+
+  (text "GPIO2/SDA (Pin 3) ─► OLED SDA"
+    (exclude_from_sim no)
+    (at 150 125 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-oled-sda")
+  )
+
+  (text "GPIO3/SCL (Pin 5) ─► OLED SCL"
+    (exclude_from_sim no)
+    (at 150 135 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-oled-scl")
+  )
+
+  ;; ============================================
+  ;; RASPBERRY PI GPIO HEADER
+  ;; ============================================
+
+  (text "RASPBERRY PI GPIO 40 PINS"
+    (exclude_from_sim no)
+    (at 150 165 0)
+    (effects
+      (font (size 2 2) (thickness 0.4) bold)
+    )
+    (uuid "text-gpio-title")
+  )
+
+  (text "Pin 1  = 3.3V          Pin 2  = 5V"
+    (exclude_from_sim no)
+    (at 150 180 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-gpio-1-2")
+  )
+
+  (text "Pin 3  = SDA (GPIO2)   Pin 4  = 5V"
+    (exclude_from_sim no)
+    (at 150 190 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-gpio-3-4")
+  )
+
+  (text "Pin 5  = SCL (GPIO3)   Pin 6  = GND"
+    (exclude_from_sim no)
+    (at 150 200 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-gpio-5-6")
+  )
+
+  (text "Pin 8  = TX (GPIO14)   Pin 10 = RX (GPIO15)"
+    (exclude_from_sim no)
+    (at 150 210 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-gpio-8-10")
+  )
+
+  (text "Pin 11 = GPIO17 (BTN1) Pin 13 = GPIO27 (BTN2)"
+    (exclude_from_sim no)
+    (at 150 220 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-gpio-11-13")
+  )
+
+  (text "Pin 15 = GPIO22 (BTN3) Pin 16 = GPIO23 (LED1)"
+    (exclude_from_sim no)
+    (at 150 230 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-gpio-15-16")
+  )
+
+  (text "Pin 18 = GPIO24 (LED2)"
+    (exclude_from_sim no)
+    (at 150 240 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-gpio-18")
+  )
+
+  ;; ============================================
+  ;; BOM
+  ;; ============================================
+
+  (text "BILL OF MATERIALS"
+    (exclude_from_sim no)
+    (at 30 270 0)
+    (effects
+      (font (size 2 2) (thickness 0.4) bold)
+    )
+    (uuid "text-bom-title")
+  )
+
+  (text "U1: AMS1117-5.0 (régulateur LDO 5V)"
+    (exclude_from_sim no)
+    (at 30 285 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-u1")
+  )
+
+  (text "D1: 1N4007 (diode protection)"
+    (exclude_from_sim no)
+    (at 30 295 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-d1")
+  )
+
+  (text "C1: 100µF/25V électrolytique"
+    (exclude_from_sim no)
+    (at 30 305 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-c1")
+  )
+
+  (text "C2: 10µF/10V électrolytique"
+    (exclude_from_sim no)
+    (at 30 315 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-c2")
+  )
+
+  (text "R1: 1kΩ, R2: 2kΩ (protection RX)"
+    (exclude_from_sim no)
+    (at 30 325 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-r1r2")
+  )
+
+  (text "R3, R4: 330Ω (limitation LEDs)"
+    (exclude_from_sim no)
+    (at 30 335 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-r3r4")
+  )
+
+  (text "J1: DC Jack 5.5x2.1mm"
+    (exclude_from_sim no)
+    (at 150 285 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-j1")
+  )
+
+  (text "J2: DIN 5 broches 180°"
+    (exclude_from_sim no)
+    (at 150 295 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-j2")
+  )
+
+  (text "J3: Header GPIO 2x20 femelle"
+    (exclude_from_sim no)
+    (at 150 305 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-j3")
+  )
+
+  (text "J4: Connecteur OLED 4 pins"
+    (exclude_from_sim no)
+    (at 150 315 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-j4")
+  )
+
+  (text "SW1-3: Boutons tactiles 6x6mm"
+    (exclude_from_sim no)
+    (at 150 325 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-sw")
+  )
+
+  (text "LED1-2: LEDs 3mm"
+    (exclude_from_sim no)
+    (at 150 335 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "text-bom-leds")
+  )
+
+)
