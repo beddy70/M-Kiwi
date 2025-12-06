@@ -175,6 +175,8 @@ Le Minitel fonctionne en logique 5V tandis que le Raspberry Pi utilise du 3.3V. 
 
 **⚠️ Attention !** Ne jamais connecter la broche 4 du DIN (8-12V) au Raspberry Pi !
 
+> **Info** : Exemple de level shifter compatible : [Gebildet 3.3V-5V 8 Channels Bi-Directional](https://www.amazon.fr/Gebildet-3-3V-5V-Channels-Converter-Bi-Directional/dp/B07RY15XMJ)
+
 ### 2. Configuration Série
 
 Activez l'UART et désactivez la console série :
