@@ -118,11 +118,62 @@ Pin 10 (RX)   ──► Minitel TX
 Pin 2  (5V)   ──► Minitel 5V (si nécessaire)
 ```
 
-**Connexion RS232 vers DIN (Minitel) :**
+**Connexion avec le Minitel :**
 
-![Schéma de câblage DIN-Serial](images/montage1-din-serial.png)
+Le Minitel fonctionne en logique 5V tandis que le Raspberry Pi utilise du 3.3V. Un **level shifter bidirectionnel** est nécessaire pour la conversion des niveaux logiques. Un pull-up de 2.2kΩ sur la ligne RX (côté 3.3V) améliore la stabilité de réception clavier.
 
-**⚠️ Attention !** Le Minitel ne possède pas de sortie 5V. La broche 5 du Minitel fournit des tensions supérieures (entre 8,5V à 12V en fonction du modèle).
+```
+                RASPBERRY PI                          LEVEL SHIFTER                           MINITEL
+                (3.3V Logic)                         (Bidirectionnel)                        (5V Logic)
+                                                
+                ┌─────────────┐                  ┌─────────────────────┐                  ┌─────────────┐
+                │             │                  │                     │                  │             │
+   3.3V (Pin 1) ┼──────┬──────┼──────────────────┤ LV            HV    ├──────────────────┼── 5V        │
+                │      │      │                  │                     │                  │             │
+   GND (Pin 6) ─┼──────┼──────┼──────────────────┤ GND          GND    ├──────────────────┼── GND       │
+                │      │      │                  │                     │                  │  (DIN 2,5)  │
+                │      │      │                  │                     │                  │             │
+   Pin 8 (TX) ──┼──────┼──────┼──────────────────┤ LV1          HV1    ├──────────────────┼──► RX       │
+   GPIO14       │      │      │                  │                     │                  │  (DIN 1)    │
+                │      │      │                  │                     │                  │             │
+                │    2.2kΩ    │                  │                     │                  │             │
+                │      └┬┐    │                  │                     │                  │             │
+                │       ││    │                  │                     │                  │             │
+                │      ┌┴┘    │                  │                     │                  │             │
+                │       │     │                  │                     │                  │             │
+   Pin 10 (RX) ◄┼───────┴─────┼──────────────────┤ LV2          HV2    ├──────────────────┼─── TX       │
+   GPIO15       │             │                  │                     │                  │  (DIN 3)    │
+                │             │                  │                     │                  │             │
+                └─────────────┘                  └─────────────────────┘                  └─────────────┘
+                                                
+                Pull-up 2.2kΩ vers 3.3V
+                sur ligne RX uniquement
+                                                
+                     DÉTAIL CONNECTEUR DIN 5 BROCHES (vue face soudure)
+                                                
+                                      ┌───────────┐
+                                     /  1     2    \
+                                    │      ●       │
+                                     \  3     4   /
+                                      └────5─────┘
+                                                
+                                 Pin │ Signal      │ Connexion
+                                 ────┼─────────────┼────────────────
+                                  1  │ RX (entrée) │ ← HV1 (depuis RPi TX)
+                                  2  │ GND         │ → GND commun
+                                  3  │ TX (sortie) │ → HV2 (vers RPi RX)
+                                  4  │ 8-12V       │ ⚠️ NON CONNECTÉ
+                                  5  │ GND         │ → GND commun
+```
+
+| Raspberry Pi | Level Shifter LV | Level Shifter HV | Minitel DIN |
+|--------------|------------------|------------------|-------------|
+| 3.3V (Pin 1) | LV | HV | - |
+| GND (Pin 6) | GND | GND | Pin 2, 5 |
+| TX (Pin 8) | LV1 | HV1 | Pin 1 (RX) |
+| RX (Pin 10) + **pull-up 2.2kΩ → 3.3V** | LV2 | HV2 | Pin 3 (TX) |
+
+**⚠️ Attention !** Ne jamais connecter la broche 4 du DIN (8-12V) au Raspberry Pi !
 
 ### 2. Configuration Série
 
