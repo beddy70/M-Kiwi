@@ -594,5 +594,5 @@ Ce projet est ouvert aux contributions ! N'hésitez pas à :
 - Améliorer la documentation
 
 **Auteur** : Eddy BRIERE (peassembler@yahoo.fr)  
-**Version** : 0.6  
+**Version** : Client 0.7, Serveur 0.4  
 **Licence** : Open Source
