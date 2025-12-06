@@ -118,6 +118,8 @@ Pin 10 (RX)   ──► Minitel TX
 Pin 2  (5V)   ──► Minitel 5V (si nécessaire)
 ```
 
+**Connexion RS232 vers DIN (Minitel) :**
+
 ![Schéma de câblage DIN-Serial](images/montage1-din-serial.png)
 
 **⚠️ Attention !** Le Minitel ne possède pas de sortie 5V. La broche 5 du Minitel fournit des tensions supérieures (entre 8,5V à 12V en fonction du modèle).
