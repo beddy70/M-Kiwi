@@ -179,11 +179,23 @@ Le fichier `config.json` contient toute la configuration du serveur et du client
   },
   "path": {
     "root_path": "./root/",
-    "plugins_path": "./plugins/"
+    "plugins_path": "./plugins/",
+    "mmodules_config_path": "./mmodules_config/"
   },
   "client": {
     "serial_port": "/dev/serial0",
     "serial_baud": 9600,
+    "serial_databits": "cs7",
+    "serial_parity": "parenb",
+    "serial_parity_odd": "-parodd",
+    "serial_stopbits": "-cstopb",
+    "serial_flow_hw": "-crtscts",
+    "serial_flow_sw": "-ixon -ixoff",
+    "serial_echo": "-echo",
+    "serial_icanon": "-icanon",
+    "serial_opost": "-opost",
+    "serial_chunk_size": 128,
+    "serial_chunk_delay_ms": 15,
     "joystick_device_0": "/dev/input/js0",
     "joystick_device_1": "/dev/input/js1",
     "joystick_enabled": true,
@@ -209,13 +221,45 @@ Le fichier `config.json` contient toute la configuration du serveur et du client
 | `server.defaultCharset` | string | Encodage des pages (défaut: utf-8) |
 | `path.root_path` | string | Répertoire des pages VTML |
 | `path.plugins_path` | string | Répertoire des MModules |
+| `path.mmodules_config_path` | string | Répertoire des configurations MModules |
 | `client.serial_port` | string | Port série du Minitel |
 | `client.serial_baud` | int | Vitesse: 1200, 4800 ou 9600 |
+| `client.serial_databits` | string | Bits de données: cs5, cs6, cs7, cs8 (défaut: cs7) |
+| `client.serial_parity` | string | Parité: parenb (activée) ou -parenb (désactivée) |
+| `client.serial_parity_odd` | string | Parité impaire: parodd ou -parodd (défaut: -parodd = paire) |
+| `client.serial_stopbits` | string | Stop bits: cstopb (2) ou -cstopb (1, défaut) |
+| `client.serial_flow_hw` | string | Flow control matériel: crtscts ou -crtscts (défaut) |
+| `client.serial_flow_sw` | string | Flow control logiciel: "ixon ixoff" ou "-ixon -ixoff" (défaut) |
+| `client.serial_echo` | string | Echo local: echo ou -echo (défaut) |
+| `client.serial_icanon` | string | Mode canonique: icanon ou -icanon (défaut) |
+| `client.serial_opost` | string | Post-processing sortie: opost ou -opost (défaut) |
+| `client.serial_chunk_size` | int | Taille des blocs d'envoi en bytes (défaut: 128) |
+| `client.serial_chunk_delay_ms` | int | Délai entre blocs en ms (défaut: 15, utile pour Minitel Philips) |
 | `client.joystick_enabled` | bool | Activer le support joystick USB |
 | `client.joystick_device_0` | string | Périphérique joystick joueur 0 |
 | `client.joystick_device_1` | string | Périphérique joystick joueur 1 |
 | `client.joystick_mapping_0` | object | Mapping boutons/axes joueur 0 |
 | `client.joystick_mapping_1` | object | Mapping boutons/axes joueur 1 |
+
+#### Configuration série pour Minitel
+
+La configuration par défaut est **7E1** (7 bits, parité paire, 1 stop bit), compatible avec tous les Minitel :
+
+| Paramètre | Valeur | Description |
+|-----------|--------|-------------|
+| `serial_databits` | `cs7` | 7 bits de données (protocole Videotex) |
+| `serial_parity` | `parenb` | Parité activée |
+| `serial_parity_odd` | `-parodd` | Parité paire (Even) |
+| `serial_stopbits` | `-cstopb` | 1 stop bit |
+
+#### Compatibilité Minitel Philips
+
+Les Minitel 2 Philips sont plus sensibles au débit que les Alcatel. Si vous rencontrez des problèmes d'affichage (caractères manquants, corruption), ajustez le throttling :
+
+```json
+"serial_chunk_size": 64,
+"serial_chunk_delay_ms": 20
+```
 
 ## 🚀 Démarrage Rapide
 
