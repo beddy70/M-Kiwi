@@ -1378,6 +1378,19 @@ function showBestScore() {
 | `joystick.setThreshold(value)` | `value`: int (0-32767) | void | Seuil de détection des axes |
 | `joystick.printMapping()` | - | void | Affiche le mapping actuel (debug) |
 | `joystick.resetMapping()` | - | void | Réinitialise le mapping par défaut |
+| `joystick.rumble(durationMs, intensity)` | `durationMs`: int, `intensity`: float (0.0-1.0, optionnel) | void | Fait vibrer la manette |
+| `joystick.isRumbleSupported()` | - | bool | Vérifie si le rumble est supporté |
+
+**Exemple rumble :**
+```javascript
+// Vibration courte lors d'une collision
+if (joystick.isRumbleSupported()) {
+  joystick.rumble(200);        // 200ms, intensité max
+  joystick.rumble(100, 0.5);   // 100ms, intensité 50%
+}
+```
+
+**Note** : Le rumble nécessite une manette compatible (Xbox, PlayStation, etc.) et les permissions d'accès aux fichiers `/sys/class/leds/`.
 
 ---
 

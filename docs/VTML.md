@@ -990,6 +990,29 @@ Exécute du JavaScript côté serveur. Permet de générer du contenu dynamique.
 | `debug(msg)`                  | Affiche un message dans la console Java               |
 | `getElementById(id)`          | Récupère un composant par son attribut `id`           |
 | `getElementByName(name)`      | Récupère un composant par son attribut `name`         |
+| `gotoPage(url)`               | Navigation programmatique vers une autre page         |
+| `setFocus(componentName)`     | Donne le focus à un composant par son nom             |
+| `enableLineZero(bool)`        | Active/désactive l'écriture sur la ligne 0 (status)   |
+| `isLineZeroEnabled()`         | Vérifie si l'écriture sur la ligne 0 est autorisée    |
+
+#### Protection Ligne 0
+
+La ligne 0 du Minitel est la ligne de status système. Par défaut, l'écriture y est **interdite** pour éviter des problèmes d'affichage.
+
+```javascript
+// Autoriser temporairement l'écriture sur la ligne 0
+enableLineZero(true);
+
+// ... écrire sur la ligne 0 ...
+
+// Réactiver la protection
+enableLineZero(false);
+
+// Vérifier l'état
+if (isLineZeroEnabled()) {
+  debug("Ligne 0 accessible");
+}
+```
 
 #### API Storage (persistant entre pages)
 
