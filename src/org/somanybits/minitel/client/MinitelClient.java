@@ -108,7 +108,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         String server = args[0];
         int port = (args.length >= 2) ? Integer.parseInt(args[1]) : 8080;
 
-        logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "Minitel Client  version" + VERSION);
+        logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "Minitel Client  version " + VERSION);
         logmgr.addLog(LogManager.ANSI_WHITE + "Connection to " + server + ":" + port + "/");
         new MinitelClient(server, port);
     }
