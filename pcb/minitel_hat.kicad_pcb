@@ -12,8 +12,8 @@
     (date "2024-12-06")
     (rev "1.0")
     (company "M-Kiwi Project")
-    (comment 1 "PROTOTYPE NON TESTÉ")
-    (comment 2 "Dimensions: 65mm x 56mm (format HAT standard)")
+    (comment 1 "PROTOTYPE NON TESTE")
+    (comment 2 "Dimensions: 65mm x 56mm")
   )
   (layers
     (0 "F.Cu" signal)
@@ -36,15 +36,6 @@
     (47 "F.CrtYd" user "F.Courtyard")
     (48 "B.Fab" user)
     (49 "F.Fab" user)
-    (50 "User.1" user)
-    (51 "User.2" user)
-    (52 "User.3" user)
-    (53 "User.4" user)
-    (54 "User.5" user)
-    (55 "User.6" user)
-    (56 "User.7" user)
-    (57 "User.8" user)
-    (58 "User.9" user)
   )
   (setup
     (pad_to_mask_clearance 0)
@@ -102,55 +93,55 @@
   (net 12 "LED1")
   (net 13 "LED2")
 
-  ;; Board outline - HAT Raspberry Pi standard 65x56mm
   (gr_rect
     (start 0 0)
     (end 65 56)
     (stroke (width 0.15) (type solid))
     (fill none)
     (layer "Edge.Cuts")
-    (uuid "board-outline")
+    (uuid "e1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c6")
   )
 
-  ;; Mounting holes M2.5
   (gr_circle
     (center 3.5 3.5)
     (end 4.75 3.5)
     (stroke (width 0.15) (type solid))
     (fill none)
     (layer "Edge.Cuts")
-    (uuid "hole-1")
+    (uuid "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c7")
   )
+
   (gr_circle
     (center 61.5 3.5)
     (end 62.75 3.5)
     (stroke (width 0.15) (type solid))
     (fill none)
     (layer "Edge.Cuts")
-    (uuid "hole-2")
+    (uuid "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c8")
   )
+
   (gr_circle
     (center 3.5 52.5)
     (end 4.75 52.5)
     (stroke (width 0.15) (type solid))
     (fill none)
     (layer "Edge.Cuts")
-    (uuid "hole-3")
+    (uuid "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c9")
   )
+
   (gr_circle
     (center 61.5 52.5)
     (end 62.75 52.5)
     (stroke (width 0.15) (type solid))
     (fill none)
     (layer "Edge.Cuts")
-    (uuid "hole-4")
+    (uuid "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5ca")
   )
 
-  ;; Title on silkscreen
   (gr_text "M-KIWI HAT v1.0"
     (at 32.5 5 0)
     (layer "F.SilkS")
-    (uuid "title-text")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567891")
     (effects
       (font (size 2 2) (thickness 0.3))
       (justify center)
@@ -160,18 +151,17 @@
   (gr_text "PROTOTYPE"
     (at 32.5 51 0)
     (layer "F.SilkS")
-    (uuid "prototype-text")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567892")
     (effects
       (font (size 1.5 1.5) (thickness 0.2))
       (justify center)
     )
   )
 
-  ;; Component labels
-  (gr_text "GPIO"
+  (gr_text "GPIO 40pin"
     (at 32.5 15 0)
     (layer "F.SilkS")
-    (uuid "gpio-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567893")
     (effects
       (font (size 1 1) (thickness 0.15))
       (justify center)
@@ -181,7 +171,7 @@
   (gr_text "DIN"
     (at 10 35 0)
     (layer "F.SilkS")
-    (uuid "din-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567894")
     (effects
       (font (size 1 1) (thickness 0.15))
       (justify center)
@@ -191,7 +181,7 @@
   (gr_text "OLED"
     (at 55 35 0)
     (layer "F.SilkS")
-    (uuid "oled-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567895")
     (effects
       (font (size 1 1) (thickness 0.15))
       (justify center)
@@ -201,7 +191,7 @@
   (gr_text "BTN1"
     (at 20 45 0)
     (layer "F.SilkS")
-    (uuid "btn1-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567896")
     (effects
       (font (size 0.8 0.8) (thickness 0.12))
       (justify center)
@@ -211,7 +201,7 @@
   (gr_text "BTN2"
     (at 30 45 0)
     (layer "F.SilkS")
-    (uuid "btn2-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567897")
     (effects
       (font (size 0.8 0.8) (thickness 0.12))
       (justify center)
@@ -221,7 +211,7 @@
   (gr_text "BTN3"
     (at 40 45 0)
     (layer "F.SilkS")
-    (uuid "btn3-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567898")
     (effects
       (font (size 0.8 0.8) (thickness 0.12))
       (justify center)
@@ -231,7 +221,7 @@
   (gr_text "LED1"
     (at 50 45 0)
     (layer "F.SilkS")
-    (uuid "led1-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567899")
     (effects
       (font (size 0.8 0.8) (thickness 0.12))
       (justify center)
@@ -241,17 +231,17 @@
   (gr_text "LED2"
     (at 57 45 0)
     (layer "F.SilkS")
-    (uuid "led2-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef123456789a")
     (effects
       (font (size 0.8 0.8) (thickness 0.12))
       (justify center)
     )
   )
 
-  (gr_text "DC IN"
+  (gr_text "DC IN 7-12V"
     (at 10 25 0)
     (layer "F.SilkS")
-    (uuid "dcin-label")
+    (uuid "a1b2c3d4-e5f6-7890-abcd-ef123456789b")
     (effects
       (font (size 1 1) (thickness 0.15))
       (justify center)
