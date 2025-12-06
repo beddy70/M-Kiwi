@@ -82,6 +82,33 @@ public class Config {
         public String serial_port = "/dev/serial0";
         /** Vitesse du port série en bauds (1200, 4800 ou 9600) */
         public int serial_baud = 9600;
+        
+        // Configuration stty détaillée pour le port série
+        /** Nombre de bits de données (cs5, cs6, cs7, cs8) - défaut: cs7 pour Minitel */
+        public String serial_databits = "cs7";
+        /** Activer la parité (parenb) ou désactiver (-parenb) */
+        public String serial_parity = "parenb";
+        /** Parité impaire (parodd) ou paire (-parodd) */
+        public String serial_parity_odd = "-parodd";
+        /** 2 stop bits (cstopb) ou 1 stop bit (-cstopb) */
+        public String serial_stopbits = "-cstopb";
+        /** Contrôle de flux matériel RTS/CTS (crtscts ou -crtscts) */
+        public String serial_flow_hw = "-crtscts";
+        /** Contrôle de flux logiciel XON/XOFF ("ixon ixoff" ou "-ixon -ixoff") */
+        public String serial_flow_sw = "-ixon -ixoff";
+        /** Echo local (echo ou -echo) */
+        public String serial_echo = "-echo";
+        /** Mode canonique (icanon ou -icanon) */
+        public String serial_icanon = "-icanon";
+        /** Post-processing sortie (opost ou -opost) */
+        public String serial_opost = "-opost";
+        
+        // Throttling pour compatibilité Minitel Philips
+        /** Taille des blocs d'envoi en bytes (défaut: 128) */
+        public int serial_chunk_size = 128;
+        /** Délai entre les blocs en ms (défaut: 10, augmenter pour Philips) */
+        public int serial_chunk_delay_ms = 10;
+        
         /** Périphérique joystick Linux pour joueur 0 (ex: /dev/input/js0) */
         public String joystick_device_0 = "/dev/input/js0";
         /** Périphérique joystick Linux pour joueur 1 (ex: /dev/input/js1) */

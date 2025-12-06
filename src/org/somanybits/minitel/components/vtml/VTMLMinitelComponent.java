@@ -38,7 +38,8 @@ public class VTMLMinitelComponent extends ModelMComponent {
         try {
             ByteArrayOutputStream divdata = new ByteArrayOutputStream();
             
-            divdata.write( GetTeletelCode.setMode(Teletel.MODE_VIDEOTEXT));
+            // Passer en mode texte (G0) et effacer l'écran
+            divdata.write(GetTeletelCode.setMode(GetTeletelCode.MODE_TEXT));
             divdata.write(GetTeletelCode.clear());
             divdata.write(getTextContent().getBytes());
             //divdata.write(GetTeletelCode.clearLineZero());

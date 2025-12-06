@@ -68,8 +68,20 @@ public class MinitelConnection implements Closeable {
     private String device = "/dev/serial0";
     private int baud = BAUD_1200;
 
-    private final boolean rtscts = false;
-    private final boolean xonxoff = false;
+    // Configuration stty paramétrable
+    private String databits = "cs7";
+    private String parity = "parenb";
+    private String parityOdd = "-parodd";
+    private String stopbits = "-cstopb";
+    private String flowHw = "-crtscts";
+    private String flowSw = "-ixon -ixoff";
+    private String echo = "-echo";
+    private String icanon = "-icanon";
+    private String opost = "-opost";
+    
+    // Throttling pour compatibilité Minitel Philips
+    private int chunkSize = 128;
+    private int chunkDelayMs = 10;
 
     private RandomAccessFile raf;
     private InputStream in;
@@ -95,8 +107,64 @@ public class MinitelConnection implements Closeable {
         this.device = device;
         this.baud = BAUD_1200;
     }
+    
+    /**
+     * Configure les paramètres stty du port série.
+     * Permet une configuration complète via config.json.
+     * 
+     * @param databits Bits de données (cs5, cs6, cs7, cs8)
+     * @param parity Parité (parenb ou -parenb)
+     * @param parityOdd Parité impaire (parodd ou -parodd)
+     * @param stopbits Stop bits (cstopb ou -cstopb)
+     * @param flowHw Flux matériel (crtscts ou -crtscts)
+     * @param flowSw Flux logiciel ("ixon ixoff" ou "-ixon -ixoff")
+     * @param echo Echo (echo ou -echo)
+     * @param icanon Mode canonique (icanon ou -icanon)
+     * @param opost Post-processing (opost ou -opost)
+     */
+    public void setSttyConfig(String databits, String parity, String parityOdd, 
+                              String stopbits, String flowHw, String flowSw,
+                              String echo, String icanon, String opost) {
+        this.databits = databits;
+        this.parity = parity;
+        this.parityOdd = parityOdd;
+        this.stopbits = stopbits;
+        this.flowHw = flowHw;
+        this.flowSw = flowSw;
+        this.echo = echo;
+        this.icanon = icanon;
+        this.opost = opost;
+    }
+    
+    /**
+     * Configure le throttling pour la compatibilité avec les Minitel Philips.
+     * @param chunkSize Taille des blocs d'envoi en bytes
+     * @param chunkDelayMs Délai entre les blocs en millisecondes
+     */
+    public void setThrottling(int chunkSize, int chunkDelayMs) {
+        this.chunkSize = chunkSize;
+        this.chunkDelayMs = chunkDelayMs;
+    }
 
     public void open() throws IOException, InterruptedException {
+        // Afficher la configuration du port série
+        System.out.println("╔══════════════════════════════════════════════════════════════╗");
+        System.out.println("║           CONFIGURATION PORT SÉRIE MINITEL                   ║");
+        System.out.println("╠══════════════════════════════════════════════════════════════╣");
+        System.out.println("║ Device     : " + padRight(device, 48) + "║");
+        System.out.println("║ Vitesse    : " + padRight(baud + " bauds", 48) + "║");
+        System.out.println("╠══════════════════════════════════════════════════════════════╣");
+        System.out.println("║ Databits   : " + padRight(databits, 48) + "║");
+        System.out.println("║ Parité     : " + padRight(parity + " " + parityOdd, 48) + "║");
+        System.out.println("║ Stop bits  : " + padRight(stopbits, 48) + "║");
+        System.out.println("║ Flow HW    : " + padRight(flowHw, 48) + "║");
+        System.out.println("║ Flow SW    : " + padRight(flowSw, 48) + "║");
+        System.out.println("║ Echo       : " + padRight(echo, 48) + "║");
+        System.out.println("║ Icanon     : " + padRight(icanon, 48) + "║");
+        System.out.println("║ Opost      : " + padRight(opost, 48) + "║");
+        System.out.println("╠══════════════════════════════════════════════════════════════╣");
+        System.out.println("║ Throttling : " + padRight(chunkSize + " bytes, " + chunkDelayMs + "ms delay", 48) + "║");
+        System.out.println("╚══════════════════════════════════════════════════════════════╝");
 
         configureLine_7E1();
 
@@ -104,6 +172,13 @@ public class MinitelConnection implements Closeable {
         this.in = new BufferedInputStream(new FileInputStream(raf.getFD()));
         this.out = new BufferedOutputStream(new FileOutputStream(raf.getFD()));
         startReader();
+        
+        System.out.println("✅ Port série ouvert avec succès");
+    }
+    
+    private static String padRight(String s, int n) {
+        if (s == null) s = "";
+        return String.format("%-" + n + "s", s);
     }
 
     /**
@@ -234,13 +309,12 @@ public class MinitelConnection implements Closeable {
     }
 
     private void configureLine_7E1() throws IOException, InterruptedException {
-        String flowHw = rtscts ? "crtscts" : "-crtscts";
-        String flowSw = xonxoff ? "ixon ixoff" : "-ixon -ixoff";
-
         // IMPORTANT: ne pas utiliser 'raw' (forcerait cs8 -parenb)
+        // Configuration entièrement paramétrable via config.json
         String cmd = String.format(
-                "stty -F %s %d cs7 parenb -parodd -cstopb %s %s  -icanon",
-                device, baud, flowHw, flowSw
+                "stty -F %s %d %s %s %s %s %s %s %s %s %s",
+                device, baud, databits, parity, parityOdd, stopbits, 
+                flowHw, flowSw, echo, icanon, opost
         );
 
         p = new ProcessBuilder("sh", "-c", cmd)
@@ -257,8 +331,30 @@ public class MinitelConnection implements Closeable {
     }
 
     public void writeBytes(byte[] data) throws IOException {
-        out.write(data);
-        out.flush();
+        // Envoi par blocs avec throttling pour éviter de saturer le Minitel
+        // Les Minitel Philips sont plus sensibles au débit que les Alcatel
+        
+        if (chunkDelayMs <= 0 || data.length <= chunkSize) {
+            // Pas de throttling ou données petites
+            out.write(data);
+            out.flush();
+        } else {
+            // Envoi par blocs avec pause
+            for (int offset = 0; offset < data.length; offset += chunkSize) {
+                int len = Math.min(chunkSize, data.length - offset);
+                out.write(data, offset, len);
+                out.flush();
+                
+                if (offset + len < data.length) {
+                    try {
+                        Thread.sleep(chunkDelayMs);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     public void writeByte(byte data) throws IOException {

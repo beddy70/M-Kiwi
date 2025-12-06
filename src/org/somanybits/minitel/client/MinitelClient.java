@@ -125,6 +125,23 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         System.out.println("📋 Config: Serial " + serialPort + " @ " + serialBaud + " baud");
         
         mc = new MinitelConnection(serialPort, serialBaud);
+        
+        // Appliquer la configuration stty depuis config.json
+        mc.setSttyConfig(
+            cfg.client.serial_databits,
+            cfg.client.serial_parity,
+            cfg.client.serial_parity_odd,
+            cfg.client.serial_stopbits,
+            cfg.client.serial_flow_hw,
+            cfg.client.serial_flow_sw,
+            cfg.client.serial_echo,
+            cfg.client.serial_icanon,
+            cfg.client.serial_opost
+        );
+        
+        // Appliquer le throttling pour compatibilité Minitel Philips
+        mc.setThrottling(cfg.client.serial_chunk_size, cfg.client.serial_chunk_delay_ms);
+        System.out.println("📋 Throttling: " + cfg.client.serial_chunk_size + " bytes, " + cfg.client.serial_chunk_delay_ms + "ms delay");
 
         mc.open();
 

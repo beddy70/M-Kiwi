@@ -774,6 +774,8 @@ public class VTMLLayersComponent extends ModelMComponent {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             int currentColor = 7;  // Couleur courante (blanc par défaut)
             
+            boolean inMosaicMode = false;  // Suivi du mode courant
+            
             for (int y = 0; y < height; y++) {
                 out.write(GetTeletelCode.setCursor(left, top + y));
                 
@@ -785,14 +787,22 @@ public class VTMLLayersComponent extends ModelMComponent {
                         out.write(GetTeletelCode.setTextColor(currentColor));
                     }
                     
-                    // Pour le rendu initial, on envoie le code de mode avant chaque caractère mosaïque
-                    if (mosaicMode[y][x]) {
-                        out.write(0x0E);  // Mode semi-graphique
-                        out.write(buffer[y][x]);
+                    // Gérer le mode mosaïque de façon optimisée (éviter les basculements répétés)
+                    if (mosaicMode[y][x] && !inMosaicMode) {
+                        out.write(0x0E);  // Passer en mode semi-graphique
+                        inMosaicMode = true;
+                    } else if (!mosaicMode[y][x] && inMosaicMode) {
                         out.write(0x0F);  // Retour mode texte
-                    } else {
-                        out.write(buffer[y][x]);
+                        inMosaicMode = false;
                     }
+                    
+                    out.write(buffer[y][x]);
+                }
+                
+                // Fin de ligne : repasser en mode texte si nécessaire
+                if (inMosaicMode) {
+                    out.write(0x0F);
+                    inMosaicMode = false;
                 }
             }
             
@@ -822,6 +832,7 @@ public class VTMLLayersComponent extends ModelMComponent {
             
             int lastX = -1, lastY = -1;
             int currentColor = -1;  // Couleur courante inconnue au départ
+            boolean inMosaicMode = false;  // Suivi du mode courant
             
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
@@ -833,35 +844,43 @@ public class VTMLLayersComponent extends ModelMComponent {
                     if (needsRedraw) {
                         // Positionner le curseur si nécessaire
                         if (lastY != y || lastX != x - 1) {
+                            // Avant de repositionner, repasser en mode texte si nécessaire
+                            if (inMosaicMode) {
+                                out.write(0x0F);
+                                inMosaicMode = false;
+                            }
                             out.write(GetTeletelCode.setCursor(left + x, top + y));
                         }
                         
                         // Changer la couleur si nécessaire (ignorer -1 = pas de couleur)
                         int cellColor = colorBuffer[y][x];
                         if (cellColor >= 0) {
-                            // Toujours envoyer le code couleur pour les caractères colorés
-                            // car on ne peut pas savoir l'état réel du Minitel après un espace
                             if (cellColor != currentColor || previousColorBuffer[y][x] < 0) {
                                 currentColor = cellColor;
                                 out.write(GetTeletelCode.setTextColor(currentColor));
                             }
                         }
                         
-                        // Pour chaque caractère mosaïque, envoyer mode avant/après
-                        boolean needMosaic = mosaicMode[y][x] || (previousMosaicMode[y][x] && buffer[y][x] == ' ');
-                        
-                        if (needMosaic) {
-                            out.write(0x0E);  // Mode semi-graphique
-                            out.write(buffer[y][x]);
+                        // Gérer le mode mosaïque de façon optimisée
+                        if (mosaicMode[y][x] && !inMosaicMode) {
+                            out.write(0x0E);  // Passer en mode semi-graphique
+                            inMosaicMode = true;
+                        } else if (!mosaicMode[y][x] && inMosaicMode) {
                             out.write(0x0F);  // Retour mode texte
-                        } else {
-                            out.write(buffer[y][x]);
+                            inMosaicMode = false;
                         }
+                        
+                        out.write(buffer[y][x]);
                         
                         lastX = x;
                         lastY = y;
                     }
                 }
+            }
+            
+            // Fin du rendu : repasser en mode texte si nécessaire
+            if (inMosaicMode) {
+                out.write(0x0F);
             }
             
             // Copier tout le buffer dans previousBuffer pour la prochaine comparaison
