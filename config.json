@@ -21,7 +21,7 @@
     "serial_icanon": "-icanon",
     "serial_opost": "-opost",
     "serial_chunk_size": 128,
-    "serial_chunk_delay_ms": 15,
+    "serial_chunk_delay_ms": 200,
     "joystick_device_0": "/dev/input/js0",
     "joystick_device_1": "/dev/input/js1",
     "joystick_enabled": true,

@@ -24,7 +24,7 @@
                 <row>#  Btn 0: ACTION1  Btn 1: ACTION2      #</row>
                 <row>########################################</row>
                 <row>#  [1] Inverser   [2] Reset  [3] Arcade#</row>
-                <row>#  [6] B0=A1 [7] B0=A2 [8] B1=A1 [0]VIBR#</row>
+                <row>#  [6] B0=A1 [7] B0=A2 [8] B1=A1 [9]B1A2#</row>
                 <row>#  [SOMMAIRE] Retour menu              #</row>
                 <row>########################################</row>
             </map>
@@ -102,7 +102,8 @@
             <keypad action="ACTION1" key=" " event="onAction1"/>
             <keypad action="ACTION2" key="X" event="onAction2"/>
             
-            <!-- Pas de timer nécessaire, les événements joystick suffisent -->
+            <!-- Timer pour initialiser le joystick -->
+            <timer event="initJoystick" interval="100"></timer>
             
             <script>
                 // Variables d'état
@@ -113,8 +114,20 @@
                 var configStep = 0;
                 var configActions = ["ACTION1", "ACTION2"];
 
+                var joystickInitialized = false;
+
                 function domReady() {
                     debug("Page test joystick chargee");
+                }
+
+                function initJoystick() {
+                    if (!joystickInitialized) {
+                        joystickInitialized = true;
+                        var l = getLayers();
+                        if (l != null) {
+                            l.setText("status", "Joystick initialise - Pret!");
+                        }
+                    }
                 }
 
                 // Fonctions appelées par le joystick/clavier
@@ -302,17 +315,6 @@
                     if (l) { l.setText("mapBtn1", "ACTION2"); l.setText("status", "Btn 1 = ACTION2"); l.beep(); }
                 }
                 
-                // Test vibration
-                function testRumble() {
-                    var l = getLayers();
-                    if (joystick.isRumbleSupported()) {
-                        joystick.rumble(500, 1.0);  // 500ms à 100%
-                        if (l) l.setText("status", "VIBRATION 500ms!");
-                    } else {
-                        if (l) l.setText("status", "Rumble non supporte");
-                    }
-                    if (l) l.beep();
-                }
             </script>
             
             <!-- Raccourcis clavier pour configuration -->
@@ -325,7 +327,6 @@
             <keypad key="7" event="mapBtn0Action2"/>
             <keypad key="8" event="mapBtn1Action1"/>
             <keypad key="9" event="mapBtn1Action2"/>
-            <keypad key="0" event="testRumble"/>
         </layers>
         
         <link key="SOMMAIRE" page="index.vtml"/>

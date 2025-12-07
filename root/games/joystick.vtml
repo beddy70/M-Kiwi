@@ -24,7 +24,7 @@
                 <row>#  Btn 0: ACTION1  Btn 1: ACTION2      #</row>
                 <row>########################################</row>
                 <row>#  [1] Inverser   [2] Reset  [3] Arcade#</row>
-                <row>#  [6] B0=A1 [7] B0=A2 [8] B1=A1 [9]B1A2</row>
+                <row>#  [6] B0=A1 [7] B0=A2 [8] B1=A1 [9]B1A2#</row>
                 <row>#  [SOMMAIRE] Retour menu              #</row>
                 <row>########################################</row>
             </map>
@@ -102,7 +102,8 @@
             <keypad action="ACTION1" key=" " event="onAction1"/>
             <keypad action="ACTION2" key="X" event="onAction2"/>
             
-            <!-- Pas de timer nécessaire, les événements joystick suffisent -->
+            <!-- Timer pour initialiser le joystick -->
+            <timer event="initJoystick" interval="100"></timer>
             
             <script>
                 // Variables d'état
@@ -113,8 +114,20 @@
                 var configStep = 0;
                 var configActions = ["ACTION1", "ACTION2"];
 
+                var joystickInitialized = false;
+
                 function domReady() {
                     debug("Page test joystick chargee");
+                }
+
+                function initJoystick() {
+                    if (!joystickInitialized) {
+                        joystickInitialized = true;
+                        var l = getLayers();
+                        if (l != null) {
+                            l.setText("status", "Joystick initialise - Pret!");
+                        }
+                    }
                 }
 
                 // Fonctions appelées par le joystick/clavier
