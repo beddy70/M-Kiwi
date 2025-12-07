@@ -404,6 +404,29 @@ L'utilitaire propose de tester :
 
 Utilisez ces informations pour configurer le mapping dans `config.json`.
 
+### 5. Installation en tant que services Linux (⚠️ Non testé)
+
+Des scripts sont fournis pour installer M-Kiwi en tant que services systemd sur Raspberry Pi :
+
+```bash
+# Installation
+sudo ./install_services.sh
+
+# Désinstallation
+sudo ./uninstall_services.sh
+```
+
+Une fois installés, les services peuvent être gérés avec `systemctl` :
+
+```bash
+sudo systemctl start mkiwi-server    # Démarrer le serveur
+sudo systemctl start mkiwi-client    # Démarrer le client
+sudo systemctl status mkiwi-server   # Voir le status
+sudo journalctl -u mkiwi-client -f   # Voir les logs
+```
+
+> ⚠️ **Non testé** : Ces scripts sont en cours de développement. Voir [docs/SERVICES.md](docs/SERVICES.md) pour plus de détails.
+
 ## 📝 Format VTML (Videotex Markup Language)
 
 VTML est un langage de markup spécialement conçu pour les contraintes du Minitel (40×25 caractères).
