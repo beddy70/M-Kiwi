@@ -106,6 +106,22 @@ java -version
 
 > **Note** : Sur Raspberry Pi OS Lite, vous pouvez aussi utiliser `openjdk-17-jre` si vous n'avez pas besoin de compiler.
 
+#### Téléchargement des librairies Java
+
+Un script est fourni pour télécharger automatiquement toutes les dépendances Java depuis Maven Central :
+
+```bash
+cd lib
+./download_libs.sh
+```
+
+Librairies téléchargées :
+- **ZXing** 3.5.1 - Génération de QR Codes
+- **Jackson** 2.17.2 - Parsing JSON
+- **Jsoup** 1.18.1 - Parsing HTML/XML (VTML)
+- **JSSC** 2.8.0 - Communication série
+- **Rhino** 1.7.14 - Moteur JavaScript
+
 ## 🔧 Installation et Configuration
 
 ### 1. Connexion Matérielle
