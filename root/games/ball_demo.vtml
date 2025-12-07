@@ -1,39 +1,45 @@
 <minitel>
   <layers id="game" left="0" top="1" width="40" height="24">
-    
+    <chardef name="blocks" type="mosaic">
+      <char>
+          <line>##</line>
+          <line># </line>
+          <line> #</line></char>
+        <char>
+          <line># </line>
+          <line> # </line>
+          <line># </line>
+        </char>
+         <char>
+          <line> #</line>
+          <line># </line>
+          <line> #</line>
+        </char>
+    </chardef>
     <!-- Décor : sol -->
     <map type="char">
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>                                        </row>
-      <row>________________________________________</row>
-      <row>########################################</row>
-      <row>########################################</row>
-      <row>########################################</row>
-      <row>########################################</row>
-      <row>########################################</row>
+      <row repeat="18">                                        </row>
+      <row><putchar index="0" repeat="40" /></row>
+      <row><putchar index="1" repeat="40" /></row>
+      <row><putchar index="2" repeat="40" /></row>
+      <row><putchar index="1" repeat="40" /></row>
+      <row><putchar index="2" repeat="40" /></row>
+      <colormap>
+        <row repeat="18">1111111111111111111111111111111111111111</row>
+        <row>6666666666666666666666666666666666666666</row>
+        <row>6666666666666666666666666666666666666666</row>
+        <row>6666666666666666666666666666666666666666</row>
+        <row>6666666666666666666666666666666666666666</row>
+        <row>6666666666666666666666666666666666666666</row>
+      </colormap>
     </map>
     
     <!-- Sprite balle contour (10 frames) - 10x10 pixels avec écrasement fluide -->
-    <spritedef id="ball" type="bitmap" width="5" height="5">
+    <spritedef id="ball" type="bitmap" width="5" height="12">
       
       <!-- Frame 0 : Balle ronde normale -->
       <sprite>
+        <line>          </line>
         <line>  ######  </line>
         <line> ##    ## </line>
         <line>##      ##</line>
@@ -48,6 +54,7 @@
       
       <!-- Frame 1 : Légère déformation descente -->
       <sprite>
+        <line>          </line>
         <line>  ######  </line>
         <line> ##    ## </line>
         <line> #      # </line>
@@ -62,6 +69,7 @@
       
       <!-- Frame 2 : Étirée descente -->
       <sprite>
+        <line>          </line>
         <line>   ####   </line>
         <line>  ##  ##  </line>
         <line> ##    ## </line>
@@ -77,6 +85,7 @@
       <!-- Frame 3 : Approche sol -->
       <sprite>
         <line>          </line>
+        <line>          </line>
         <line>   ####   </line>
         <line>  ##  ##  </line>
         <line> ##    ## </line>
@@ -91,6 +100,7 @@
       <!-- Frame 4 : Contact sol -->
       <sprite>
         <line>          </line>
+        <line>          </line>
         <line>  ######  </line>
         <line> ##    ## </line>
         <line>#        #</line>
@@ -104,6 +114,7 @@
       
       <!-- Frame 5 : Écrasée légère -->
       <sprite>
+        <line>          </line>
         <line>          </line>
         <line>          </line>
         <line>  ######  </line>
@@ -121,6 +132,7 @@
         <line>          </line>
         <line>          </line>
         <line>          </line>
+        <line>          </line>
         <line> ######## </line>
         <line>#        #</line>
         <line>#        #</line>
@@ -132,6 +144,7 @@
       
       <!-- Frame 7 : Décompression -->
       <sprite>
+        <line>          </line>
         <line>          </line>
         <line>          </line>
         <line>  ######  </line>
@@ -147,6 +160,7 @@
       <!-- Frame 8 : Rebond -->
       <sprite>
         <line>          </line>
+        <line>          </line>
         <line>  ######  </line>
         <line> ##    ## </line>
         <line>#        #</line>
@@ -160,6 +174,7 @@
       
       <!-- Frame 9 : Étirée montée -->
       <sprite>
+        <line>          </line>
         <line>   ####   </line>
         <line>  ##  ##  </line>
         <line> ##    ## </line>

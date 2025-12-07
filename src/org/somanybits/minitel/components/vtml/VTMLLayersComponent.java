@@ -690,22 +690,24 @@ public class VTMLLayersComponent extends ModelMComponent {
         boolean[][] areaMosaicData = area.getMosaicData();
         if (areaData == null) return;
         
+        boolean isFirstArea = areas.indexOf(area) == 0;
+        
         for (int y = 0; y < areaData.length && y < height; y++) {
             for (int x = 0; x < areaData[y].length && x < width; x++) {
                 char c = areaData[y][x];
                 // Ne dessiner que si non-transparent (espace = transparent pour les areas supérieures)
-                if (c != ' ' || areas.indexOf(area) == 0) {
+                if (c != ' ' || isFirstArea) {
                     buffer[y][x] = c;
-                    // Copier la couleur (même pour les espaces, pour réinitialiser)
-                    if (areaColorData != null && y < areaColorData.length && x < areaColorData[y].length) {
-                        int areaColor = areaColorData[y][x];
-                        if (areaColor >= 0) {
-                            colorBuffer[y][x] = areaColor;
-                        }
-                    }
                     // Copier le mode mosaïque si défini
                     if (areaMosaicData != null && y < areaMosaicData.length && x < areaMosaicData[y].length) {
                         mosaicMode[y][x] = areaMosaicData[y][x];
+                    }
+                }
+                // Toujours copier la couleur si définie (même pour les espaces de la première area)
+                if (areaColorData != null && y < areaColorData.length && x < areaColorData[y].length) {
+                    int areaColor = areaColorData[y][x];
+                    if (areaColor >= 0 && (c != ' ' || isFirstArea)) {
+                        colorBuffer[y][x] = areaColor;
                     }
                 }
             }
@@ -778,6 +780,9 @@ public class VTMLLayersComponent extends ModelMComponent {
             
             for (int y = 0; y < height; y++) {
                 out.write(GetTeletelCode.setCursor(left, top + y));
+                // Réinitialiser la couleur après setCursor (le Minitel reset la couleur)
+                currentColor = -1;
+                inMosaicMode = false;
                 
                 for (int x = 0; x < width; x++) {
                     // Changer la couleur si nécessaire (ignorer -1 = pas de couleur)
@@ -850,15 +855,15 @@ public class VTMLLayersComponent extends ModelMComponent {
                                 inMosaicMode = false;
                             }
                             out.write(GetTeletelCode.setCursor(left + x, top + y));
+                            // Réinitialiser la couleur après setCursor (le Minitel reset les attributs)
+                            currentColor = -1;
                         }
                         
                         // Changer la couleur si nécessaire (ignorer -1 = pas de couleur)
                         int cellColor = colorBuffer[y][x];
-                        if (cellColor >= 0) {
-                            if (cellColor != currentColor || previousColorBuffer[y][x] < 0) {
-                                currentColor = cellColor;
-                                out.write(GetTeletelCode.setTextColor(currentColor));
-                            }
+                        if (cellColor >= 0 && cellColor != currentColor) {
+                            currentColor = cellColor;
+                            out.write(GetTeletelCode.setTextColor(currentColor));
                         }
                         
                         // Gérer le mode mosaïque de façon optimisée
