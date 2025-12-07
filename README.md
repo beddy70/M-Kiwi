@@ -534,6 +534,53 @@ String utilisateur = params.get("utilisateur");  // "eddy"
 String niveau = params.get("niveau");            // "admin"
 ```
 
+### Configuration des MModules avec `readConfig()`
+
+Chaque MModule peut avoir son propre fichier de configuration JSON. Le fichier doit être placé dans le répertoire `mmodules_config/` (défini par `mmodules_config_path` dans `config.json`) et nommé `NomDuModule.json`.
+
+**Exemple de fichier de configuration** (`mmodules_config/MonModule.json`) :
+```json
+{
+  "apiKey": "ma-cle-secrete",
+  "maxResults": 50,
+  "dataPath": "/chemin/vers/donnees/"
+}
+```
+
+**Utilisation dans le module :**
+```java
+public class MonModule extends ModelMModule {
+    
+    public MonModule(HashMap params, HttpExchange ex, Path docRoot) {
+        super(params, ex, docRoot);
+    }
+    
+    @Override
+    public String getResponse() {
+        // Charger la configuration
+        JsonNode config = readConfig();
+        
+        if (config != null) {
+            // Lire les valeurs
+            String apiKey = config.get("apiKey").asText();
+            int maxResults = config.get("maxResults").asInt();
+            String dataPath = config.get("dataPath").asText();
+            
+            // Utiliser les valeurs...
+        }
+        
+        return "<minitel>...</minitel>";
+    }
+}
+```
+
+**Méthodes disponibles :**
+
+| Méthode | Description |
+|---------|-------------|
+| `readConfig()` | Charge et retourne le fichier JSON de configuration (`JsonNode`), ou `null` si absent |
+| `getConfigPath()` | Retourne le chemin du fichier de configuration (après appel à `readConfig()`) |
+
 ### Exemples de MModules
 
 - **`ServerStatus.mod`** : Informations système

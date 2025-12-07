@@ -52,7 +52,25 @@ Chaque jeu est identifié par un **GameId** unique (généré par le module). Le
 
 ## Configuration
 
-Lors de la création d'un tableau de scores, vous définissez :
+### Fichier de configuration du module
+
+Le module ServerScore utilise la méthode `readConfig()` pour charger sa configuration depuis le fichier `mmodules_config/ServerScore.json` :
+
+```json
+{
+  "dataPath": "/home/eddy/minitel/.data/scores/"
+}
+```
+
+| Paramètre | Description |
+|-----------|-------------|
+| `dataPath` | Chemin absolu vers le répertoire de stockage des fichiers de scores |
+
+> **Note** : Le répertoire `dataPath` doit exister et être accessible en écriture par le serveur.
+
+### Paramètres de création d'un tableau
+
+Lors de la création d'un tableau de scores via l'API, vous définissez :
 
 | Paramètre | Description |
 |-----------|-------------|
