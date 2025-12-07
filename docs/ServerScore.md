@@ -117,12 +117,20 @@ GET /ServerScore.mod?mode=create&gamename={nom}&sizerecord={max}&fields={champ1}
 | `mode` | `create` |
 | `gamename` | Nom du jeu (ex: `tetris`, `snake`) |
 | `sizerecord` | Nombre maximum de scores à conserver |
-| `fields` | Champs à stocker, séparés par des virgules |
+| `fields` | Champs à stocker, séparés par des virgules (nombre illimité) |
 
-### Exemple
+> **Note** : Vous pouvez définir autant de champs que nécessaire. Par exemple : `name,score,date,level,time,combo`. Les champs sont libres et personnalisables selon les besoins de votre jeu.
 
+### Exemples
+
+**Tableau simple (2 champs) :**
 ```
-http://localhost:8080/ServerScore.mod?mode=create&gamename=tetris&sizerecord=10&fields=name,score,date
+http://localhost:8080/ServerScore.mod?mode=create&gamename=snake&sizerecord=10&fields=name,score
+```
+
+**Tableau détaillé (5 champs) :**
+```
+http://localhost:8080/ServerScore.mod?mode=create&gamename=tetris&sizerecord=10&fields=name,score,level,lines,date
 ```
 
 ### Réponse
