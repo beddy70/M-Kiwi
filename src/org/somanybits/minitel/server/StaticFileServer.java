@@ -66,7 +66,7 @@ public class StaticFileServer {
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
         
-        logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "Minitel Page Server version " + VERSION);
+        logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "M-Kiwi Server version " + VERSION);
         logmgr.addLog(LogManager.ANSI_WHITE + "Serving " + docRoot + " on http://localhost:" + port + "/");
         
         Kernel.getInstance().getMModulesManager().loadAllMModulePlugins();
