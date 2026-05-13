@@ -1,70 +1,51 @@
 package org.somanybits.minitel.hardware;
 
-import com.pi4j.Pi4J;
-import com.pi4j.context.Context;
-import com.pi4j.io.gpio.digital.DigitalOutput;
-import com.pi4j.io.gpio.digital.DigitalOutputConfig;
-import com.pi4j.io.gpio.digital.DigitalState;
+import java.io.*;
+import java.nio.file.*;
+import java.util.Arrays;
 
 /**
  * Contrôleur de 4 LEDs câblées sur les GPIO BCM 5, 6, 12 et 13.
  *
- * Les LEDs sont numérotées par indice (0–3) :
- *   index 0 → GPIO 5
- *   index 1 → GPIO 6
- *   index 2 → GPIO 12
- *   index 3 → GPIO 13
+ * Utilise le sysfs GPIO avec l'offset dynamique de gpiochip512 (Linux 6.x).
+ * Sur Linux 6.x, les GPIO ne s'exportent plus avec leur numéro BCM brut :
+ * il faut lire la base dans /sys/class/gpio/gpiochip512/base et ajouter
+ * le numéro BCM pour obtenir le numéro sysfs réel.
  *
- * Câblage supposé : LED active-high (anode côté GPIO, cathode via résistance à GND).
- * Graceful degradation : si Pi4J ou les GPIO ne sont pas disponibles,
- * {@link #isAvailable()} retourne false et aucune exception n'est propagée.
- *
- * Exemple :
- * <pre>
- *   GPIOLed leds = new GPIOLed();
- *   if (leds.init()) {
- *       leds.set(0, true);   // allume LED 0 (GPIO 5)
- *       leds.toggle(2);      // bascule LED 2 (GPIO 12)
- *       leds.allOff();
- *   }
- * </pre>
+ * Câblage : LED active-high (anode côté GPIO, cathode via résistance à GND).
+ * Graceful degradation si le sysfs n'est pas accessible.
  */
 public class GPIOLed {
 
-    /** Numéros BCM des 4 broches LED. */
+    /** Numéros BCM des 4 broches LED (indices 0–3). */
     public static final int[] GPIO_PINS = { 5, 6, 12, 13 };
-    public static final int COUNT = GPIO_PINS.length;
+    public static final int   COUNT     = GPIO_PINS.length;
 
-    private Context        pi4j;
-    private DigitalOutput[] outputs;
-    private boolean         available = false;
+    private static final String SYSFS_GPIO   = "/sys/class/gpio";
+    private static final String CHIP_PRIMARY = "gpiochip512";
+    private static final String CHIP_LEGACY  = "gpiochip0";
 
-    /**
-     * Initialise Pi4J et configure les 4 sorties GPIO.
-     * @return true si toutes les sorties sont prêtes, false sinon (silencieux)
-     */
+    private final int[] sysfsNum = new int[COUNT]; // numéros sysfs (base + BCM)
+    private boolean available = false;
+
     public boolean init() {
         try {
-            pi4j   = Pi4J.newAutoContext();
-            outputs = new DigitalOutput[COUNT];
+            int base = readBase();
 
             for (int i = 0; i < COUNT; i++) {
-                DigitalOutputConfig cfg = DigitalOutput.newConfigBuilder(pi4j)
-                        .id("led-gpio" + GPIO_PINS[i])
-                        .name("LED GPIO" + GPIO_PINS[i])
-                        .address(GPIO_PINS[i])
-                        .shutdown(DigitalState.LOW)
-                        .initial(DigitalState.LOW)
-                        .build();
-                outputs[i] = pi4j.create(cfg);
+                sysfsNum[i] = base + GPIO_PINS[i];
+                export(sysfsNum[i]);
+                write(sysfsNum[i], "direction", "out");
+                write(sysfsNum[i], "value", "0");
             }
 
             available = true;
-            System.out.println("GPIOLed initialisé — GPIO " + java.util.Arrays.toString(GPIO_PINS));
+            System.out.println("GPIOLed initialisé — GPIO " + Arrays.toString(GPIO_PINS)
+                    + " (base sysfs=" + base + ")");
         } catch (Exception | Error e) {
-            System.out.println("GPIOLed non disponible (" + e.getClass().getSimpleName() + "): " + e.getMessage());
+            System.out.println("GPIOLed non disponible (" + e.getClass().getSimpleName()
+                    + "): " + e.getMessage());
             available = false;
-            shutdown();
         }
         return available;
     }
@@ -73,55 +54,81 @@ public class GPIOLed {
 
     // ── API publique ──────────────────────────────────────────────────────────
 
-    /**
-     * Allume ou éteint une LED.
-     * @param index indice de la LED (0–3)
-     * @param on    true = allumée, false = éteinte
-     */
     public void set(int index, boolean on) {
         if (!available || index < 0 || index >= COUNT) return;
-        if (on) outputs[index].high();
-        else    outputs[index].low();
+        writeValue(sysfsNum[index], on);
     }
 
-    /** Bascule l'état d'une LED. */
     public void toggle(int index) {
         if (!available || index < 0 || index >= COUNT) return;
-        outputs[index].toggle();
+        writeValue(sysfsNum[index], !readValue(sysfsNum[index]));
     }
 
-    /** Allume toutes les LEDs. */
     public void allOn() {
         if (!available) return;
-        for (DigitalOutput out : outputs) out.high();
+        for (int n : sysfsNum) writeValue(n, true);
     }
 
-    /** Éteint toutes les LEDs. */
     public void allOff() {
         if (!available) return;
-        for (DigitalOutput out : outputs) out.low();
+        for (int n : sysfsNum) writeValue(n, false);
     }
 
-    /**
-     * Retourne l'état courant d'une LED.
-     * @return true si allumée, false si éteinte ou indisponible
-     */
     public boolean getState(int index) {
         if (!available || index < 0 || index >= COUNT) return false;
-        return outputs[index].state() == DigitalState.HIGH;
+        return readValue(sysfsNum[index]);
     }
 
-    /** Libère les ressources Pi4J. */
     public void close() {
+        if (!available) return;
         available = false;
-        allOff();
-        shutdown();
+        for (int n : sysfsNum) {
+            try { writeValue(n, false); } catch (Exception ignored) {}
+        }
     }
 
-    private void shutdown() {
-        if (pi4j != null) {
-            try { pi4j.shutdown(); } catch (Exception ignored) {}
-            pi4j = null;
+    // ── Accès sysfs ───────────────────────────────────────────────────────────
+
+    /** Lit la base du chip principal ; essaie gpiochip512 puis gpiochip0. */
+    private int readBase() throws IOException {
+        for (String chip : new String[]{ CHIP_PRIMARY, CHIP_LEGACY }) {
+            Path p = Paths.get(SYSFS_GPIO, chip, "base");
+            if (Files.exists(p)) {
+                return Integer.parseInt(Files.readString(p).trim());
+            }
+        }
+        throw new IOException("Aucun gpiochip trouvé dans " + SYSFS_GPIO);
+    }
+
+    private void export(int num) throws IOException, InterruptedException {
+        // Unexport d'abord pour garantir un état propre
+        Path gpioDir = Paths.get(SYSFS_GPIO, "gpio" + num);
+        if (Files.exists(gpioDir)) {
+            Files.writeString(Paths.get(SYSFS_GPIO, "unexport"), String.valueOf(num));
+            Thread.sleep(50);
+        }
+        Files.writeString(Paths.get(SYSFS_GPIO, "export"), String.valueOf(num));
+        Thread.sleep(100);
+    }
+
+    private void write(int num, String attr, String value) throws IOException {
+        Files.writeString(Paths.get(SYSFS_GPIO, "gpio" + num, attr), value);
+    }
+
+    private void writeValue(int num, boolean high) {
+        try {
+            Files.writeString(Paths.get(SYSFS_GPIO, "gpio" + num, "value"), high ? "1" : "0");
+        } catch (IOException e) {
+            System.out.println("GPIOLed erreur écriture gpio" + num + ": " + e.getMessage());
+        }
+    }
+
+    private boolean readValue(int num) {
+        try {
+            return "1".equals(Files.readString(
+                    Paths.get(SYSFS_GPIO, "gpio" + num, "value")).trim());
+        } catch (IOException e) {
+            return false;
         }
     }
 }

@@ -1,140 +1,164 @@
 package org.somanybits.minitel.hardware;
 
-import com.pi4j.Pi4J;
-import com.pi4j.context.Context;
-import com.pi4j.io.gpio.digital.DigitalInput;
-import com.pi4j.io.gpio.digital.DigitalInputConfig;
-import com.pi4j.io.gpio.digital.DigitalState;
-import com.pi4j.io.gpio.digital.PullResistance;
+import java.io.*;
+import java.nio.file.*;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Capture les événements de 3 boutons-poussoirs câblés sur les GPIO BCM 20, 21 et 25.
  *
- * Les boutons sont numérotés par indice (0–2) :
- *   index 0 → GPIO 20
- *   index 1 → GPIO 21
- *   index 2 → GPIO 25
+ * Utilise le sysfs GPIO avec l'offset dynamique de gpiochip512 (Linux 6.x),
+ * la même technique que GPIOLed. Un thread de polling à 10 ms lit la valeur
+ * du GPIO et détecte les transitions.
  *
- * Câblage supposé : bouton entre GPIO et GND, résistance interne PULL_UP activée.
- * Appui = état LOW, relâché = état HIGH.
- *
- * Un anti-rebond logiciel (10 ms) complète l'anti-rebond matériel de Pi4J.
- * Graceful degradation : si Pi4J ou les GPIO ne sont pas disponibles,
- * {@link #isAvailable()} retourne false et aucune exception n'est propagée.
- *
- * Exemple :
- * <pre>
- *   GPIOButton buttons = new GPIOButton();
- *   buttons.setListener(new GPIOButton.Listener() {
- *       public void onPressed(int index)  { System.out.println("BTN " + index + " pressé");  }
- *       public void onReleased(int index) { System.out.println("BTN " + index + " relâché"); }
- *   });
- *   buttons.init();
- * </pre>
+ * Câblage supposé : bouton entre GPIO et GND, pull-up externe ou via device tree.
+ * Appui = état LOW (0), relâché = état HIGH (1).
  */
 public class GPIOButton {
 
     /** Numéros BCM des 3 broches bouton. */
-    public static final int[] GPIO_PINS = { 20, 21, 25 };
-    public static final int COUNT = GPIO_PINS.length;
+    public static final int[] GPIO_PINS = { 20, 21, 26 };
+    public static final int   COUNT     = GPIO_PINS.length;
 
-    /** Durée minimale entre deux événements (anti-rebond logiciel, en ms). */
-    private static final long DEBOUNCE_MS = 10;
+    private static final String SYSFS_GPIO   = "/sys/class/gpio";
+    private static final String CHIP_PRIMARY = "gpiochip512";
+    private static final String CHIP_LEGACY  = "gpiochip0";
 
-    // ── Interface listener ────────────────────────────────────────────────────
+    private static final long POLL_MS = 10;
 
     public interface Listener {
-        /** Appuyé (front descendant sur pull-up). */
         void onPressed(int index);
-        /** Relâché (front montant sur pull-up). */
         void onReleased(int index);
     }
 
-    // ── Champs internes ───────────────────────────────────────────────────────
+    private final int[]     sysfsNum  = new int[COUNT];
+    private final boolean[] lastState = new boolean[COUNT]; // true = HIGH
+    private Listener listener;
+    private Thread   pollThread;
+    private boolean  available = false;
 
-    private Context      pi4j;
-    private DigitalInput[] inputs;
-    private Listener     listener;
-    private boolean      available = false;
-
-    private final long[] lastEventMs = new long[COUNT];
-
-    // ── Cycle de vie ──────────────────────────────────────────────────────────
-
-    /**
-     * Définit le listener avant ou après l'init.
-     */
     public void setListener(Listener listener) {
         this.listener = listener;
     }
 
-    /**
-     * Initialise Pi4J et configure les 3 entrées GPIO avec pull-up.
-     * @return true si toutes les entrées sont prêtes, false sinon (silencieux)
-     */
     public boolean init() {
         try {
-            pi4j  = Pi4J.newAutoContext();
-            inputs = new DigitalInput[COUNT];
+            int base = readBase();
 
             for (int i = 0; i < COUNT; i++) {
-                final int idx = i;
-
-                DigitalInputConfig cfg = DigitalInput.newConfigBuilder(pi4j)
-                        .id("btn-gpio" + GPIO_PINS[i])
-                        .name("Button GPIO" + GPIO_PINS[i])
-                        .address(GPIO_PINS[i])
-                        .pull(PullResistance.PULL_UP)
-                        .debounce(3000L)   // 3 ms anti-rebond matériel (µs)
-                        .build();
-
-                inputs[i] = pi4j.create(cfg);
-
-                inputs[i].addListener(event -> {
-                    long now = System.currentTimeMillis();
-                    if (now - lastEventMs[idx] < DEBOUNCE_MS) return;
-                    lastEventMs[idx] = now;
-
-                    if (listener == null) return;
-                    if (event.state() == DigitalState.LOW) {
-                        listener.onPressed(idx);
-                    } else if (event.state() == DigitalState.HIGH) {
-                        listener.onReleased(idx);
-                    }
-                });
+                sysfsNum[i] = base + GPIO_PINS[i];
+                export(sysfsNum[i]);
+                write(sysfsNum[i], "direction", "in");
+                configurePullUp(GPIO_PINS[i]);  // pull-up interne : pin HIGH au repos
+            }
+            Thread.sleep(20); // stabilisation pull-up avant lecture état initial
+            for (int i = 0; i < COUNT; i++) {
+                lastState[i] = readValue(sysfsNum[i]);
+                System.out.println("GPIOButton GPIO " + GPIO_PINS[i]
+                        + " état initial=" + (lastState[i] ? "HIGH" : "LOW"));
             }
 
             available = true;
-            System.out.println("GPIOButton initialisé — GPIO " + java.util.Arrays.toString(GPIO_PINS));
+            System.out.println("GPIOButton initialisé — GPIO " + Arrays.toString(GPIO_PINS)
+                    + " (base sysfs=" + base + ")");
+
+            pollThread = new Thread(this::pollLoop, "gpio-button-poll");
+            pollThread.setDaemon(true);
+            pollThread.start();
+
         } catch (Exception | Error e) {
-            System.out.println("GPIOButton non disponible (" + e.getClass().getSimpleName() + "): " + e.getMessage());
+            System.out.println("GPIOButton non disponible (" + e.getClass().getSimpleName()
+                    + "): " + e.getMessage());
             available = false;
-            shutdown();
         }
         return available;
     }
 
     public boolean isAvailable() { return available; }
 
-    /**
-     * Lit l'état instantané d'un bouton (sans événement).
-     * @return true si le bouton est pressé en ce moment, false sinon
-     */
     public boolean isPressed(int index) {
         if (!available || index < 0 || index >= COUNT) return false;
-        return inputs[index].state() == DigitalState.LOW;
+        return !readValue(sysfsNum[index]); // LOW = pressé
     }
 
-    /** Libère les ressources Pi4J. */
     public void close() {
         available = false;
-        shutdown();
+        if (pollThread != null) {
+            pollThread.interrupt();
+            pollThread = null;
+        }
     }
 
-    private void shutdown() {
-        if (pi4j != null) {
-            try { pi4j.shutdown(); } catch (Exception ignored) {}
-            pi4j = null;
+    // ── Polling ───────────────────────────────────────────────────────────────
+
+    private void pollLoop() {
+        while (available && !Thread.currentThread().isInterrupted()) {
+            for (int i = 0; i < COUNT; i++) {
+                boolean current = readValue(sysfsNum[i]);
+                if (current != lastState[i]) {
+                    lastState[i] = current;
+                    if (listener != null) {
+                        if (!current) listener.onPressed(i);   // HIGH→LOW = appui
+                        else          listener.onReleased(i);  // LOW→HIGH = relâché
+                    }
+                }
+            }
+            try {
+                Thread.sleep(POLL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    // ── Accès sysfs ───────────────────────────────────────────────────────────
+
+    private int readBase() throws IOException {
+        for (String chip : new String[]{ CHIP_PRIMARY, CHIP_LEGACY }) {
+            Path p = Paths.get(SYSFS_GPIO, chip, "base");
+            if (Files.exists(p)) {
+                return Integer.parseInt(Files.readString(p).trim());
+            }
+        }
+        throw new IOException("Aucun gpiochip trouvé dans " + SYSFS_GPIO);
+    }
+
+    private void export(int num) throws IOException, InterruptedException {
+        // Unexport d'abord pour garantir un état propre
+        Path gpioDir = Paths.get(SYSFS_GPIO, "gpio" + num);
+        if (Files.exists(gpioDir)) {
+            Files.writeString(Paths.get(SYSFS_GPIO, "unexport"), String.valueOf(num));
+            Thread.sleep(50);
+        }
+        Files.writeString(Paths.get(SYSFS_GPIO, "export"), String.valueOf(num));
+        Thread.sleep(100);
+    }
+
+    /** Active le pull-up interne via raspi-gpio (BCM pin number). */
+    private void configurePullUp(int bcmPin) {
+        try {
+            Process p = new ProcessBuilder("raspi-gpio", "set",
+                    String.valueOf(bcmPin), "ip", "pu")
+                    .redirectErrorStream(true).start();
+            p.waitFor(1, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            System.out.println("GPIOButton: pull-up non configuré sur GPIO "
+                    + bcmPin + " (" + e.getMessage() + ")");
+        }
+    }
+
+    private void write(int num, String attr, String value) throws IOException {
+        Files.writeString(Paths.get(SYSFS_GPIO, "gpio" + num, attr), value);
+    }
+
+    private boolean readValue(int num) {
+        try {
+            return "1".equals(Files.readString(
+                    Paths.get(SYSFS_GPIO, "gpio" + num, "value")).trim());
+        } catch (IOException e) {
+            return false;
         }
     }
 }

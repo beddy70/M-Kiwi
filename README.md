@@ -193,7 +193,56 @@ Le Minitel fonctionne en logique 5V tandis que le Raspberry Pi utilise du 3.3V. 
 
 > **Info** : Exemple de level shifter compatible : [Gebildet 3.3V-5V 8 Channels Bi-Directional](https://www.amazon.fr/Gebildet-3-3V-5V-Channels-Converter-Bi-Directional/dp/B07RY15XMJ)
 
-### 2. Configuration Série
+### 2. Périphériques GPIO (optionnels)
+
+Ces composants sont gérés par le **client** (`MinitelClient`) via l'accès direct au sysfs GPIO (Linux 6.x, offset `gpiochip512`).
+
+#### Prérequis
+
+```bash
+sudo apt-get install raspi-gpio   # pull-up boutons
+sudo usermod -aG gpio $USER       # droits sysfs (reconnexion requise)
+```
+
+#### OLED SSD1306 (I2C)
+
+Affiche en temps réel : version, serveur:port, URL courante, état des joysticks USB.
+
+| Signal | GPIO  | Pin Header |
+|--------|-------|------------|
+| SDA    | GPIO2 | Pin 3      |
+| SCL    | GPIO3 | Pin 5      |
+| VCC    | 3.3V  | Pin 1      |
+| GND    | GND   | Pin 9      |
+
+Activation I2C :
+```bash
+sudo raspi-config   # Interface Options → I2C → Enable
+sudo i2cdetect -y 1  # doit afficher 0x3c
+```
+
+#### LEDs (4× active-high)
+
+| Index | GPIO BCM | Pin Header |
+|-------|----------|------------|
+| LED 0 | GPIO 5   | Pin 29     |
+| LED 1 | GPIO 6   | Pin 31     |
+| LED 2 | GPIO 12  | Pin 32     |
+| LED 3 | GPIO 13  | Pin 33     |
+
+Câblage : `GPIO -- [R 330ohm] -- LED(+) -- LED(-) -- GND` (active-high)
+
+#### Boutons-poussoirs (3× active-low, pull-up interne)
+
+| Index | GPIO BCM | Pin Header | Fonction                    |
+|-------|----------|------------|-----------------------------|
+| BTN 0 | GPIO 20  | Pin 38     | Sélectionne la LED (0→1→2→3)|
+| BTN 1 | GPIO 21  | Pin 40     | Éteint la LED sélectionnée  |
+| BTN 2 | GPIO 26  | Pin 37     | Allume la LED sélectionnée  |
+
+Câblage : GPIO → [BTN] → GND. Le pull-up interne est activé automatiquement au démarrage via `raspi-gpio set <BCM> ip pu`.
+
+### 3. Configuration Série
 
 Activez l'UART et désactivez la console série :
 ```bash

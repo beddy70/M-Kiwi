@@ -8,8 +8,8 @@ Ce document décrit la conception d'un HAT (Hardware Attached on Top) pour Raspb
 
 - **Alimentation** : Régulateur 5V pour alimenter le RPi via GPIO
 - **UART Minitel** : Connexion série TX/RX vers prise DIN
-- **3 boutons poussoirs** : Entrées GPIO configurables
-- **2 LEDs** : Sorties GPIO pour indicateurs status
+- **3 boutons poussoirs** : Entrées GPIO actives-basses, pull-up interne via raspi-gpio
+- **4 LEDs** : Sorties GPIO pour indicateurs status
 - **Écran OLED** : SSD1306 128x64 I2C pour affichage local
 
 ## Attribution des GPIO
@@ -23,13 +23,15 @@ Ce document décrit la conception d'un HAT (Hardware Attached on Top) pour Raspb
 | TX | GPIO14 | Pin 8 | TX → Minitel RX |
 | RX | GPIO15 | Pin 10 | RX ← Minitel TX |
 | GND | - | Pin 6 | Masse Minitel |
-| **Boutons (INPUT)** |
-| BTN1 | GPIO17 | Pin 11 | Bouton poussoir 1 |
-| BTN2 | GPIO27 | Pin 13 | Bouton poussoir 2 |
-| BTN3 | GPIO22 | Pin 15 | Bouton poussoir 3 |
-| **LEDs (OUTPUT)** |
-| LED1 | GPIO23 | Pin 16 | LED status 1 |
-| LED2 | GPIO24 | Pin 18 | LED status 2 |
+| **Boutons (INPUT, active-low, pull-up raspi-gpio)** |
+| BTN0 | GPIO20 | Pin 38 | Bouton sélection LED |
+| BTN1 | GPIO21 | Pin 40 | Bouton éteint LED sélectionnée |
+| BTN2 | GPIO26 | Pin 37 | Bouton allume LED sélectionnée |
+| **LEDs (OUTPUT, active-high)** |
+| LED0 | GPIO5 | Pin 29 | LED status 0 |
+| LED1 | GPIO6 | Pin 31 | LED status 1 |
+| LED2 | GPIO12 | Pin 32 | LED status 2 |
+| LED3 | GPIO13 | Pin 33 | LED status 3 |
 | **Écran OLED I2C** |
 | SDA | GPIO2 | Pin 3 | I2C Data |
 | SCL | GPIO3 | Pin 5 | I2C Clock |
@@ -52,11 +54,11 @@ Ce document décrit la conception d'un HAT (Hardware Attached on Top) pour Raspb
                     │  └─────────────────────────────────────────┘    │
                     │                                                 │
                     │  ┌────────────┐   ┌─────────────────────────┐   │
-                    │  │ DIN 5 pins │   │  BTN1  BTN2  BTN3       │   │
+                    │  │ DIN 5 pins │   │  BTN0  BTN1  BTN2       │   │
                     │  │  Minitel   │   │   ○     ○     ○         │   │
                     │  │    ┌─┐     │   │                         │   │
-                    │  │   /   \    │   │  LED1  LED2             │   │
-                    │  │  │1 2 3│   │   │   ●     ●               │   │
+                    │  │   /   \    │   │  LED0 LED1 LED2 LED3    │   │
+                    │  │  │1 2 3│   │   │   ●    ●    ●    ●      │   │
                     │  │   \4 5/    │   │                         │   │
                     │  │    └─┘     │   │  ┌──────────────────┐   │   │
                     │  └────────────┘   │  │  OLED SSD1306    │   │   │
@@ -117,19 +119,21 @@ Pin DIN │ Signal    │ Connexion RPi
                                       GND
 ```
 
-### Boutons (avec pull-up interne RPi)
+### Boutons (INPUT, active-low, pull-up via raspi-gpio)
 
 ```
-  GPIO17 (Pin 11) ───[BTN1]───► GND
-  GPIO27 (Pin 13) ───[BTN2]───► GND  
-  GPIO22 (Pin 15) ───[BTN3]───► GND
+  GPIO20 (Pin 38) ───[BTN0]───► GND
+  GPIO21 (Pin 40) ───[BTN1]───► GND
+  GPIO26 (Pin 37) ───[BTN2]───► GND
 ```
 
-### LEDs
+### LEDs (OUTPUT, active-high)
 
 ```
-  GPIO23 (Pin 16) ───[R 330Ω]───[LED1]───► GND
-  GPIO24 (Pin 18) ───[R 330Ω]───[LED2]───► GND
+  GPIO5  (Pin 29) ───[R 330Ω]───[LED0]───► GND
+  GPIO6  (Pin 31) ───[R 330Ω]───[LED1]───► GND
+  GPIO12 (Pin 32) ───[R 330Ω]───[LED2]───► GND
+  GPIO13 (Pin 33) ───[R 330Ω]───[LED3]───► GND
 ```
 
 ### Écran OLED I2C
@@ -196,27 +200,27 @@ Pin DIN │ Signal    │ Connexion RPi
                        └────────────┼─────────────────────────────────────────────────────────────┘   │
                                     │                                                                 │
                        ┌────────────┼─────────────────────────────────────────────────────────────┐   │
-                       │            │         BUTTONS SECTION (Active LOW, internal pull-up)      │   │
+                       │            │         BUTTONS SECTION (Active LOW, pull-up via raspi-gpio)│   │
                        │            │                                                             │   │
-                       │            │    Pin 11 (GPIO17) ────[BTN1]──┬──► GND                     │   │
+                       │            │    Pin 38 (GPIO20) ────[BTN0]──┬──► GND                     │   │
                        │            │                                │                            │   │
-                       │            │    Pin 13 (GPIO27) ────[BTN2]──┤                            │   │
+                       │            │    Pin 40 (GPIO21) ────[BTN1]──┤                            │   │
                        │            │                                │                            │   │
-                       │            │    Pin 15 (GPIO22) ────[BTN3]──┘                            │   │
+                       │            │    Pin 37 (GPIO26) ────[BTN2]──┘                            │   │
                        │            │                                                             │   │
-                       │            │         [BTN1]    [BTN2]    [BTN3]                          │   │
+                       │            │         [BTN0]    [BTN1]    [BTN2]                          │   │
                        │            │           ○         ○         ○                             │   │
                        └────────────┼─────────────────────────────────────────────────────────────┘   │
                                     │                                                                 │
                        ┌────────────┼─────────────────────────────────────────────────────────────┐   │
-                       │            │         LEDS SECTION                                        │   │
+                       │            │         LEDS SECTION (Active HIGH)                          │   │
                        │            │                                                             │   │
-                       │            │    Pin 16 (GPIO23) ───[R3 330Ω]───►|───┬──► GND             │   │
-                       │            │                                  LED1  │                    │   │
-                       │            │    Pin 18 (GPIO24) ───[R4 330Ω]───►|───┘                    │   │
-                       │            │                                  LED2                       │   │
+                       │            │    Pin 29 (GPIO5)  ───[R 330Ω]───►|───► GND  (LED0)         │   │
+                       │            │    Pin 31 (GPIO6)  ───[R 330Ω]───►|───► GND  (LED1)         │   │
+                       │            │    Pin 32 (GPIO12) ───[R 330Ω]───►|───► GND  (LED2)         │   │
+                       │            │    Pin 33 (GPIO13) ───[R 330Ω]───►|───► GND  (LED3)         │   │
                        │            │                                                             │   │
-                       │            │              (●) LED1    (●) LED2                           │   │
+                       │            │         (●) LED0  (●) LED1  (●) LED2  (●) LED3              │   │
                        └────────────┼─────────────────────────────────────────────────────────────┘   │
                                     │                                                                 │
                        ┌────────────┼─────────────────────────────────────────────────────────────┐   │
@@ -261,8 +265,8 @@ Pin DIN │ Signal    │ Connexion RPi
 | 1 | Connecteur DIN | 5 broches 180° | Prise péri-informatique Minitel |
 | 1 | Header GPIO | 2x20 femelle | Connecteur Raspberry Pi |
 | 3 | Bouton | 6x6mm tactile | Boutons poussoirs |
-| 2 | LED | 3mm ou 5mm | Indicateurs status |
-| 2 | Résistance | 330Ω | Limitation courant LEDs |
+| 4 | LED | 3mm ou 5mm | Indicateurs status |
+| 4 | Résistance | 330Ω | Limitation courant LEDs |
 | 1 | Connecteur | 4 pins femelle | Pour écran OLED |
 | 1 | Résistance | 1kΩ | Protection RX (optionnel) |
 | 1 | Résistance | 2kΩ | Protection RX (optionnel) |
@@ -298,31 +302,45 @@ sudo i2cdetect -y 1
 # L'écran SSD1306 apparaît généralement à l'adresse 0x3C
 ```
 
-### Test des GPIO (Python)
+### Test des GPIO (shell, sysfs + raspi-gpio)
 
-```python
-import RPi.GPIO as GPIO
-import time
+> Prérequis: `sudo apt-get install raspi-gpio`
 
-# Configuration
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # BTN1
-GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # BTN2
-GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # BTN3
-GPIO.setup(23, GPIO.OUT)  # LED1
-GPIO.setup(24, GPIO.OUT)  # LED2
+```bash
+# Configurer les LEDs en sortie (active-high)
+for gpio in 5 6 12 13; do
+    echo $gpio > /sys/class/gpio/export
+    echo out > /sys/class/gpio/gpio${gpio}/direction
+done
 
-# Test LEDs
-GPIO.output(23, GPIO.HIGH)
-time.sleep(1)
-GPIO.output(23, GPIO.LOW)
+# Configurer les boutons en entrée avec pull-up interne
+for gpio in 20 21 26; do
+    echo $gpio > /sys/class/gpio/export
+    echo in  > /sys/class/gpio/gpio${gpio}/direction
+    sudo raspi-gpio set $gpio ip pu
+done
 
-# Lecture boutons
-while True:
-    if GPIO.input(17) == GPIO.LOW:
-        print("BTN1 pressé")
-    time.sleep(0.1)
+# Test LEDs : allumer puis éteindre chaque LED
+for gpio in 5 6 12 13; do
+    echo 1 > /sys/class/gpio/gpio${gpio}/value
+    sleep 0.3
+    echo 0 > /sys/class/gpio/gpio${gpio}/value
+done
+
+# Lecture boutons (actif à l'état bas)
+echo "Appuyez sur un bouton (Ctrl+C pour quitter)..."
+while true; do
+    for gpio in 20 21 26; do
+        val=$(cat /sys/class/gpio/gpio${gpio}/value)
+        if [ "$val" = "0" ]; then
+            echo "GPIO${gpio} pressé"
+        fi
+    done
+    sleep 0.1
+done
 ```
+
+> **Note** : Le pull-up interne est activé via `raspi-gpio set <BCM> ip pu` (input, pull-up). Les boutons sont câblés GPIO → [BTN] → GND, donc actifs à l'état bas.
 
 ## Fichiers de conception
 
