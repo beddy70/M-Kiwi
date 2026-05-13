@@ -9,9 +9,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.somanybits.log.LogManager;
+import org.somanybits.minitel.hardware.OLEDClient;
 import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.MinitelConnection;
 import org.somanybits.minitel.Teletel;
@@ -97,12 +96,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private String[] lastAxisAction = new String[8];   // Pour éviter les répétitions d'axes (joueur 1)
     private String[] lastAxisAction2 = new String[8];  // Pour éviter les répétitions d'axes (joueur 2)
     private JoystickWatcher joystickWatcher = null;    // Surveillance plug & play
-    private String joystickDevice0   = null;  // chemin device J1 (pour OLED)
-    private String joystickDevice1   = null;  // chemin device J2 (pour OLED)
-    private volatile int  lastJoyBtn0     = -1;
-    private volatile long lastJoyBtnTime0 = 0;
-    private volatile int  lastJoyBtn1     = -1;
-    private volatile long lastJoyBtnTime1 = 0;
+
+    // Écran OLED SSD1306 (optionnel)
+    private OLEDClient oledClient = null;
 
     public static void main(String[] args) throws Exception {
 
@@ -215,14 +211,18 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         mtr = new MinitelPageReader(server, port);
 
+        // Initialiser l'écran OLED (optionnel, silencieux si absent)
+        oledClient = new OLEDClient(VERSION, server, port);
+        oledClient.init();
+
         //currentpage = mtr.get("");
         pmgr.navigate("");
 t.setEcho(false);
         mc.writeBytes(pmgr.getCurrentPage().getData());
-        
+
         // Initialiser le système de focus pour la première page
         updateCurrentForm(pmgr.getCurrentPage());
-        
+
         // Initialiser le joystick USB si disponible
         initJoystick();
 
@@ -522,6 +522,7 @@ t.setEcho(false);
      * Par défaut, le focus commence sur le menu (formHasFocus = false)
      */
     private void updateCurrentForm(Page page) {
+        if (oledClient != null) oledClient.onNavigate(page.getUrl());
         // Arrêter le game loop précédent avant de changer de page
         stopGameLoop();
         
@@ -743,10 +744,7 @@ t.setEcho(false);
             public void onButton(int button, boolean pressed) {
                 // Debug: System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
                 if (!pressed) return;
-                // Toujours tracer le bouton pour l'affichage OLED
-                if (playerIndex == 0) { lastJoyBtn0 = button; lastJoyBtnTime0 = System.currentTimeMillis(); }
-                else                  { lastJoyBtn1 = button; lastJoyBtnTime1 = System.currentTimeMillis(); }
-                writeJoystickState();
+                if (oledClient != null) oledClient.onButton(playerIndex, button);
                 handleJoystickButton(playerIndex, button);
             }
             
@@ -763,16 +761,14 @@ t.setEcho(false);
         
         if (index == 0) {
             joystick = reader;
-            joystickDevice0 = device;
             // Initialiser le rumble
             joystickRumble = new JoystickRumble(device);
             VTMLScriptEngine.getInstance().setVariable("_joystickRumble", joystickRumble);
         } else {
             joystick2 = reader;
-            joystickDevice1 = device;
         }
 
-        writeJoystickState();
+        if (oledClient != null) oledClient.onJoystick(index, device, true);
         System.out.println("🎮 Joystick " + index + ": connecté ✓");
     }
 
@@ -783,35 +779,15 @@ t.setEcho(false);
         if (index == 0 && joystick != null) {
             joystick.stop();
             joystick = null;
-            joystickDevice0 = null;
             joystickRumble = null;
             VTMLScriptEngine.getInstance().setVariable("_joystickRumble", null);
             System.out.println("🎮 Joystick 0: déconnecté");
         } else if (index == 1 && joystick2 != null) {
             joystick2.stop();
             joystick2 = null;
-            joystickDevice1 = null;
             System.out.println("🎮 Joystick 1: déconnecté");
         }
-        writeJoystickState();
-    }
-
-    private void writeJoystickState() {
-        // Capture snapshot pour le thread async
-        String d1   = joystickDevice0 != null ? joystickDevice0.replace("/dev/input/", "") : "---";
-        String d2   = joystickDevice1 != null ? joystickDevice1.replace("/dev/input/", "") : "---";
-        int    btn0 = lastJoyBtn0;  long t0 = lastJoyBtnTime0;
-        int    btn1 = lastJoyBtn1;  long t1 = lastJoyBtnTime1;
-        Thread w = new Thread(() -> {
-            try {
-                String line1 = "J1:" + d1 + ":" + btn0 + ":" + t0;
-                String line2 = "J2:" + d2 + ":" + btn1 + ":" + t1;
-                Files.writeString(Path.of(org.somanybits.minitel.hardware.OLEDServer.JOY_STATE_FILE),
-                        line1 + "\n" + line2 + "\n");
-            } catch (Exception ignored) {}
-        }, "joy-state-writer");
-        w.setDaemon(true);
-        w.start();
+        if (oledClient != null) oledClient.onJoystick(index, null, false);
     }
     
     private void handleJoystickButton(int player, int button) {

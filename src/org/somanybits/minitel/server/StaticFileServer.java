@@ -69,26 +69,10 @@ public class StaticFileServer {
         logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "M-Kiwi Server version " + VERSION);
         logmgr.addLog(LogManager.ANSI_WHITE + "Serving " + docRoot + " on http://localhost:" + port + "/");
 
-        Kernel.getInstance().initOledServer("M-Kiwi Serveur", VERSION, port);
-
         Kernel.getInstance().getMModulesManager().loadAllMModulePlugins();
         
     }
     
-    private static void notifyOled(String path) {
-        try {
-            var oled = Kernel.getInstance().getOledServer();
-            if (oled != null) oled.onRX(path);
-        } catch (Exception ignored) {}
-    }
-
-    private static void notifyOledTX() {
-        try {
-            var oled = Kernel.getInstance().getOledServer();
-            if (oled != null) oled.onTX();
-        } catch (Exception ignored) {}
-    }
-
     private static void handleRequest(HttpExchange ex, Path docRoot) throws IOException {
 
         String method = ex.getRequestMethod();
@@ -103,7 +87,6 @@ public class StaticFileServer {
         String pathDec = URLDecoder.decode(rawPath, StandardCharsets.UTF_8);
         // Normaliser les séparateurs (évite backslashes sous Windows)
         pathDec = pathDec.replace('\\', '/');
-        notifyOled(pathDec);
 
         System.out.println("rawPath " + rawPath);
         System.out.println("pathDec " + pathDec);
@@ -151,7 +134,6 @@ public class StaticFileServer {
             try (OutputStream os = ex.getResponseBody()) {
                 os.write(respBytes);
             } finally {
-                notifyOledTX();
                 ex.close();
             }
             return;
@@ -207,7 +189,6 @@ public class StaticFileServer {
         try (OutputStream os = ex.getResponseBody(); InputStream is = Files.newInputStream(target)) {
             is.transferTo(os);
         } finally {
-            notifyOledTX();
             ex.close();
         }
     }
