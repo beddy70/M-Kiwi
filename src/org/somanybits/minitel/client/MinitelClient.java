@@ -9,6 +9,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.somanybits.log.LogManager;
 import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.MinitelConnection;
@@ -95,6 +97,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private String[] lastAxisAction = new String[8];   // Pour éviter les répétitions d'axes (joueur 1)
     private String[] lastAxisAction2 = new String[8];  // Pour éviter les répétitions d'axes (joueur 2)
     private JoystickWatcher joystickWatcher = null;    // Surveillance plug & play
+    private String joystickDevice0 = null;  // chemin device J1 (pour OLED)
+    private String joystickDevice1 = null;  // chemin device J2 (pour OLED)
 
     public static void main(String[] args) throws Exception {
 
@@ -751,16 +755,19 @@ t.setEcho(false);
         
         if (index == 0) {
             joystick = reader;
+            joystickDevice0 = device;
             // Initialiser le rumble
             joystickRumble = new JoystickRumble(device);
             VTMLScriptEngine.getInstance().setVariable("_joystickRumble", joystickRumble);
         } else {
             joystick2 = reader;
+            joystickDevice1 = device;
         }
-        
+
+        writeJoystickState();
         System.out.println("🎮 Joystick " + index + ": connecté ✓");
     }
-    
+
     /**
      * Déconnecte un joystick.
      */
@@ -768,14 +775,28 @@ t.setEcho(false);
         if (index == 0 && joystick != null) {
             joystick.stop();
             joystick = null;
+            joystickDevice0 = null;
             joystickRumble = null;
             VTMLScriptEngine.getInstance().setVariable("_joystickRumble", null);
             System.out.println("🎮 Joystick 0: déconnecté");
         } else if (index == 1 && joystick2 != null) {
             joystick2.stop();
             joystick2 = null;
+            joystickDevice1 = null;
             System.out.println("🎮 Joystick 1: déconnecté");
         }
+        writeJoystickState();
+    }
+
+    private void writeJoystickState() {
+        try {
+            String j1 = joystickDevice0 != null
+                    ? joystickDevice0.replace("/dev/input/", "") : "---";
+            String j2 = joystickDevice1 != null
+                    ? joystickDevice1.replace("/dev/input/", "") : "---";
+            Files.writeString(Path.of(org.somanybits.minitel.hardware.OLEDServer.JOY_STATE_FILE),
+                    "J1:" + j1 + "\nJ2:" + j2 + "\n");
+        } catch (Exception ignored) {}
     }
     
     private void handleJoystickButton(int player, int button) {

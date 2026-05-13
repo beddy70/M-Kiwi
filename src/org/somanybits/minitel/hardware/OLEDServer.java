@@ -1,5 +1,8 @@
 package org.somanybits.minitel.hardware;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -10,8 +13,12 @@ import java.util.concurrent.TimeUnit;
  * Affiche en temps réel sur l'écran SSD1306 128×64 :
  *   - Nom, version et port du serveur
  *   - Indicateurs de trafic HTTP (flèches >>> RX / TX <<<) clignotants
- *   - Dernière page VTML servie
+ *   - État des joysticks USB (lu depuis /tmp/mkiwi-jstk.txt)
  *   - Dernier message d'erreur (module non chargé, etc.)
+ *
+ * Le fichier /tmp/mkiwi-jstk.txt est écrit par MinitelClient :
+ *   J1:js0
+ *   J2:---
  *
  * Utilisation depuis n'importe quel MModule :
  * <pre>
@@ -21,18 +28,25 @@ import java.util.concurrent.TimeUnit;
  */
 public class OLEDServer {
 
-    private static final int BLINK_MS   = 300;   // durée de l'indicateur RX/TX
-    private static final int REFRESH_MS = 150;   // cadence de rafraîchissement
+    public static final String JOY_STATE_FILE = "/tmp/mkiwi-jstk.txt";
+
+    private static final int BLINK_MS        = 300;  // durée de l'indicateur RX/TX
+    private static final int REFRESH_MS      = 150;  // cadence de rafraîchissement
+    private static final int JOY_POLL_CYCLES = 20;   // relire le fichier joystick toutes les ~3 s
 
     private final OLEDDisplay oled;
     private final String serverName;
     private final String version;
     private final int    port;
 
-    private volatile long   lastRxTime    = 0;
-    private volatile long   lastTxTime    = 0;
-    private volatile String lastPath      = "";
-    private volatile String errorMessage  = null;
+    private volatile long   lastRxTime   = 0;
+    private volatile long   lastTxTime   = 0;
+    private volatile String errorMessage = null;
+
+    private volatile String joyLine1 = "J1: ---";
+    private volatile String joyLine2 = "J2: ---";
+
+    private int refreshCount = 0;
 
     private ScheduledExecutorService scheduler;
 
@@ -68,7 +82,6 @@ public class OLEDServer {
     /** Appeler à chaque requête HTTP reçue. */
     public void onRX(String path) {
         lastRxTime = System.currentTimeMillis();
-        lastPath   = path != null ? path : "";
     }
 
     /** Appeler à chaque réponse HTTP envoyée. */
@@ -86,6 +99,12 @@ public class OLEDServer {
         errorMessage = null;
     }
 
+    /** Met à jour directement l'état d'un joystick (appel intra-processus). */
+    public void setJoystick(int idx, String status) {
+        if (idx == 0) joyLine1 = truncate("J1: " + status, 21);
+        else          joyLine2 = truncate("J2: " + status, 21);
+    }
+
     /** Libère les ressources. */
     public void close() {
         if (scheduler != null) scheduler.shutdownNow();
@@ -94,9 +113,26 @@ public class OLEDServer {
 
     // ── Rendu ─────────────────────────────────────────────────────────────────
 
+    private void readJoystickState() {
+        try {
+            Path file = Path.of(JOY_STATE_FILE);
+            if (!Files.exists(file)) return;
+            List<String> lines = Files.readAllLines(file);
+            for (String line : lines) {
+                if (line.startsWith("J1:")) joyLine1 = truncate("J1: " + line.substring(3), 21);
+                else if (line.startsWith("J2:")) joyLine2 = truncate("J2: " + line.substring(3), 21);
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void refresh() {
         if (!oled.isAvailable()) return;
         try {
+            // Relire le fichier joystick périodiquement (toutes les ~3 s)
+            if (refreshCount++ % JOY_POLL_CYCLES == 0) {
+                readJoystickState();
+            }
+
             long now   = System.currentTimeMillis();
             boolean rx = (now - lastRxTime) < BLINK_MS;
             boolean tx = (now - lastTxTime) < BLINK_MS;
@@ -112,16 +148,14 @@ public class OLEDServer {
             // Ligne 2 : séparateur
             oled.drawText("---------------------", 0, 2);
 
-            // Ligne 3 : indicateurs trafic
-            //   ">>>RX     TX<<<" (15 chars, centré dans 21)
+            // Ligne 3 : indicateurs trafic  "  >>>RX     TX<<<"
             String rxArrow = rx ? ">>>" : "   ";
             String txArrow = tx ? "<<<" : "   ";
             oled.drawText("  " + rxArrow + "RX     TX" + txArrow, 0, 3);
 
-            // Ligne 4 : dernière page servie
-            if (!lastPath.isEmpty()) {
-                oled.drawText(truncate(lastPath, 21), 0, 4);
-            }
+            // Lignes 4-5 : état des joysticks
+            oled.drawText(joyLine1, 0, 4);
+            oled.drawText(joyLine2, 0, 5);
 
             // Ligne 7 : erreur (si présente)
             if (errorMessage != null) {
