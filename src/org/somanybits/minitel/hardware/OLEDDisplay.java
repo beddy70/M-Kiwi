@@ -91,26 +91,26 @@ public class OLEDDisplay {
         i2c.write(new byte[]{0x00, (byte) b}, 0, 2);
     }
 
-    private void initSSD1306() {
-        cmd(0xAE);              // Display OFF
-        cmd(0x20); cmd(0x00);  // Horizontal addressing mode
-        cmd(0xB0);              // Page start address = 0
-        cmd(0xC8);              // COM scan direction flipped (haut→bas)
-        cmd(0x00);              // Low column = 0
-        cmd(0x10);              // High column = 0
-        cmd(0x40);              // Display start line = 0
-        cmd(0x81); cmd(0xCF);  // Contrast
-        cmd(0xA1);              // Segment remap (col 127 = SEG0)
-        cmd(0xA6);              // Normal display (non inversé)
+    private void initSSD1306() throws InterruptedException {
+        // Pause après power-up : le SSD1306 a besoin de ~100ms avant d'accepter des commandes
+        Thread.sleep(100);
+
+        cmd(0xAE);              // Display OFF (reset state)
+        cmd(0xD5); cmd(0xF0);  // Clock divide / oscillateur freq
         cmd(0xA8); cmd(0x3F);  // Multiplex ratio = 64
-        cmd(0xA4);              // Output follows RAM
         cmd(0xD3); cmd(0x00);  // Display offset = 0
-        cmd(0xD5); cmd(0xF0);  // Clock divide / oscillateur
-        cmd(0xD9); cmd(0x22);  // Pre-charge period
-        cmd(0xDA); cmd(0x12);  // COM pins hardware config
-        cmd(0xDB); cmd(0x20);  // VCOMH deselect level
+        cmd(0x40);              // Display start line = 0
         cmd(0x8D); cmd(0x14);  // Charge pump ON
-        cmd(0xAF);              // Display ON
+        cmd(0x20); cmd(0x00);  // Horizontal addressing mode
+        cmd(0xA1);              // Segment remap (col 127 = SEG0)
+        cmd(0xC8);              // COM scan direction flipped (haut→bas)
+        cmd(0xDA); cmd(0x12);  // COM pins hardware config (128x64)
+        cmd(0x81); cmd(0xCF);  // Contrast
+        cmd(0xD9); cmd(0xF1);  // Pre-charge period
+        cmd(0xDB); cmd(0x40);  // VCOMH deselect level
+        cmd(0xA4);              // Output follows RAM content
+        cmd(0xA6);              // Normal display (non inversé)
+        cmd(0xAF);              // Display ON — la charge pump a eu le temps de monter
     }
 
     // ── Buffer ────────────────────────────────────────────────────────────────
