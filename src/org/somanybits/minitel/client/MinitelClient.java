@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.somanybits.log.LogManager;
+import org.somanybits.minitel.hardware.GPIOButton;
+import org.somanybits.minitel.hardware.GPIOLed;
 import org.somanybits.minitel.hardware.OLEDClient;
 import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.MinitelConnection;
@@ -99,6 +101,10 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     // Écran OLED SSD1306 (optionnel)
     private OLEDClient oledClient = null;
+
+    // GPIO : LEDs et boutons-poussoirs (démo)
+    private GPIOLed    gpioLeds    = null;
+    private GPIOButton gpioButtons = null;
 
     public static void main(String[] args) throws Exception {
 
@@ -225,6 +231,9 @@ t.setEcho(false);
 
         // Initialiser le joystick USB si disponible
         initJoystick();
+
+        // Démo GPIO : LEDs + boutons-poussoirs
+        startGpioDemo();
 
 //            ReadNews rnews = new ReadNews(URL_NEWS); 
 //
@@ -952,6 +961,78 @@ t.setEcho(false);
                 System.err.println("Erreur setFocus: " + e.getMessage());
             }
         }
+    }
+
+    // ========== DÉMO GPIO ==========
+
+    /**
+     * Démo LEDs + boutons-poussoirs GPIO.
+     *
+     * Comportement :
+     *   - Animation de démarrage : chase 0→1→2→3 puis retour 3→2→1→0
+     *   - Bouton maintenu → LED correspondante allumée (1:1, indices 0-2)
+     *   - LED 3 (GPIO 13) : heartbeat clignotant à 1 Hz
+     *
+     * Tout est silencieux si les GPIO ne sont pas disponibles.
+     */
+    private void startGpioDemo() {
+        gpioLeds = new GPIOLed();
+        if (!gpioLeds.init()) {
+            System.out.println("Démo GPIO : LEDs non disponibles, démo annulée");
+            gpioLeds = null;
+            return;
+        }
+
+        // Boutons → LEDs (press = on, release = off)
+        gpioButtons = new GPIOButton();
+        gpioButtons.setListener(new GPIOButton.Listener() {
+            @Override
+            public void onPressed(int index) {
+                System.out.println("GPIO BTN " + index + " pressé (GPIO " + GPIOButton.GPIO_PINS[index] + ")");
+                if (index < GPIOLed.COUNT) gpioLeds.set(index, true);
+            }
+            @Override
+            public void onReleased(int index) {
+                System.out.println("GPIO BTN " + index + " relâché");
+                if (index < GPIOLed.COUNT) gpioLeds.set(index, false);
+            }
+        });
+        gpioButtons.init();
+
+        // Thread daemon : animation de démarrage puis heartbeat sur LED 3
+        Thread demoThread = new Thread(() -> {
+            try {
+                // Chase avant : 0 → 1 → 2 → 3
+                for (int i = 0; i < GPIOLed.COUNT; i++) {
+                    gpioLeds.set(i, true);
+                    Thread.sleep(150);
+                    gpioLeds.set(i, false);
+                }
+                // Chase retour : 2 → 1 → 0
+                for (int i = GPIOLed.COUNT - 2; i >= 0; i--) {
+                    gpioLeds.set(i, true);
+                    Thread.sleep(150);
+                    gpioLeds.set(i, false);
+                }
+
+                // Heartbeat sur LED 3 à 1 Hz (indépendant des boutons)
+                while (!Thread.currentThread().isInterrupted()) {
+                    gpioLeds.set(3, true);
+                    Thread.sleep(100);   // flash court
+                    gpioLeds.set(3, false);
+                    Thread.sleep(900);   // pause longue
+                }
+            } catch (InterruptedException ignored) {
+                gpioLeds.allOff();
+            }
+        }, "gpio-demo");
+        demoThread.setDaemon(true);
+        demoThread.start();
+
+        System.out.println("Démo GPIO démarrée — LEDs GPIO "
+                + java.util.Arrays.toString(GPIOLed.GPIO_PINS)
+                + " / Boutons GPIO "
+                + java.util.Arrays.toString(GPIOButton.GPIO_PINS));
     }
 
 }
