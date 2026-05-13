@@ -797,15 +797,21 @@ t.setEcho(false);
     }
 
     private void writeJoystickState() {
-        try {
-            String d1 = joystickDevice0 != null ? joystickDevice0.replace("/dev/input/", "") : "---";
-            String d2 = joystickDevice1 != null ? joystickDevice1.replace("/dev/input/", "") : "---";
-            // Format : J1:<device>:<bouton>:<timestamp_ms>
-            String line1 = "J1:" + d1 + ":" + lastJoyBtn0 + ":" + lastJoyBtnTime0;
-            String line2 = "J2:" + d2 + ":" + lastJoyBtn1 + ":" + lastJoyBtnTime1;
-            Files.writeString(Path.of(org.somanybits.minitel.hardware.OLEDServer.JOY_STATE_FILE),
-                    line1 + "\n" + line2 + "\n");
-        } catch (Exception ignored) {}
+        // Capture snapshot pour le thread async
+        String d1   = joystickDevice0 != null ? joystickDevice0.replace("/dev/input/", "") : "---";
+        String d2   = joystickDevice1 != null ? joystickDevice1.replace("/dev/input/", "") : "---";
+        int    btn0 = lastJoyBtn0;  long t0 = lastJoyBtnTime0;
+        int    btn1 = lastJoyBtn1;  long t1 = lastJoyBtnTime1;
+        Thread w = new Thread(() -> {
+            try {
+                String line1 = "J1:" + d1 + ":" + btn0 + ":" + t0;
+                String line2 = "J2:" + d2 + ":" + btn1 + ":" + t1;
+                Files.writeString(Path.of(org.somanybits.minitel.hardware.OLEDServer.JOY_STATE_FILE),
+                        line1 + "\n" + line2 + "\n");
+            } catch (Exception ignored) {}
+        }, "joy-state-writer");
+        w.setDaemon(true);
+        w.start();
     }
     
     private void handleJoystickButton(int player, int button) {
