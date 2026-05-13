@@ -62,7 +62,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.2";
+    private static final String VERSION = "0.7.3";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -733,16 +733,16 @@ t.setEcho(false);
         reader.addListener(new JoystickListener() {
             @Override
             public void onButton(int button, boolean pressed) {
-                System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
+                // Debug: System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
                 if (!pressed) return;
                 handleJoystickButton(playerIndex, button);
             }
             
             @Override
             public void onAxis(int axis, int value) {
-                if (Math.abs(value) > 10000) {
-                    System.out.println("🎮 [P" + playerIndex + "] Axe " + axis + " = " + value);
-                }
+                // Debug: if (Math.abs(value) > 10000) {
+                //     System.out.println("🎮 [P" + playerIndex + "] Axe " + axis + " = " + value);
+                // }
                 handleJoystickAxis(playerIndex, axis, value);
             }
         });

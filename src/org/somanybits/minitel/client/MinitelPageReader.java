@@ -128,13 +128,12 @@ public class MinitelPageReader {
 
         // Générer les données Minitel à partir de l'arbre de composants
         if (rootComponent != null) {
-            // Afficher l'arbre des composants sur la console
-            System.out.println("=== ARBRE DES COMPOSANTS ===");
-            printComponentTree(rootComponent, 0);
-            System.out.println("============================");
+            // Debug: afficher l'arbre des composants (désactivé)
+            // System.out.println("=== ARBRE DES COMPOSANTS ===");
+            // printComponentTree(rootComponent, 0);
+            // System.out.println("============================");
 
             renderComponentTree(rootComponent);
-            System.out.println();
         }
 
         return page;
