@@ -764,21 +764,6 @@ public class MinitelPageReader {
                 return null;
             }
 
-            case "oled" -> {
-                String[] lines = new String[]{
-                    attrs.getOrDefault("line1", ""),
-                    attrs.getOrDefault("line2", ""),
-                    attrs.getOrDefault("line3", ""),
-                    attrs.getOrDefault("line4", ""),
-                    attrs.getOrDefault("line5", ""),
-                    attrs.getOrDefault("line6", ""),
-                    attrs.getOrDefault("line7", ""),
-                    attrs.getOrDefault("line8", ""),
-                };
-                page.setOledLines(lines);
-                return new VTMLOledComponent(lines);
-            }
-
             default -> {
                 // Tag non reconnu
                 System.out.println("⚠️ Tag VTML non reconnu: " + tagname);

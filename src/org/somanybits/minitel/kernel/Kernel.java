@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import org.somanybits.log.LogManager;
 import org.somanybits.minitel.client.PageManager;
+import org.somanybits.minitel.hardware.OLEDServer;
 import org.somanybits.minitel.server.MModulesManager;
 import org.somanybits.minitel.util.SSLHelper;
 
@@ -43,6 +44,7 @@ public class Kernel {
     private MModulesManager mmodmgr;
     private Config cfg;
     private PageManager pageManager;
+    private OLEDServer oledServer = null;
 
     private Kernel() throws IOException {
 
@@ -107,11 +109,27 @@ public class Kernel {
 
     /**
      * Retourne le gestionnaire de pages et de navigation.
-     * 
+     *
      * @return Le {@link PageManager} pour naviguer entre les pages VTML
      */
     public PageManager getPageManager() {
         return pageManager;
+    }
+
+    /**
+     * Initialise et démarre le gestionnaire d'affichage OLED serveur.
+     * Silencieux si l'écran est absent.
+     */
+    public void initOledServer(String serverName, String version, int port) {
+        oledServer = new OLEDServer(serverName, version, port);
+        oledServer.init();
+    }
+
+    /**
+     * Retourne le gestionnaire OLED serveur, ou null si non initialisé / indisponible.
+     */
+    public OLEDServer getOledServer() {
+        return oledServer;
     }
 
 }

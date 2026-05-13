@@ -84,8 +84,10 @@ public class MModulesManager {
             return module.getResponse();
 
         } catch (IOException | ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-            //System.getLogger(StaticFileServer.class.getName()).log(System.Logger.Level.ERROR, (String) null, e);
-            
+            try {
+                var oled = Kernel.getInstance().getOledServer();
+                if (oled != null) oled.showError(modname + ": " + e.getClass().getSimpleName());
+            } catch (Exception ignored) {}
         }
         return null;
     }
