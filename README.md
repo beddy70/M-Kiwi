@@ -53,6 +53,17 @@ Minitel-Serveur est une plateforme Java innovante qui transforme un terminal Min
 
 ---
 
+## Documentations techniques
+
+- [Hardware.md](docs/Hardware.md) — Package `org.somanybits.minitel.hardware` : GPIOLed, GPIOButton, OLEDDisplay, OLEDClient
+- [PCB_HAT.md](docs/PCB_HAT.md) — Schéma et BOM du Shield M-Kiwi
+- [VTML.md](docs/VTML.md) — Référence du langage VTML
+- [MModules.md](docs/MModules.md) — Création de modules dynamiques
+- [GraphTel.md](docs/GraphTel.md) — Affichage bitmap et QR codes
+- [SERVICES.md](docs/SERVICES.md) — Installation en tant que services Linux
+
+---
+
 ## 🚀 Fonctionnalités
 
 - **🌐 Serveur HTTP** avec support du format VTML
