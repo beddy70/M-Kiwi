@@ -13,17 +13,19 @@ Minitel-Serveur est une plateforme Java innovante qui transforme un terminal Min
   - [Matériel](#matériel)
   - [Logiciel](#logiciel)
 - [Installation et Configuration](#-installation-et-configuration)
-  - [Connexion Matérielle](#1-connexion-matérielle)
-  - [Configuration Série](#2-configuration-série)
-  - [Auto-négociation de Vitesse](#3-auto-négociation-de-vitesse)
-  - [Désactiver le mode ECHO](#4-désactiver-le-mode-echo)
-  - [Fichier de Configuration](#5-fichier-de-configuration)
+  - [1. Connexion Matérielle](#1-connexion-matérielle)
+  - [2. Shield M-Kiwi (carte fille GPIO)](#2-shield-m-kiwi-carte-fille-gpio-optionnelle)
+  - [3. Configuration Série](#3-configuration-série)
+  - [4. Auto-négociation de Vitesse](#4-auto-négociation-de-vitesse)
+  - [5. Désactiver le mode ECHO](#5-désactiver-le-mode-echo)
+  - [6. Fichier de Configuration](#6-fichier-de-configuration)
 - [Démarrage Rapide](#-démarrage-rapide)
   - [Déploiement](#déploiement)
-  - [Compilation](#1-compilation)
-  - [Lancement du Serveur](#2-lancement-du-serveur)
-  - [Lancement du Client](#3-lancement-du-client)
-  - [Test des Joysticks USB](#4-test-des-joysticks-usb)
+  - [1. Compilation](#1-compilation)
+  - [2. Lancement du Serveur](#2-lancement-du-serveur)
+  - [3. Lancement du Client](#3-lancement-du-client)
+  - [4. Test des Joysticks USB](#4-test-des-joysticks-usb)
+  - [5. Installation en tant que services Linux](#5-installation-en-tant-que-services-linux)
 - [Format VTML](#-format-vtml-videotex-markup-language)
   - [Structure de Base](#structure-de-base)
   - [Tags VTML Supportés](#tags-vtml-supportés)
@@ -31,10 +33,12 @@ Minitel-Serveur est une plateforme Java innovante qui transforme un terminal Min
 - [Modules Dynamiques (MModules)](#-modules-dynamiques-mmodules)
   - [Fonctionnement](#fonctionnement)
   - [Structure d'un MModule](#structure-dun-mmodule)
-  - [Module natif ServerScore](#module-natif--serverscore)
+  - [Utilisation avec Paramètres](#utilisation-avec-paramètres)
+  - [Configuration avec readConfig()](#configuration-des-mmodules-avec-readconfig)
+  - [Exemples de MModules](#exemples-de-mmodules)
+  - [Module natif : ServerScore](#module-natif--serverscore)
 - [Composants Graphiques](#-composants-graphiques)
-  - [Affichage d'Images](#affichage-dimages)
-  - [Génération de QR Codes](#génération-de-qr-codes)
+  - [GraphTel - Affichage Bitmap et QR Codes](#graphtel---affichage-bitmap-et-qr-codes)
 - [Navigation et Événements](#-navigation-et-événements)
   - [Gestion des Touches](#gestion-des-touches)
   - [Liens et Navigation](#liens-et-navigation)
@@ -43,6 +47,7 @@ Minitel-Serveur est une plateforme Java innovante qui transforme un terminal Min
   - [Tests et Émulation](#tests-et-émulation)
 - [Ressources Techniques](#-ressources-techniques)
   - [Protocole Videotex](#protocole-videotex)
+  - [Protection Ligne 0](#protection-ligne-0)
   - [Références](#références)
 - [Contribution](#-contribution)
 
@@ -254,7 +259,7 @@ dtoverlay=disable-bt
 sudo systemctl disable serial-getty@ttyAMA0.service
 ```
 
-### 3. Auto-négociation de Vitesse
+### 4. Auto-négociation de Vitesse
 
 **Important** : Le Minitel démarre toujours en **1200 bauds** à sa mise sous tension.
 
@@ -279,7 +284,7 @@ Le client intègre un système d'**auto-négociation automatique** de la vitesse
 > ./switchTo9600b.sh
 > ```
 
-### 4. Désactiver le mode ECHO
+### 5. Désactiver le mode ECHO
 
 Afin de réaliser le bon fonctionnement du client VTML, il est important de désactiver le mode ECHO du Minitel. Pour cela, réaliser la combinaison de touches suivante :
 
@@ -290,7 +295,7 @@ Si lorsque vous tapé des touches au clavier et que ces dernières apparaissent,
 
 > **Note** : Cette manipulation doit être effectuée après chaque mise sous tension du Minitel.
 
-### 5. Fichier de Configuration
+### 6. Fichier de Configuration
 
 Le fichier `config.json` contient toute la configuration du serveur et du client :
 
@@ -453,7 +458,7 @@ L'utilitaire propose de tester :
 
 Utilisez ces informations pour configurer le mapping dans `config.json`.
 
-### 5. Installation en tant que services Linux (⚠️ Non testé)
+### 5. Installation en tant que services Linux
 
 Des scripts sont fournis pour installer M-Kiwi en tant que services systemd sur Raspberry Pi :
 
