@@ -97,8 +97,12 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private String[] lastAxisAction = new String[8];   // Pour éviter les répétitions d'axes (joueur 1)
     private String[] lastAxisAction2 = new String[8];  // Pour éviter les répétitions d'axes (joueur 2)
     private JoystickWatcher joystickWatcher = null;    // Surveillance plug & play
-    private String joystickDevice0 = null;  // chemin device J1 (pour OLED)
-    private String joystickDevice1 = null;  // chemin device J2 (pour OLED)
+    private String joystickDevice0   = null;  // chemin device J1 (pour OLED)
+    private String joystickDevice1   = null;  // chemin device J2 (pour OLED)
+    private volatile int  lastJoyBtn0     = -1;
+    private volatile long lastJoyBtnTime0 = 0;
+    private volatile int  lastJoyBtn1     = -1;
+    private volatile long lastJoyBtnTime1 = 0;
 
     public static void main(String[] args) throws Exception {
 
@@ -739,6 +743,10 @@ t.setEcho(false);
             public void onButton(int button, boolean pressed) {
                 // Debug: System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
                 if (!pressed) return;
+                // Toujours tracer le bouton pour l'affichage OLED
+                if (playerIndex == 0) { lastJoyBtn0 = button; lastJoyBtnTime0 = System.currentTimeMillis(); }
+                else                  { lastJoyBtn1 = button; lastJoyBtnTime1 = System.currentTimeMillis(); }
+                writeJoystickState();
                 handleJoystickButton(playerIndex, button);
             }
             
@@ -790,12 +798,13 @@ t.setEcho(false);
 
     private void writeJoystickState() {
         try {
-            String j1 = joystickDevice0 != null
-                    ? joystickDevice0.replace("/dev/input/", "") : "---";
-            String j2 = joystickDevice1 != null
-                    ? joystickDevice1.replace("/dev/input/", "") : "---";
+            String d1 = joystickDevice0 != null ? joystickDevice0.replace("/dev/input/", "") : "---";
+            String d2 = joystickDevice1 != null ? joystickDevice1.replace("/dev/input/", "") : "---";
+            // Format : J1:<device>:<bouton>:<timestamp_ms>
+            String line1 = "J1:" + d1 + ":" + lastJoyBtn0 + ":" + lastJoyBtnTime0;
+            String line2 = "J2:" + d2 + ":" + lastJoyBtn1 + ":" + lastJoyBtnTime1;
             Files.writeString(Path.of(org.somanybits.minitel.hardware.OLEDServer.JOY_STATE_FILE),
-                    "J1:" + j1 + "\nJ2:" + j2 + "\n");
+                    line1 + "\n" + line2 + "\n");
         } catch (Exception ignored) {}
     }
     
