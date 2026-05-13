@@ -193,7 +193,7 @@ Le Minitel fonctionne en logique 5V tandis que le Raspberry Pi utilise du 3.3V. 
 
 > **Info** : Exemple de level shifter compatible : [Gebildet 3.3V-5V 8 Channels Bi-Directional](https://www.amazon.fr/Gebildet-3-3V-5V-Channels-Converter-Bi-Directional/dp/B07RY15XMJ)
 
-### 2. Périphériques GPIO (optionnels)
+### 2. Shield M-Kiwi (carte fille GPIO, optionnelle)
 
 Ces composants sont gérés par le **client** (`MinitelClient`) via l'accès direct au sysfs GPIO (Linux 6.x, offset `gpiochip512`).
 
