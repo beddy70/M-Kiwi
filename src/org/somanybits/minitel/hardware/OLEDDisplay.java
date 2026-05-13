@@ -1,37 +1,43 @@
 package org.somanybits.minitel.hardware;
 
-import com.pi4j.io.i2c.I2CBus;
-import com.pi4j.io.i2c.I2CDevice;
-import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.Pi4J;
+import com.pi4j.context.Context;
+import com.pi4j.io.i2c.I2C;
+import com.pi4j.io.i2c.I2CConfig;
 
 /**
- * Pilote SSD1306 OLED 128x64 via I2C (Pi4J v1.x).
- * Écran connecté sur /dev/i2c-1 (GPIO2=SDA, GPIO3=SCL) du Raspberry Pi.
+ * Pilote SSD1306 OLED 128x64 via I2C (Pi4J v2 / linuxfs).
  *
- * Usage VTML côté serveur (jusqu'à 8 lignes, 21 caractères chacune) :
+ * Pi4J v2 avec le plugin linuxfs accède directement à /dev/i2c-1
+ * SANS dépendance WiringPi — compatible avec toutes les versions de Raspberry Pi OS.
+ *
+ * Branchement RPi : GPIO2=SDA (pin 3), GPIO3=SCL (pin 5)  →  /dev/i2c-1
+ *
+ * Syntaxe VTML côté serveur (jusqu'à 8 lignes, 21 caractères chacune) :
  * <pre>
  *   &lt;oled line1="M-Kiwi" line2="Score: 100" line3="Joueur: Eddy" /&gt;
  * </pre>
  *
- * Graceful degradation : si le bus I2C n'est pas disponible (ex: Mac),
- * l'objet reste utilisable mais {@link #isAvailable()} retourne false.
+ * Graceful degradation : si Pi4J ou l'I2C ne sont pas disponibles,
+ * {@link #isAvailable()} retourne false et aucune exception n'est propagée.
  */
 public class OLEDDisplay {
 
-    public static final int DEFAULT_BUS     = I2CBus.BUS_1;  // /dev/i2c-1
-    public static final int DEFAULT_ADDRESS = 0x3C;
+    public static final int DEFAULT_BUS     = 1;       // /dev/i2c-1
+    public static final int DEFAULT_ADDRESS = 0x3C;    // SSD1306 adresse courante
 
     private static final int WIDTH  = 128;
     private static final int HEIGHT = 64;
-    private static final int PAGES  = HEIGHT / 8;   // 8 pages de 8px
+    private static final int PAGES  = HEIGHT / 8;      // 8 pages de 8 pixels
 
-    private static final int FONT_WIDTH  = 6;        // 5px glyphe + 1px espace
+    private static final int FONT_WIDTH  = 6;           // 5px glyphe + 1px espace
     public static final int  CHARS_PER_LINE = WIDTH / FONT_WIDTH;   // 21
     public static final int  MAX_LINES      = PAGES;                 // 8
 
     private final byte[] buffer = new byte[WIDTH * PAGES];  // 1024 octets
 
-    private I2CDevice device;
+    private Context pi4j;
+    private I2C i2c;
     private boolean available = false;
 
     private final int busNumber;
@@ -47,47 +53,55 @@ public class OLEDDisplay {
     }
 
     /**
-     * Initialise Pi4J et le SSD1306. Retourne true si l'écran est prêt.
+     * Initialise Pi4J v2 et le SSD1306. Retourne true si l'écran est prêt.
+     * Ne lève pas d'exception — log l'erreur et retourne false si indisponible.
      */
     public boolean init() {
         try {
-            I2CBus bus = I2CFactory.getInstance(busNumber);
-            device = bus.getDevice(address);
+            pi4j = Pi4J.newAutoContext();
+            I2CConfig config = I2C.newConfigBuilder(pi4j)
+                    .id("ssd1306-oled")
+                    .bus(busNumber)
+                    .device(address)
+                    .build();
+            i2c = pi4j.create(config);
             initSSD1306();
             clear();
             flush();
             available = true;
-            System.out.println("OLED SSD1306 initialisé sur I2C bus "
+            System.out.println("OLED SSD1306 initialisé — I2C bus "
                     + busNumber + ", adresse 0x" + Integer.toHexString(address));
         } catch (Exception | Error e) {
             System.out.println("OLED non disponible ("
                     + e.getClass().getSimpleName() + "): " + e.getMessage());
             available = false;
+            if (pi4j != null) {
+                try { pi4j.shutdown(); } catch (Exception ignored) {}
+                pi4j = null;
+            }
         }
         return available;
     }
 
-    public boolean isAvailable() {
-        return available;
+    public boolean isAvailable() { return available; }
+
+    // ── Envoi commandes SSD1306 ───────────────────────────────────────────────
+
+    private void cmd(int b) {
+        i2c.write(new byte[]{0x00, (byte) b}, 0, 2);
     }
 
-    // ── Commandes SSD1306 ─────────────────────────────────────────────────────
-
-    private void cmd(int b) throws Exception {
-        device.write(new byte[]{0x00, (byte) b});
-    }
-
-    private void initSSD1306() throws Exception {
+    private void initSSD1306() {
         cmd(0xAE);              // Display OFF
         cmd(0x20); cmd(0x00);  // Horizontal addressing mode
         cmd(0xB0);              // Page start address = 0
-        cmd(0xC8);              // COM scan direction flipped
+        cmd(0xC8);              // COM scan direction flipped (haut→bas)
         cmd(0x00);              // Low column = 0
         cmd(0x10);              // High column = 0
         cmd(0x40);              // Display start line = 0
         cmd(0x81); cmd(0xCF);  // Contrast
         cmd(0xA1);              // Segment remap (col 127 = SEG0)
-        cmd(0xA6);              // Normal display
+        cmd(0xA6);              // Normal display (non inversé)
         cmd(0xA8); cmd(0x3F);  // Multiplex ratio = 64
         cmd(0xA4);              // Output follows RAM
         cmd(0xD3); cmd(0x00);  // Display offset = 0
@@ -106,21 +120,17 @@ public class OLEDDisplay {
         java.util.Arrays.fill(buffer, (byte) 0);
     }
 
-    /** Envoie le buffer complet vers l'écran SSD1306. */
+    /** Envoie le buffer complet (1024 octets) vers l'écran. */
     public void flush() {
         if (!available) return;
-        try {
-            // Positionner le curseur en haut à gauche
-            device.write(new byte[]{0x00, 0x21, 0x00, (byte) 0x7F});  // col 0-127
-            device.write(new byte[]{0x00, 0x22, 0x00, 0x07});          // page 0-7
-            // Envoyer les 1024 octets de pixels
-            byte[] payload = new byte[buffer.length + 1];
-            payload[0] = 0x40;   // mode données
-            System.arraycopy(buffer, 0, payload, 1, buffer.length);
-            device.write(payload);
-        } catch (Exception e) {
-            System.err.println("OLED flush error: " + e.getMessage());
-        }
+        // Positionner curseur : colonnes 0-127, pages 0-7
+        i2c.write(new byte[]{0x00, 0x21, 0x00, (byte) 0x7F}, 0, 4);
+        i2c.write(new byte[]{0x00, 0x22, 0x00, 0x07},         0, 4);
+        // Envoyer les pixels (control byte 0x40 suivi des 1024 octets)
+        byte[] payload = new byte[buffer.length + 1];
+        payload[0] = 0x40;
+        System.arraycopy(buffer, 0, payload, 1, buffer.length);
+        i2c.write(payload, 0, payload.length);
     }
 
     // ── Rendu texte ───────────────────────────────────────────────────────────
@@ -128,7 +138,7 @@ public class OLEDDisplay {
     /**
      * Dessine un caractère ASCII dans le buffer.
      * @param c   caractère (0x20-0x7E)
-     * @param col position en caractères (0-20)
+     * @param col position horizontale en caractères (0-20)
      * @param row ligne de texte (0-7)
      */
     public void drawChar(char c, int col, int row) {
@@ -137,16 +147,11 @@ public class OLEDDisplay {
         int px   = col * FONT_WIDTH;
         int base = row * WIDTH + px;
         if (px + 5 > WIDTH || row >= PAGES) return;
-        for (int i = 0; i < 5; i++) {
-            buffer[base + i] = glyph[i];
-        }
+        for (int i = 0; i < 5; i++) buffer[base + i] = glyph[i];
         buffer[base + 5] = 0;   // espace inter-caractère
     }
 
-    /**
-     * Dessine une chaîne depuis la colonne {@code col} sur la ligne {@code row}.
-     * Tronque automatiquement si la ligne est trop longue.
-     */
+    /** Dessine une chaîne depuis la colonne {@code col} sur la ligne {@code row}. */
     public void drawText(String text, int col, int row) {
         if (text == null) return;
         for (int i = 0; i < text.length(); i++) {
@@ -156,8 +161,8 @@ public class OLEDDisplay {
     }
 
     /**
-     * Méthode principale : efface l'écran et affiche les lignes de texte.
-     * {@code lines} peut contenir de 0 à 8 éléments (null/vide = ligne vide).
+     * Efface l'écran et affiche les lignes de texte (0 à 8 éléments).
+     * C'est la méthode appelée par le client à chaque changement de page VTML.
      */
     public void displayLines(String[] lines) {
         if (!available) return;
@@ -179,15 +184,18 @@ public class OLEDDisplay {
         flush();
     }
 
-    /** Libère les ressources. */
+    /** Libère les ressources Pi4J. */
     public void close() {
         available = false;
-        device    = null;
+        if (pi4j != null) {
+            try { pi4j.shutdown(); } catch (Exception ignored) {}
+            pi4j = null;
+        }
     }
 
     // ── Police 5×7 (Adafruit GFX), ASCII 0x20 → 0x7E ────────────────────────
     // Chaque entrée = 5 octets (colonnes gauche→droite).
-    // Dans chaque octet : bit 0 = ligne du haut, bit 6 = ligne du bas.
+    // Bit 0 = ligne du haut, bit 6 = ligne du bas.
 
     private static final byte[][] FONT5X7 = {
         {0x00,0x00,0x00,0x00,0x00}, // 0x20 ' '
