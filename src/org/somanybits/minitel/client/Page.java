@@ -246,6 +246,22 @@ public class Page {
         return layers != null;
     }
 
+    // ========== OLED ==========
+
+    private String[] oledLines = null;
+
+    public void setOledLines(String[] lines) {
+        this.oledLines = lines;
+    }
+
+    public String[] getOledLines() {
+        return oledLines;
+    }
+
+    public boolean hasOledContent() {
+        return oledLines != null;
+    }
+
     // ========== LISTE DES COMPOSANTS ==========
     
     private List<ModelMComponent> components = new ArrayList<>();

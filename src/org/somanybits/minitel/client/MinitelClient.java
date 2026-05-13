@@ -28,6 +28,7 @@ import org.somanybits.minitel.input.JoystickMapping;
 import org.somanybits.minitel.input.JoystickReader;
 import org.somanybits.minitel.input.JoystickRumble;
 import org.somanybits.minitel.input.JoystickWatcher;
+import org.somanybits.minitel.hardware.OLEDDisplay;
 import org.somanybits.minitel.kernel.Config;
 import org.somanybits.minitel.kernel.Kernel;
 
@@ -86,6 +87,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     // Verrou pour synchroniser l'accès au script engine et au layers
     private final Object scriptLock = new Object();
     
+    // Écran OLED SSD1306 128x64 I2C
+    private OLEDDisplay oledDisplay = null;
+
     // Joystick USB - Support 2 joueurs avec plug & play
     private JoystickReader joystick = null;      // Joueur 1
     private JoystickReader joystick2 = null;     // Joueur 2
@@ -215,6 +219,16 @@ t.setEcho(false);
         // Initialiser le système de focus pour la première page
         updateCurrentForm(pmgr.getCurrentPage());
         
+        // Initialiser l'écran OLED SSD1306 (optionnel, silencieux si absent)
+        oledDisplay = new OLEDDisplay();
+        if (oledDisplay.init()) {
+            oledDisplay.displayLines(new String[]{
+                "M-Kiwi v" + VERSION,
+                "Connexion...",
+                server + ":" + port
+            });
+        }
+
         // Initialiser le joystick USB si disponible
         initJoystick();
 
@@ -514,6 +528,13 @@ t.setEcho(false);
      * Par défaut, le focus commence sur le menu (formHasFocus = false)
      */
     private void updateCurrentForm(Page page) {
+        // Mettre à jour l'écran OLED si la page contient du contenu OLED
+        if (oledDisplay != null && oledDisplay.isAvailable()) {
+            if (page.hasOledContent()) {
+                oledDisplay.displayLines(page.getOledLines());
+            }
+        }
+
         // Arrêter le game loop précédent avant de changer de page
         stopGameLoop();
         

@@ -59,6 +59,14 @@ wget -q --show-progress -O rhino-1.7.14.jar \
   "$MAVEN/org/mozilla/rhino/1.7.14/rhino-1.7.14.jar"
 
 # ----------------------------------------
+# Pi4J v1.4 - Accès GPIO/I2C Raspberry Pi (écran OLED SSD1306)
+# ----------------------------------------
+echo ""
+echo "📦 Pi4J v1.4 (I2C / GPIO Raspberry Pi)..."
+wget -q --show-progress -O pi4j-core-1.4.jar \
+  "$MAVEN/com/pi4j/pi4j-core/1.4/pi4j-core-1.4.jar"
+
+# ----------------------------------------
 # Résumé
 # ----------------------------------------
 echo ""
