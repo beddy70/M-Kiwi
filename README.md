@@ -253,11 +253,11 @@ Câblage : `GPIO -- [R 330ohm] -- LED(+) -- LED(-) -- GND` (active-high)
 
 #### Boutons-poussoirs (3× active-low, pull-up interne)
 
-| Index | GPIO BCM | Pin Header | Fonction                    |
-|-------|----------|------------|-----------------------------|
-| BTN 0 | GPIO 20  | Pin 38     | Sélectionne la LED (0→1→2→3)|
-| BTN 1 | GPIO 21  | Pin 40     | Éteint la LED sélectionnée  |
-| BTN 2 | GPIO 26  | Pin 37     | Allume la LED sélectionnée  |
+| Index | GPIO BCM | Pin Header |
+|-------|----------|------------|
+| BTN 0 | GPIO 20  | Pin 38     |
+| BTN 1 | GPIO 21  | Pin 40     |
+| BTN 2 | GPIO 26  | Pin 37     |
 
 Câblage : GPIO → [BTN] → GND. Le pull-up interne est activé automatiquement au démarrage via `raspi-gpio set <BCM> ip pu`.
 
