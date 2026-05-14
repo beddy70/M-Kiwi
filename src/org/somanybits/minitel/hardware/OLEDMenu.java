@@ -76,9 +76,11 @@ public class OLEDMenu {
     private static final int ITEMS_ROW_BASE = 2;
 
     // Écran Network Info
-    private boolean inNetworkInfo = false;
-    private String  netIp  = "";
-    private String  netMac = "";
+    private boolean inNetworkInfo   = false;
+    private String  netIp           = "";
+    private String  netMac          = "";
+    private volatile int netMacScrollPos = 0;
+    private Thread  netMacScrollThread   = null;
 
     // Réglage luminosité (5 niveaux, index 0-4, défaut 3 = 0xCF)
     private static final int[] BRIGHTNESS_LEVELS = {0x20, 0x60, 0x9F, 0xCF, 0xFF};
@@ -235,6 +237,8 @@ public class OLEDMenu {
         inLedTest        = false;
         inBrightnessMenu = false;
         brightnessLevel  = 3;  // retour au niveau par défaut (0xCF)
+        inNetworkInfo    = false;
+        stopMacScroll();
 
         // Exécuter via le thread de rendu pour éviter tout conflit I2C
         renderQueue.clear();
@@ -351,16 +355,47 @@ public class OLEDMenu {
             mac = actions.getNetworkMac();
         }
         synchronized (this) {
-            netIp  = ip;
-            netMac = mac;
-            inNetworkInfo = true;
+            netIp           = ip;
+            netMac          = mac;
+            netMacScrollPos = 0;
+            inNetworkInfo   = true;
         }
+        startMacScroll(mac);
         scheduleRender();
     }
 
-    private synchronized void exitNetworkInfo() {
-        inNetworkInfo = false;
+    private void exitNetworkInfo() {
+        synchronized (this) { inNetworkInfo = false; }
+        stopMacScroll();
         scheduleRender();
+    }
+
+    private void startMacScroll(String mac) {
+        stopMacScroll();
+        int maxScroll = Math.max(0, mac.length() - OLEDDisplay.CHARS_PER_LINE_8X8);
+        if (maxScroll <= 0) return;
+        netMacScrollThread = new Thread(() -> {
+            int pos = 0, dir = 1;
+            try {
+                while (inNetworkInfo && !Thread.currentThread().isInterrupted()) {
+                    synchronized (OLEDMenu.this) { netMacScrollPos = pos; }
+                    scheduleRender();
+                    Thread.sleep((pos == 0 || pos == maxScroll) ? 1500 : 350);
+                    pos += dir;
+                    if (pos >= maxScroll) { pos = maxScroll; dir = -1; }
+                    else if (pos <= 0)   { pos = 0;          dir =  1; }
+                }
+            } catch (InterruptedException ignored) {}
+        }, "mac-scroll");
+        netMacScrollThread.setDaemon(true);
+        netMacScrollThread.start();
+    }
+
+    private void stopMacScroll() {
+        if (netMacScrollThread != null) {
+            netMacScrollThread.interrupt();
+            netMacScrollThread = null;
+        }
     }
 
     /** Appelé par MinitelClient pour tout événement joystick (bouton ou axe mappé). */
@@ -491,6 +526,7 @@ public class OLEDMenu {
         final int     brightLevel;
         final boolean netInfo;
         final String  nIp, nMac;
+        final int     nMacScroll;
 
         synchronized (this) {
             btnTest     = inButtonTest;
@@ -504,8 +540,9 @@ public class OLEDMenu {
             brightMenu  = inBrightnessMenu;
             brightLevel = brightnessLevel;
             netInfo     = inNetworkInfo;
-            nIp        = netIp;
-            nMac       = netMac;
+            nIp         = netIp;
+            nMac        = netMac;
+            nMacScroll  = netMacScrollPos;
             items      = currentItems;
             selIdx     = selectedIndex;
             scrOff     = scrollOffset;
@@ -591,7 +628,9 @@ public class OLEDMenu {
             display.drawText8x8("IP:", 0, 3);
             display.drawText8x8(fit(nIp), 0, 4);
             display.drawText8x8("MAC:", 0, 5);
-            display.drawText8x8(fit(nMac), 0, 6);
+            int macEnd = Math.min(nMac.length(), nMacScroll + OLEDDisplay.CHARS_PER_LINE_8X8);
+            String macView = (nMacScroll < nMac.length()) ? nMac.substring(nMacScroll, macEnd) : nMac;
+            display.drawText8x8(fit(macView), 0, 6);
             display.drawText8x8("                ", 0, 7);
             display.flush();
             return;
