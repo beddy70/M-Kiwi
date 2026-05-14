@@ -78,6 +78,13 @@ public class OLEDMenu {
     private boolean inButtonTest = false;
     private final boolean[] btnPressed = {false, false, false};
 
+    // Test interactif des LEDs (compteur binaire 4 bits)
+    private volatile boolean inLedTest     = false;
+    private volatile boolean ledTestRunning = false;
+    private volatile int     ledTestCounter = 0;
+    private final boolean[]  ledTestSaved   = new boolean[4];
+    private Thread           ledTestThread  = null;
+
     // Superposition temporaire (info/résultat d'action)
     private String[] overlayLines = null;
     private long     overlayUntil = 0;
@@ -138,6 +145,10 @@ public class OLEDMenu {
             else scheduleRender();
             return;
         }
+        if (inLedTest) {
+            if (index == 0) exitLedTest();
+            return;
+        }
         switch (index) {
             case 0 -> enter();
             case 1 -> moveUp();
@@ -160,6 +171,43 @@ public class OLEDMenu {
 
     private synchronized void exitButtonTest() {
         inButtonTest = false;
+        scheduleRender();
+    }
+
+    private void enterLedTest() {
+        if (leds == null) { showOverlay("LEDs", "non disponibles"); return; }
+        for (int i = 0; i < 4; i++) ledTestSaved[i] = leds.getState(i);
+        ledTestCounter = 0;
+        inLedTest      = true;
+        ledTestRunning = true;
+        scheduleRender();
+
+        ledTestThread = new Thread(() -> {
+            int count = 0;
+            while (ledTestRunning) {
+                final int c = count;
+                for (int i = 0; i < 4; i++) leds.set(i, (c & (1 << i)) != 0);
+                ledTestCounter = c;
+                scheduleRender();
+                count = (count + 1) & 0x0F;
+                try { Thread.sleep(500); } catch (InterruptedException e) { break; }
+            }
+        }, "led-test");
+        ledTestThread.setDaemon(true);
+        ledTestThread.start();
+    }
+
+    private void exitLedTest() {
+        ledTestRunning = false;
+        if (ledTestThread != null) {
+            ledTestThread.interrupt();
+            try { ledTestThread.join(300); } catch (InterruptedException ignored) {}
+            ledTestThread = null;
+        }
+        inLedTest = false;
+        if (leds != null) {
+            for (int i = 0; i < 4; i++) leds.set(i, ledTestSaved[i]);
+        }
         scheduleRender();
     }
 
@@ -248,9 +296,11 @@ public class OLEDMenu {
         Thread hb = new Thread(() -> {
             try {
                 while (running && !Thread.currentThread().isInterrupted()) {
-                    if (leds != null) leds.set(3, true);
-                    Thread.sleep(100);
-                    if (leds != null) leds.set(3, false);
+                    if (!inLedTest && leds != null) {
+                        leds.set(3, true);
+                        Thread.sleep(100);
+                        if (!inLedTest && leds != null) leds.set(3, false);
+                    }
                     Thread.sleep(900);
                 }
             } catch (InterruptedException ignored) {}
@@ -271,11 +321,15 @@ public class OLEDMenu {
         final long overlayEnd;
         final boolean btnTest;
         final boolean p1, p2;
+        final boolean ledTest;
+        final int     ledCount;
 
         synchronized (this) {
             btnTest    = inButtonTest;
             p1         = btnPressed[1];
             p2         = btnPressed[2];
+            ledTest    = inLedTest;
+            ledCount   = ledTestCounter;
             items      = currentItems;
             selIdx     = selectedIndex;
             scrOff     = scrollOffset;
@@ -291,6 +345,21 @@ public class OLEDMenu {
         }
 
         display.clear();
+
+        // Écran test LEDs (compteur binaire 4 bits)
+        if (ledTest) {
+            String binary = String.format("%4s", Integer.toBinaryString(ledCount)).replace(' ', '0');
+            display.drawText8x8(fit("LED Test"), 0, 0);
+            display.drawText8x8("----------------", 0, 1);
+            display.drawText8x8(fit("bt0->To Exit"), 0, 2);
+            display.drawText8x8(fit("cnt:" + String.format("%2d", ledCount) + " b:" + binary), 0, 3);
+            display.drawText8x8("                ", 0, 4);
+            display.drawText8x8("                ", 0, 5);
+            display.drawText8x8("                ", 0, 6);
+            display.drawText8x8("                ", 0, 7);
+            display.flush();
+            return;
+        }
 
         // Écran test boutons
         if (btnTest) {
@@ -378,10 +447,7 @@ public class OLEDMenu {
     private MenuItem[] buildLedsMenu() {
         return new MenuItem[]{
             new MenuItem("Back",  (Runnable) this::goBack),
-            new MenuItem("Check", () -> {
-                if (actions != null) actions.onCheckLeds();
-                showOverlay("LED test", "Checking LEDs...");
-            }),
+            new MenuItem("Check", (Runnable) this::enterLedTest),
         };
     }
 
