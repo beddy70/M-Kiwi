@@ -528,17 +528,13 @@ public class OLEDMenu {
 
         // Écran Network Info
         if (netInfo) {
-            // MAC "AABBCCDDEEFF" → "AABB:CCDD:EEFF" (14 chars, tient en 16)
-            String macFmt = (nMac.length() == 12)
-                ? nMac.substring(0,4) + ":" + nMac.substring(4,8) + ":" + nMac.substring(8,12)
-                : nMac;
             display.drawText8x8(fit("Network Info"), 0, 0);
             display.drawText8x8("----------------", 0, 1);
             display.drawText8x8(fit("Bt0 to Exit"), 0, 2);
             display.drawText8x8("IP:", 0, 3);
             display.drawText8x8(fit(nIp), 0, 4);
             display.drawText8x8("MAC:", 0, 5);
-            display.drawText8x8(fit(macFmt), 0, 6);
+            display.drawText8x8(fit(nMac), 0, 6);
             display.drawText8x8("                ", 0, 7);
             display.flush();
             return;
