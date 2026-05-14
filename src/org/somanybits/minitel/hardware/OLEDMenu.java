@@ -78,6 +78,10 @@ public class OLEDMenu {
     private boolean inButtonTest = false;
     private final boolean[] btnPressed = {false, false, false};
 
+    // Test interactif joysticks
+    private volatile boolean inJoyTest  = false;
+    private final String[]   joyLabel   = {"", ""};  // dernière touche Joy0, Joy1
+
     // Réinitialisation par combo BTN1+BTN2 maintenu 3 s
     private volatile boolean resetPending = false;
     private Thread           resetThread  = null;
@@ -158,6 +162,10 @@ public class OLEDMenu {
         }
         if (inLedTest) {
             if (index == 0) exitLedTest();
+            return;
+        }
+        if (inJoyTest) {
+            if (index == 0) exitJoyTest();
             return;
         }
         switch (index) {
@@ -277,6 +285,25 @@ public class OLEDMenu {
         scheduleRender();
     }
 
+    private synchronized void enterJoyTest() {
+        joyLabel[0] = "";
+        joyLabel[1] = "";
+        inJoyTest = true;
+        scheduleRender();
+    }
+
+    private synchronized void exitJoyTest() {
+        inJoyTest = false;
+        scheduleRender();
+    }
+
+    /** Appelé par MinitelClient à chaque appui bouton joystick. */
+    public void onJoystickButton(int player, int button) {
+        if (!inJoyTest || player < 0 || player >= joyLabel.length) return;
+        synchronized (this) { joyLabel[player] = String.valueOf(button); }
+        scheduleRender();
+    }
+
     private synchronized void enter() {
         MenuItem item = currentItems[selectedIndex];
         if (item.hasChildren()) {
@@ -389,6 +416,8 @@ public class OLEDMenu {
         final boolean p1, p2;
         final boolean ledTest;
         final int     ledCount;
+        final boolean joyTest;
+        final String  joy0, joy1;
 
         synchronized (this) {
             btnTest    = inButtonTest;
@@ -396,6 +425,9 @@ public class OLEDMenu {
             p2         = btnPressed[2];
             ledTest    = inLedTest;
             ledCount   = ledTestCounter;
+            joyTest    = inJoyTest;
+            joy0       = joyLabel[0];
+            joy1       = joyLabel[1];
             items      = currentItems;
             selIdx     = selectedIndex;
             scrOff     = scrollOffset;
@@ -434,6 +466,20 @@ public class OLEDMenu {
             display.drawText8x8(fit("bt0->To Exit"), 0, 2);
             display.drawText8x8(fit("bt1->" + (p1 ? "pressed " : "released")), 0, 3);
             display.drawText8x8(fit("bt2->" + (p2 ? "pressed " : "released")), 0, 4);
+            display.drawText8x8("                ", 0, 5);
+            display.drawText8x8("                ", 0, 6);
+            display.drawText8x8("                ", 0, 7);
+            display.flush();
+            return;
+        }
+
+        // Écran test joysticks
+        if (joyTest) {
+            display.drawText8x8(fit("Joysticks Test"), 0, 0);
+            display.drawText8x8("----------------", 0, 1);
+            display.drawText8x8(fit("Btn 0 to Exit"), 0, 2);
+            display.drawText8x8(fit("Joy0 -> " + joy0), 0, 3);
+            display.drawText8x8(fit("Joy1 -> " + joy1), 0, 4);
             display.drawText8x8("                ", 0, 5);
             display.drawText8x8("                ", 0, 6);
             display.drawText8x8("                ", 0, 7);
@@ -586,10 +632,7 @@ public class OLEDMenu {
                 String info = (actions != null) ? actions.getJoystickInfo() : "N/A";
                 showOverlay(splitToLines(info));
             }),
-            new MenuItem("Test", () -> {
-                showOverlay("Joystick test", "Move sticks", "or press BTNs");
-                if (actions != null) actions.onTestJoystick();
-            }),
+            new MenuItem("Test", (Runnable) this::enterJoyTest),
         };
     }
 

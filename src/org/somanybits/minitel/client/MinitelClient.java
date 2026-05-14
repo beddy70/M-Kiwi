@@ -63,7 +63,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.3";
+    private static final String VERSION = "0.7.4";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -750,6 +750,7 @@ t.setEcho(false);
             public void onButton(int button, boolean pressed) {
                 // Debug: System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
                 if (!pressed) return;
+                if (oledMenu != null) oledMenu.onJoystickButton(playerIndex, button);
                 handleJoystickButton(playerIndex, button);
             }
             
