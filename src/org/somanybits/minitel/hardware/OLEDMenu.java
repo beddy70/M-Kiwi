@@ -488,7 +488,7 @@ public class OLEDMenu {
             String binary = String.format("%4s", Integer.toBinaryString(ledCount)).replace(' ', '0');
             display.drawText8x8(fit("LED Test"), 0, 0);
             display.drawText8x8("----------------", 0, 1);
-            display.drawText8x8(fit("bt0->To Exit"), 0, 2);
+            display.drawText8x8(fit("OK->To Exit"), 0, 2);
             display.drawText8x8(fit("cnt:" + String.format("%2d", ledCount) + " b:" + binary), 0, 3);
             display.drawText8x8("                ", 0, 4);
             display.drawText8x8("                ", 0, 5);
@@ -502,9 +502,9 @@ public class OLEDMenu {
         if (btnTest) {
             display.drawText8x8(fit("Button Test"), 0, 0);
             display.drawText8x8("----------------", 0, 1);
-            display.drawText8x8(fit("bt0->To Exit"), 0, 2);
-            display.drawText8x8(fit("bt1->" + (p1 ? "pressed " : "released")), 0, 3);
-            display.drawText8x8(fit("bt2->" + (p2 ? "pressed " : "released")), 0, 4);
+            display.drawText8x8(fit("OK->To Exit"), 0, 2);
+            display.drawText8x8(fit("UP->" + (p1 ? "pressed " : "released")), 0, 3);
+            display.drawText8x8(fit("DOWN->" + (p2 ? "pressed " : "released")), 0, 4);
             display.drawText8x8("                ", 0, 5);
             display.drawText8x8("                ", 0, 6);
             display.drawText8x8("                ", 0, 7);
@@ -516,7 +516,7 @@ public class OLEDMenu {
         if (joyTest) {
             display.drawText8x8(fit("Joysticks Test"), 0, 0);
             display.drawText8x8("----------------", 0, 1);
-            display.drawText8x8(fit("Btn 0 to Exit"), 0, 2);
+            display.drawText8x8(fit("OK to Exit"), 0, 2);
             display.drawText8x8(fit("Joy0 -> " + joy0), 0, 3);
             display.drawText8x8(fit("Joy1 -> " + joy1), 0, 4);
             display.drawText8x8("                ", 0, 5);
@@ -530,7 +530,7 @@ public class OLEDMenu {
         if (netInfo) {
             display.drawText8x8(fit("Network Info"), 0, 0);
             display.drawText8x8("----------------", 0, 1);
-            display.drawText8x8(fit("Bt0 to Exit"), 0, 2);
+            display.drawText8x8(fit("OK to Exit"), 0, 2);
             display.drawText8x8("IP:", 0, 3);
             display.drawText8x8(fit(nIp), 0, 4);
             display.drawText8x8("MAC:", 0, 5);
