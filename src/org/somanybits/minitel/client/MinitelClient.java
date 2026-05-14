@@ -985,6 +985,29 @@ t.setEcho(false);
         return "127.0.0.1";
     }
 
+    private static String resolveLocalMac() {
+        try {
+            java.util.Enumeration<java.net.NetworkInterface> ifaces =
+                java.net.NetworkInterface.getNetworkInterfaces();
+            while (ifaces.hasMoreElements()) {
+                java.net.NetworkInterface iface = ifaces.nextElement();
+                if (!iface.isUp() || iface.isLoopback()) continue;
+                java.util.Enumeration<java.net.InetAddress> addrs = iface.getInetAddresses();
+                while (addrs.hasMoreElements()) {
+                    java.net.InetAddress addr = addrs.nextElement();
+                    if (addr instanceof java.net.Inet4Address && !addr.isLoopbackAddress()) {
+                        byte[] mac = iface.getHardwareAddress();
+                        if (mac == null) return "N/A";
+                        StringBuilder sb = new StringBuilder();
+                        for (byte b : mac) sb.append(String.format("%02X", b));
+                        return sb.toString();
+                    }
+                }
+            }
+        } catch (java.net.SocketException ignored) {}
+        return "N/A";
+    }
+
     private OLEDMenu.Actions createMenuActions() {
         return new OLEDMenu.Actions() {
 
@@ -1007,6 +1030,10 @@ t.setEcho(false);
                     String ip = new String(p.getInputStream().readAllBytes()).trim();
                     return ip.isEmpty() ? "No IP" : ip;
                 } catch (java.io.IOException e) { return "N/A"; }
+            }
+
+            @Override public String getNetworkMac() {
+                return resolveLocalMac();
             }
 
             @Override public void onRenewDhcp() {

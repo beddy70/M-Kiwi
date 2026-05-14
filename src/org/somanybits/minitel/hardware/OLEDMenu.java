@@ -23,6 +23,7 @@ public class OLEDMenu {
         void onCheckLeds();
         void onReboot();
         String getNetworkInfo();
+        String getNetworkMac();
         void onRenewDhcp();
         String getCurrentUrl();
         String getSizeHistory();
@@ -73,6 +74,11 @@ public class OLEDMenu {
 
     private static final int MAX_VISIBLE    = 6;
     private static final int ITEMS_ROW_BASE = 2;
+
+    // Écran Network Info
+    private boolean inNetworkInfo = false;
+    private String  netIp  = "";
+    private String  netMac = "";
 
     // Test interactif des boutons
     private boolean inButtonTest = false;
@@ -166,6 +172,10 @@ public class OLEDMenu {
         }
         if (inJoyTest) {
             if (index == 0) exitJoyTest();
+            return;
+        }
+        if (inNetworkInfo) {
+            if (index == 0) exitNetworkInfo();
             return;
         }
         switch (index) {
@@ -297,6 +307,27 @@ public class OLEDMenu {
         scheduleRender();
     }
 
+    private void enterNetworkInfo() {
+        String ip  = "N/A";
+        String mac = "N/A";
+        if (actions != null) {
+            String raw = actions.getNetworkInfo();
+            ip = (raw != null && !raw.isBlank()) ? raw.trim().split("\\s+")[0] : "N/A";
+            mac = actions.getNetworkMac();
+        }
+        synchronized (this) {
+            netIp  = ip;
+            netMac = mac;
+            inNetworkInfo = true;
+        }
+        scheduleRender();
+    }
+
+    private synchronized void exitNetworkInfo() {
+        inNetworkInfo = false;
+        scheduleRender();
+    }
+
     /** Appelé par MinitelClient pour tout événement joystick (bouton ou axe mappé). */
     public void onJoystickEvent(int player, String label) {
         if (!inJoyTest || player < 0 || player >= joyLabel.length) return;
@@ -421,6 +452,8 @@ public class OLEDMenu {
         final int     ledCount;
         final boolean joyTest;
         final String  joy0, joy1;
+        final boolean netInfo;
+        final String  nIp, nMac;
 
         synchronized (this) {
             btnTest    = inButtonTest;
@@ -431,6 +464,9 @@ public class OLEDMenu {
             joyTest    = inJoyTest;
             joy0       = joyLabel[0];
             joy1       = joyLabel[1];
+            netInfo    = inNetworkInfo;
+            nIp        = netIp;
+            nMac       = netMac;
             items      = currentItems;
             selIdx     = selectedIndex;
             scrOff     = scrollOffset;
@@ -483,6 +519,21 @@ public class OLEDMenu {
             display.drawText8x8(fit("Btn 0 to Exit"), 0, 2);
             display.drawText8x8(fit("Joy0 -> " + joy0), 0, 3);
             display.drawText8x8(fit("Joy1 -> " + joy1), 0, 4);
+            display.drawText8x8("                ", 0, 5);
+            display.drawText8x8("                ", 0, 6);
+            display.drawText8x8("                ", 0, 7);
+            display.flush();
+            return;
+        }
+
+        // Écran Network Info
+        if (netInfo) {
+            String macCompact = "MAC:" + nMac.replaceAll("[:\\-]", "");
+            display.drawText8x8(fit("Network Info"), 0, 0);
+            display.drawText8x8("----------------", 0, 1);
+            display.drawText8x8(fit("Bt0 to Exit"), 0, 2);
+            display.drawText8x8(fit("IP : " + nIp), 0, 3);
+            display.drawText8x8(fit(macCompact), 0, 4);
             display.drawText8x8("                ", 0, 5);
             display.drawText8x8("                ", 0, 6);
             display.drawText8x8("                ", 0, 7);
@@ -580,10 +631,7 @@ public class OLEDMenu {
     private MenuItem[] buildNetworkMenu() {
         return new MenuItem[]{
             new MenuItem("Back",  (Runnable) this::goBack),
-            new MenuItem("Info",  () -> {
-                String info = (actions != null) ? actions.getNetworkInfo() : "N/A";
-                showOverlay(splitToLines(info));
-            }),
+            new MenuItem("Info",  (Runnable) this::enterNetworkInfo),
             new MenuItem("Renew", () -> {
                 showOverlay("DHCP renewing", "Please wait...");
                 if (actions != null) actions.onRenewDhcp();
