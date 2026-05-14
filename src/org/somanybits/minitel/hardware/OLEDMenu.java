@@ -74,6 +74,10 @@ public class OLEDMenu {
     private static final int MAX_VISIBLE    = 6;
     private static final int ITEMS_ROW_BASE = 2;
 
+    // Test interactif des boutons
+    private boolean inButtonTest = false;
+    private final boolean[] btnPressed = {false, false, false};
+
     // Superposition temporaire (info/résultat d'action)
     private String[] overlayLines = null;
     private long     overlayUntil = 0;
@@ -103,8 +107,8 @@ public class OLEDMenu {
 
         buttons = new GPIOButton();
         buttons.setListener(new GPIOButton.Listener() {
-            @Override public void onPressed(int index)  { handleButton(index); }
-            @Override public void onReleased(int index) {}
+            @Override public void onPressed(int index)  { handleButtonPressed(index); }
+            @Override public void onReleased(int index) { handleButtonReleased(index); }
         });
         buttons.init();
 
@@ -127,12 +131,36 @@ public class OLEDMenu {
 
     // ── Boutons ───────────────────────────────────────────────────────────────
 
-    private void handleButton(int index) {
+    private void handleButtonPressed(int index) {
+        synchronized (this) { if (index < btnPressed.length) btnPressed[index] = true; }
+        if (inButtonTest) {
+            if (index == 0) exitButtonTest();
+            else scheduleRender();
+            return;
+        }
         switch (index) {
             case 0 -> enter();
             case 1 -> moveUp();
             case 2 -> moveDown();
         }
+    }
+
+    private void handleButtonReleased(int index) {
+        synchronized (this) { if (index < btnPressed.length) btnPressed[index] = false; }
+        if (inButtonTest) scheduleRender();
+    }
+
+    private synchronized void enterButtonTest() {
+        btnPressed[0] = false;
+        btnPressed[1] = false;
+        btnPressed[2] = false;
+        inButtonTest = true;
+        scheduleRender();
+    }
+
+    private synchronized void exitButtonTest() {
+        inButtonTest = false;
+        scheduleRender();
     }
 
     private synchronized void enter() {
@@ -241,8 +269,13 @@ public class OLEDMenu {
         final String title;
         final String[] overlay;
         final long overlayEnd;
+        final boolean btnTest;
+        final boolean p1, p2;
 
         synchronized (this) {
+            btnTest    = inButtonTest;
+            p1         = btnPressed[1];
+            p2         = btnPressed[2];
             items      = currentItems;
             selIdx     = selectedIndex;
             scrOff     = scrollOffset;
@@ -258,6 +291,20 @@ public class OLEDMenu {
         }
 
         display.clear();
+
+        // Écran test boutons
+        if (btnTest) {
+            display.drawText8x8(fit("Button Test"), 0, 0);
+            display.drawText8x8("----------------", 0, 1);
+            display.drawText8x8(fit("bt0->To Exit"), 0, 2);
+            display.drawText8x8(fit("bt1->" + (p1 ? "pressed " : "released")), 0, 3);
+            display.drawText8x8(fit("bt2->" + (p2 ? "pressed " : "released")), 0, 4);
+            display.drawText8x8("                ", 0, 5);
+            display.drawText8x8("                ", 0, 6);
+            display.drawText8x8("                ", 0, 7);
+            display.flush();
+            return;
+        }
 
         // Superposition (résultat d'action)
         if (overlay != null && System.currentTimeMillis() < overlayEnd) {
@@ -324,10 +371,7 @@ public class OLEDMenu {
     private MenuItem[] buildButtonsMenu() {
         return new MenuItem[]{
             new MenuItem("Back",  (Runnable) this::goBack),
-            new MenuItem("Check", () -> {
-                if (actions != null) actions.onCheckButtons();
-                showOverlay("Button test", "Press buttons", "to test LEDs");
-            }),
+            new MenuItem("Check", (Runnable) this::enterButtonTest),
         };
     }
 
