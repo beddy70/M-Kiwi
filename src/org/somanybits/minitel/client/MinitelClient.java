@@ -999,7 +999,7 @@ t.setEcho(false);
                         byte[] mac = iface.getHardwareAddress();
                         if (mac == null) return "N/A";
                         StringBuilder sb = new StringBuilder();
-                        for (byte b : mac) sb.append(String.format("%02X", b));
+                        for (byte b : mac) sb.append(String.format("%02X", b & 0xFF));
                         return sb.toString();
                     }
                 }
