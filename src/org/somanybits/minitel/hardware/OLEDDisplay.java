@@ -216,6 +216,16 @@ public class OLEDDisplay {
         flush();
     }
 
+    /**
+     * Règle le contraste (luminosité) de l'écran.
+     * @param value 0x00 (minimum) … 0xFF (maximum); défaut hardware : 0xCF
+     */
+    public void setContrast(int value) {
+        if (!available) return;
+        cmd(0x81);
+        cmd(value & 0xFF);
+    }
+
     /** Libère les ressources Pi4J. */
     public void close() {
         available = false;

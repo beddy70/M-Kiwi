@@ -80,6 +80,11 @@ public class OLEDMenu {
     private String  netIp  = "";
     private String  netMac = "";
 
+    // Réglage luminosité (5 niveaux, index 0-4, défaut 3 = 0xCF)
+    private static final int[] BRIGHTNESS_LEVELS = {0x20, 0x60, 0x9F, 0xCF, 0xFF};
+    private volatile boolean inBrightnessMenu = false;
+    private volatile int     brightnessLevel  = 3;
+
     // Test interactif des boutons
     private boolean inButtonTest = false;
     private final boolean[] btnPressed = {false, false, false};
@@ -174,6 +179,12 @@ public class OLEDMenu {
             if (index == 0) exitJoyTest();
             return;
         }
+        if (inBrightnessMenu) {
+            if (index == 0) exitBrightnessMenu();
+            else if (index == 1) adjustBrightness(+1);
+            else if (index == 2) adjustBrightness(-1);
+            return;
+        }
         if (inNetworkInfo) {
             if (index == 0) exitNetworkInfo();
             return;
@@ -218,10 +229,12 @@ public class OLEDMenu {
     /** Réinitialise l'écran OLED et revient au menu principal. */
     private void doReinit() {
         // Arrêter les modes test en cours
-        inButtonTest   = false;
-        ledTestRunning = false;
+        inButtonTest     = false;
+        ledTestRunning   = false;
         if (ledTestThread != null) { ledTestThread.interrupt(); ledTestThread = null; }
-        inLedTest = false;
+        inLedTest        = false;
+        inBrightnessMenu = false;
+        brightnessLevel  = 3;  // retour au niveau par défaut (0xCF)
 
         // Exécuter via le thread de rendu pour éviter tout conflit I2C
         renderQueue.clear();
@@ -305,6 +318,28 @@ public class OLEDMenu {
     private synchronized void exitJoyTest() {
         inJoyTest = false;
         scheduleRender();
+    }
+
+    private synchronized void enterBrightnessMenu() {
+        inBrightnessMenu = true;
+        scheduleRender();
+    }
+
+    private synchronized void exitBrightnessMenu() {
+        inBrightnessMenu = false;
+        scheduleRender();
+    }
+
+    private void adjustBrightness(int delta) {
+        final int newLevel;
+        synchronized (this) {
+            brightnessLevel = Math.max(0, Math.min(BRIGHTNESS_LEVELS.length - 1, brightnessLevel + delta));
+            newLevel = brightnessLevel;
+        }
+        renderQueue.offer(() -> {
+            if (display != null) display.setContrast(BRIGHTNESS_LEVELS[newLevel]);
+            doRender();
+        });
     }
 
     private void enterNetworkInfo() {
@@ -452,19 +487,23 @@ public class OLEDMenu {
         final int     ledCount;
         final boolean joyTest;
         final String  joy0, joy1;
+        final boolean brightMenu;
+        final int     brightLevel;
         final boolean netInfo;
         final String  nIp, nMac;
 
         synchronized (this) {
-            btnTest    = inButtonTest;
-            p1         = btnPressed[1];
-            p2         = btnPressed[2];
-            ledTest    = inLedTest;
-            ledCount   = ledTestCounter;
-            joyTest    = inJoyTest;
-            joy0       = joyLabel[0];
-            joy1       = joyLabel[1];
-            netInfo    = inNetworkInfo;
+            btnTest     = inButtonTest;
+            p1          = btnPressed[1];
+            p2          = btnPressed[2];
+            ledTest     = inLedTest;
+            ledCount    = ledTestCounter;
+            joyTest     = inJoyTest;
+            joy0        = joyLabel[0];
+            joy1        = joyLabel[1];
+            brightMenu  = inBrightnessMenu;
+            brightLevel = brightnessLevel;
+            netInfo     = inNetworkInfo;
             nIp        = netIp;
             nMac       = netMac;
             items      = currentItems;
@@ -520,6 +559,24 @@ public class OLEDMenu {
             display.drawText8x8(fit("Joy0 -> " + joy0), 0, 3);
             display.drawText8x8(fit("Joy1 -> " + joy1), 0, 4);
             display.drawText8x8("                ", 0, 5);
+            display.drawText8x8("                ", 0, 6);
+            display.drawText8x8("                ", 0, 7);
+            display.flush();
+            return;
+        }
+
+        // Écran réglage luminosité
+        if (brightMenu) {
+            int filled = (brightLevel + 1) * 2;  // 2,4,6,8,10 pour niveaux 0-4
+            StringBuilder bar = new StringBuilder("[");
+            for (int i = 0; i < 10; i++) bar.append(i < filled ? '#' : ' ');
+            bar.append("]");
+            display.drawText8x8(fit("Brightness"), 0, 0);
+            display.drawText8x8("----------------", 0, 1);
+            display.drawText8x8(fit("OK to Exit"), 0, 2);
+            display.drawText8x8(fit("UP+ / DOWN-"), 0, 3);
+            display.drawText8x8(fit(bar.toString()), 0, 4);
+            display.drawText8x8(fit("Lv:" + (brightLevel + 1) + " / 5"), 0, 5);
             display.drawText8x8("                ", 0, 6);
             display.drawText8x8("                ", 0, 7);
             display.flush();
@@ -595,10 +652,11 @@ public class OLEDMenu {
 
     private MenuItem[] buildSystemMenu() {
         return new MenuItem[]{
-            new MenuItem("Back",    (Runnable) this::goBack),
-            new MenuItem("Buttons", buildButtonsMenu()),
-            new MenuItem("LEDs",    buildLedsMenu()),
-            new MenuItem("Reboot",  buildRebootMenu()),
+            new MenuItem("Back",       (Runnable) this::goBack),
+            new MenuItem("Buttons",    buildButtonsMenu()),
+            new MenuItem("LEDs",       buildLedsMenu()),
+            new MenuItem("Brightness", (Runnable) this::enterBrightnessMenu),
+            new MenuItem("Reboot",     buildRebootMenu()),
         };
     }
 

@@ -15,6 +15,7 @@ Minitel-Serveur est une plateforme Java innovante qui transforme un terminal Min
 - [Installation et Configuration](#-installation-et-configuration)
   - [1. Connexion Matérielle](#1-connexion-matérielle)
   - [2. Shield M-Kiwi (carte fille GPIO)](#2-shield-m-kiwi-carte-fille-gpio-optionnelle)
+    - [Menu OLED arborescent](#menu-oled-arborescent)
   - [3. Configuration Série](#3-configuration-série)
   - [4. Auto-négociation de Vitesse](#4-auto-négociation-de-vitesse)
   - [5. Désactiver le mode ECHO](#5-désactiver-le-mode-echo)
@@ -260,6 +261,164 @@ Câblage : `GPIO -- [R 330ohm] -- LED(+) -- LED(-) -- GND` (active-high)
 | BTN 2 | GPIO 26  | Pin 37     |
 
 Câblage : GPIO → [BTN] → GND. Le pull-up interne est activé automatiquement au démarrage via `raspi-gpio set <BCM> ip pu`.
+
+#### Menu OLED arborescent
+
+Au démarrage du client, un **menu arborescent** est affiché sur l'écran OLED. Les 3 boutons du Shield assurent la navigation :
+
+| Bouton | Index | Rôle |
+|--------|-------|------|
+| **OK** | BTN 0 — GPIO 20 | Valider / Entrer dans un sous-menu / Quitter un test |
+| **UP** | BTN 1 — GPIO 21 | Monter dans la liste |
+| **DOWN** | BTN 2 — GPIO 26 | Descendre dans la liste |
+
+L'écran affiche **16 caractères × 8 lignes** (police 8 × 8 px) :
+
+- **Ligne 0** : titre du menu courant (ou `M-Kiwi vX.X.X` en racine)
+- **Ligne 1** : séparateur `----------------`
+- **Lignes 2–7** : jusqu'à 6 entrées visibles avec défilement automatique ; le curseur `>` indique la sélection
+
+##### Réinitialisation d'urgence
+
+> **UP + DOWN maintenus 3 secondes** → réinitialise l'écran OLED et revient au menu principal.
+>
+> À utiliser si l'écran reste vierge au démarrage ou s'éteint inopinément.
+
+##### Arborescence complète
+
+```
+Main Menu
+├── System
+│   ├── Back
+│   ├── Buttons    ──► Check   (test interactif des boutons)
+│   ├── LEDs       ──► Check   (compteur binaire 4 bits sur les LEDs)
+│   ├── Brightness ──► réglage luminosité OLED (5 niveaux)
+│   └── Reboot     ──► Yes I'm sure
+├── Server
+│   ├── Back
+│   ├── Info    ──► affiche IP locale + port du serveur
+│   └── Restart
+├── JoySticks
+│   ├── Back
+│   ├── Info
+│   └── Test    ──► affiche les événements Joy0 / Joy1 en temps réel
+├── NetWork
+│   ├── Back
+│   ├── Info    ──► affiche IP + adresse MAC
+│   └── Renew   ──► renouvellement bail DHCP
+└── Client
+    ├── Back
+    ├── Current URL
+    ├── Size History
+    └── Restart
+```
+
+##### Représentation des écrans
+
+**Menu principal** — au démarrage le curseur `>` est sur `System` :
+
+```
+┌────────────────┐
+│M-Kiwi v0.7.4   │
+│────────────────│
+│>System         │
+│ Server         │
+│ JoySticks      │
+│ NetWork        │
+│ Client         │
+│                │
+└────────────────┘
+```
+
+**System / Buttons / Check** — état en temps réel de UP et DOWN :
+
+```
+┌────────────────┐
+│Button Test     │
+│────────────────│
+│OK->To Exit     │
+│UP->released    │
+│DOWN->pressed   │
+│                │
+│                │
+│                │
+└────────────────┘
+```
+
+**System / LEDs / Check** — compteur binaire 4 bits, période 500 ms. OK quitte et restaure l'état des LEDs :
+
+```
+┌────────────────┐
+│LED Test        │
+│────────────────│
+│OK->To Exit     │
+│cnt: 7 b:0111   │
+│                │
+│                │
+│                │
+│                │
+└────────────────┘
+```
+
+**System / Brightness** — réglage interactif de la luminosité en 5 niveaux. UP augmente, DOWN diminue, OK quitte en conservant le réglage. La réinitialisation UP+DOWN 3 s remet le niveau par défaut (niveau 4) :
+
+```
+┌────────────────┐
+│Brightness      │
+│────────────────│
+│OK to Exit      │
+│UP+ / DOWN-     │
+│[########  ]    │
+│Lv:4 / 5        │
+│                │
+│                │
+└────────────────┘
+```
+
+**JoySticks / Test** — dernière touche ou direction détectée sur chaque joystick :
+
+```
+┌────────────────┐
+│Joysticks Test  │
+│────────────────│
+│OK to Exit      │
+│Joy0 -> UP      │
+│Joy1 ->         │
+│                │
+│                │
+│                │
+└────────────────┘
+```
+
+**Server / Info** — overlay temporaire (3 s) avec IP et port du serveur local :
+
+```
+┌────────────────┐
+│Local Server    │
+│────────────────│
+│IP:192.168.1.42 │
+│PORT:8080       │
+│                │
+│                │
+│                │
+│                │
+└────────────────┘
+```
+
+**NetWork / Info** — IP et adresse MAC de l'interface réseau active :
+
+```
+┌────────────────┐
+│Network Info    │
+│────────────────│
+│OK to Exit      │
+│IP:             │
+│192.168.1.42    │
+│MAC:            │
+│B827:EB12:3456  │
+│                │
+└────────────────┘
+```
 
 ### 3. Configuration Série
 
