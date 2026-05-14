@@ -34,6 +34,9 @@ public class OLEDDisplay {
     public static final int  CHARS_PER_LINE = WIDTH / FONT_WIDTH;   // 21
     public static final int  MAX_LINES      = PAGES;                 // 8
 
+    public static final int  CHAR_SIZE_8X8     = 8;
+    public static final int  CHARS_PER_LINE_8X8 = WIDTH / CHAR_SIZE_8X8; // 16
+
     private final byte[] buffer = new byte[WIDTH * PAGES];  // 1024 octets
 
     private Context pi4j;
@@ -149,6 +152,35 @@ public class OLEDDisplay {
         if (px + 5 > WIDTH || row >= PAGES) return;
         for (int i = 0; i < 5; i++) buffer[base + i] = glyph[i];
         buffer[base + 5] = 0;   // espace inter-caractère
+    }
+
+    /**
+     * Dessine un caractère dans une grille 8×8 px (col 0-15, row 0-7).
+     * Réutilise la police 5×7 avec 1px de marge gauche et 2px droite.
+     */
+    public void drawChar8x8(char c, int col, int row) {
+        if (c < 0x20 || c > 0x7E) c = ' ';
+        byte[] g = FONT5X7[c - 0x20];
+        int px   = col * CHAR_SIZE_8X8;
+        int base = row * WIDTH + px;
+        if (px + CHAR_SIZE_8X8 > WIDTH || row >= PAGES) return;
+        buffer[base]   = 0;
+        buffer[base+1] = g[0];
+        buffer[base+2] = g[1];
+        buffer[base+3] = g[2];
+        buffer[base+4] = g[3];
+        buffer[base+5] = g[4];
+        buffer[base+6] = 0;
+        buffer[base+7] = 0;
+    }
+
+    /** Dessine une chaîne en grille 8×8 px depuis la colonne {@code col} sur la ligne {@code row}. */
+    public void drawText8x8(String text, int col, int row) {
+        if (text == null) return;
+        for (int i = 0; i < text.length(); i++) {
+            if (col + i >= CHARS_PER_LINE_8X8) break;
+            drawChar8x8(text.charAt(i), col + i, row);
+        }
     }
 
     /** Dessine une chaîne depuis la colonne {@code col} sur la ligne {@code row}. */

@@ -10,9 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.somanybits.log.LogManager;
-import org.somanybits.minitel.hardware.GPIOButton;
-import org.somanybits.minitel.hardware.GPIOLed;
-import org.somanybits.minitel.hardware.OLEDClient;
+import org.somanybits.minitel.hardware.OLEDMenu;
 import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.MinitelConnection;
 import org.somanybits.minitel.Teletel;
@@ -99,12 +97,10 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private String[] lastAxisAction2 = new String[8];  // Pour éviter les répétitions d'axes (joueur 2)
     private JoystickWatcher joystickWatcher = null;    // Surveillance plug & play
 
-    // Écran OLED SSD1306 (optionnel)
-    private OLEDClient oledClient = null;
-
-    // GPIO : LEDs et boutons-poussoirs (démo)
-    private GPIOLed    gpioLeds    = null;
-    private GPIOButton gpioButtons = null;
+    // Menu OLED + GPIO (LEDs et boutons)
+    private OLEDMenu oledMenu = null;
+    private String   server   = null;
+    private int      port     = 0;
 
     public static void main(String[] args) throws Exception {
 
@@ -125,6 +121,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     // private Page currentpage;
 
     public MinitelClient(String server, int port) throws IOException, InterruptedException {
+        this.server = server;
+        this.port   = port;
 
         PageManager pmgr = Kernel.getInstance().getPageManager();
         Config cfg = Kernel.getInstance().getConfig();
@@ -217,9 +215,12 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         mtr = new MinitelPageReader(server, port);
 
-        // Initialiser l'écran OLED (optionnel, silencieux si absent)
-        oledClient = new OLEDClient(VERSION, server, port);
-        oledClient.init();
+        // Initialiser le menu OLED + GPIO
+        oledMenu = new OLEDMenu(VERSION, createMenuActions());
+        oledMenu.init();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (oledMenu != null) oledMenu.close();
+        }, "shutdown-menu"));
 
         //currentpage = mtr.get("");
         pmgr.navigate("");
@@ -231,9 +232,6 @@ t.setEcho(false);
 
         // Initialiser le joystick USB si disponible
         initJoystick();
-
-        // Démo GPIO : LEDs + boutons-poussoirs
-        startGpioDemo();
 
 //            ReadNews rnews = new ReadNews(URL_NEWS); 
 //
@@ -531,7 +529,6 @@ t.setEcho(false);
      * Par défaut, le focus commence sur le menu (formHasFocus = false)
      */
     private void updateCurrentForm(Page page) {
-        if (oledClient != null) oledClient.onNavigate(page.getUrl());
         // Arrêter le game loop précédent avant de changer de page
         stopGameLoop();
         
@@ -753,7 +750,6 @@ t.setEcho(false);
             public void onButton(int button, boolean pressed) {
                 // Debug: System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
                 if (!pressed) return;
-                if (oledClient != null) oledClient.onButton(playerIndex, button);
                 handleJoystickButton(playerIndex, button);
             }
             
@@ -777,7 +773,6 @@ t.setEcho(false);
             joystick2 = reader;
         }
 
-        if (oledClient != null) oledClient.onJoystick(index, device, true);
         System.out.println("🎮 Joystick " + index + ": connecté ✓");
     }
 
@@ -796,7 +791,6 @@ t.setEcho(false);
             joystick2 = null;
             System.out.println("🎮 Joystick 1: déconnecté");
         }
-        if (oledClient != null) oledClient.onJoystick(index, null, false);
     }
     
     private void handleJoystickButton(int player, int button) {
@@ -963,62 +957,72 @@ t.setEcho(false);
         }
     }
 
-    // ========== DÉMO GPIO ==========
+    // ========== MENU OLED ==========
 
-    /**
-     * Démo LEDs + boutons-poussoirs GPIO.
-     *
-     * Comportement :
-     *   - Animation de démarrage : chase 0→1→2→3 puis retour 3→2→1→0
-     *   - Bouton maintenu → LED correspondante allumée (1:1, indices 0-2)
-     *   - LED 3 (GPIO 13) : heartbeat clignotant à 1 Hz
-     *
-     * Tout est silencieux si les GPIO ne sont pas disponibles.
-     */
-    private void startGpioDemo() {
-        gpioLeds = new GPIOLed();
-        if (!gpioLeds.init()) {
-            System.out.println("Démo GPIO : LEDs non disponibles, démo annulée");
-            gpioLeds = null;
-            return;
-        }
+    private OLEDMenu.Actions createMenuActions() {
+        return new OLEDMenu.Actions() {
 
-        // Bouton 0 = sélection LED (cycle 0→1→2→3)
-        // Bouton 1 = allume la LED sélectionnée
-        // Bouton 2 = éteint la LED sélectionnée
-        final int[] selectedLed = { 0 };
-
-        gpioButtons = new GPIOButton();
-        gpioButtons.setListener(new GPIOButton.Listener() {
-            @Override
-            public void onPressed(int index) {
-                switch (index) {
-                    case 0 -> {
-                        selectedLed[0] = (selectedLed[0] + 1) % GPIOLed.COUNT;
-                        System.out.println("GPIO BTN 0 — LED sélectionnée : " + selectedLed[0]);
-                    }
-                    case 1 -> {
-                        gpioLeds.set(selectedLed[0], false);
-                        System.out.println("GPIO BTN 1 — LED " + selectedLed[0] + " OFF");
-                    }
-                    case 2 -> {
-                        gpioLeds.set(selectedLed[0], true);
-                        System.out.println("GPIO BTN 2 — LED " + selectedLed[0] + " ON");
-                    }
-                }
+            @Override public void onCheckButtons() {
+                System.out.println("Menu: test boutons");
             }
-            @Override
-            public void onReleased(int index) {}
-        });
-        gpioButtons.init();
 
-        // Toutes les LEDs allumées dès le démarrage
-        gpioLeds.allOn();
+            @Override public void onCheckLeds() {
+                System.out.println("Menu: test LEDs");
+            }
 
-        System.out.println("Démo GPIO démarrée — LEDs GPIO "
-                + java.util.Arrays.toString(GPIOLed.GPIO_PINS)
-                + " / Boutons GPIO "
-                + java.util.Arrays.toString(GPIOButton.GPIO_PINS));
+            @Override public void onReboot() {
+                try { Runtime.getRuntime().exec(new String[]{"sudo", "reboot"}); }
+                catch (java.io.IOException e) { System.err.println("Reboot: " + e.getMessage()); }
+            }
+
+            @Override public String getNetworkInfo() {
+                try {
+                    Process p = Runtime.getRuntime().exec("hostname -I");
+                    String ip = new String(p.getInputStream().readAllBytes()).trim();
+                    return ip.isEmpty() ? "No IP" : ip;
+                } catch (java.io.IOException e) { return "N/A"; }
+            }
+
+            @Override public void onRenewDhcp() {
+                try { Runtime.getRuntime().exec(new String[]{"sudo", "dhclient"}); }
+                catch (java.io.IOException e) { System.err.println("DHCP: " + e.getMessage()); }
+            }
+
+            @Override public String getCurrentUrl() {
+                try {
+                    PageManager pmgr = Kernel.getInstance().getPageManager();
+                    Page p = pmgr.getCurrentPage();
+                    return p != null ? p.getUrl() : "none";
+                } catch (Exception e) { return "N/A"; }
+            }
+
+            @Override public String getSizeHistory() {
+                try {
+                    PageManager pmgr = Kernel.getInstance().getPageManager();
+                    return "Page: " + pmgr.getCurrentPage().getUrl();
+                } catch (Exception e) { return "N/A"; }
+            }
+
+            @Override public void onRestartClient() { System.exit(0); }
+
+            @Override public String getServerInfo() {
+                return server + ":" + port;
+            }
+
+            @Override public void onRestartServer() {
+                System.out.println("Menu: restart serveur (non implémenté)");
+            }
+
+            @Override public String getJoystickInfo() {
+                String j0 = (joystick  != null) ? "J1: OK" : "J1: ---";
+                String j1 = (joystick2 != null) ? "J2: OK" : "J2: ---";
+                return j0 + " " + j1;
+            }
+
+            @Override public void onTestJoystick() {
+                System.out.println("Menu: test joystick");
+            }
+        };
     }
 
 }
