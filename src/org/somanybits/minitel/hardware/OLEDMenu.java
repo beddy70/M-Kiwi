@@ -78,6 +78,10 @@ public class OLEDMenu {
     private boolean inButtonTest = false;
     private final boolean[] btnPressed = {false, false, false};
 
+    // Réinitialisation par combo BTN1+BTN2 maintenu 3 s
+    private volatile boolean resetPending = false;
+    private Thread           resetThread  = null;
+
     // Test interactif des LEDs (compteur binaire 4 bits)
     private volatile boolean inLedTest     = false;
     private volatile boolean ledTestRunning = false;
@@ -140,6 +144,13 @@ public class OLEDMenu {
 
     private void handleButtonPressed(int index) {
         synchronized (this) { if (index < btnPressed.length) btnPressed[index] = true; }
+
+        // Combo BTN1+BTN2 maintenu 3 s → réinitialisation (prioritaire sur tout)
+        if ((index == 1 || index == 2) && btnPressed[1] && btnPressed[2]) {
+            startResetCountdown();
+            return;
+        }
+
         if (inButtonTest) {
             if (index == 0) exitButtonTest();
             else scheduleRender();
@@ -158,7 +169,62 @@ public class OLEDMenu {
 
     private void handleButtonReleased(int index) {
         synchronized (this) { if (index < btnPressed.length) btnPressed[index] = false; }
+        if (index == 1 || index == 2) cancelResetCountdown();
         if (inButtonTest) scheduleRender();
+    }
+
+    private void startResetCountdown() {
+        if (resetPending) return;
+        resetPending = true;
+        System.out.println("OLEDMenu: combo BTN1+BTN2 détecté — réinitialisation dans 3 s");
+        resetThread = new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+                if (resetPending && btnPressed[1] && btnPressed[2]) {
+                    System.out.println("OLEDMenu: réinitialisation déclenchée");
+                    doReinit();
+                }
+            } catch (InterruptedException ignored) {}
+            resetPending = false;
+        }, "menu-reset");
+        resetThread.setDaemon(true);
+        resetThread.start();
+    }
+
+    private void cancelResetCountdown() {
+        if (!resetPending) return;
+        resetPending = false;
+        if (resetThread != null) { resetThread.interrupt(); resetThread = null; }
+    }
+
+    /** Réinitialise l'écran OLED et revient au menu principal. */
+    private void doReinit() {
+        // Arrêter les modes test en cours
+        inButtonTest   = false;
+        ledTestRunning = false;
+        if (ledTestThread != null) { ledTestThread.interrupt(); ledTestThread = null; }
+        inLedTest = false;
+
+        // Exécuter via le thread de rendu pour éviter tout conflit I2C
+        renderQueue.clear();
+        renderQueue.offer(() -> {
+            if (display != null) { display.close(); display = null; }
+            display = new OLEDDisplay();
+            if (!display.init()) {
+                System.out.println("OLEDMenu: réinitialisation OLED échouée");
+                display = null;
+            } else {
+                System.out.println("OLEDMenu: OLED réinitialisé");
+            }
+            synchronized (OLEDMenu.this) {
+                menuStack.clear();
+                indexStack.clear();
+                currentItems  = buildMainMenu();
+                selectedIndex = 0;
+                scrollOffset  = 0;
+            }
+            doRender();
+        });
     }
 
     private synchronized void enterButtonTest() {
