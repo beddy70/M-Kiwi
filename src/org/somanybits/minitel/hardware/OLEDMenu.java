@@ -499,8 +499,12 @@ public class OLEDMenu {
         return new MenuItem[]{
             new MenuItem("Back",    (Runnable) this::goBack),
             new MenuItem("Info",    () -> {
-                String info = (actions != null) ? actions.getServerInfo() : "N/A";
-                showOverlay(splitToLines(info));
+                String raw   = (actions != null) ? actions.getServerInfo() : "N/A";
+                int    colon = raw.lastIndexOf(':');
+                String host  = (colon >= 0) ? raw.substring(0, colon) : raw;
+                String port  = (colon >= 0) ? raw.substring(colon + 1) : "";
+                showOverlay("Local Server", "----------------",
+                            fit("IP:" + host), fit("PORT:" + port));
             }),
             new MenuItem("Restart", () -> {
                 showOverlay("Server", "restarting...");
