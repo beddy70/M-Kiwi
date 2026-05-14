@@ -211,6 +211,9 @@ Le Minitel fonctionne en logique 5V tandis que le Raspberry Pi utilise du 3.3V. 
 
 ### 2. Shield M-Kiwi (carte fille GPIO, optionnelle)
 
+> Remerciement particulier à **Michael Jouannigot** pour l'élaboration et l'amélioration du PCB.
+> Site web : [electrosens.fr](https://www.electrosens.fr)
+
 Ces composants sont gérés par le **client** (`MinitelClient`) via l'accès direct au sysfs GPIO (Linux 6.x, offset `gpiochip512`).
 
 #### Prérequis
