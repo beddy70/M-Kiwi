@@ -959,6 +959,29 @@ t.setEcho(false);
 
     // ========== MENU OLED ==========
 
+    /**
+     * Retourne la première IP locale non-loopback (ex. 192.168.x.x).
+     * Replie sur 127.0.0.1 si aucune interface réseau n'est active.
+     */
+    private static String resolveLocalIp() {
+        try {
+            java.util.Enumeration<java.net.NetworkInterface> ifaces =
+                java.net.NetworkInterface.getNetworkInterfaces();
+            while (ifaces.hasMoreElements()) {
+                java.net.NetworkInterface iface = ifaces.nextElement();
+                if (!iface.isUp() || iface.isLoopback()) continue;
+                java.util.Enumeration<java.net.InetAddress> addrs = iface.getInetAddresses();
+                while (addrs.hasMoreElements()) {
+                    java.net.InetAddress addr = addrs.nextElement();
+                    if (addr instanceof java.net.Inet4Address && !addr.isLoopbackAddress()) {
+                        return addr.getHostAddress();
+                    }
+                }
+            }
+        } catch (java.net.SocketException ignored) {}
+        return "127.0.0.1";
+    }
+
     private OLEDMenu.Actions createMenuActions() {
         return new OLEDMenu.Actions() {
 
@@ -1006,7 +1029,7 @@ t.setEcho(false);
             @Override public void onRestartClient() { System.exit(0); }
 
             @Override public String getServerInfo() {
-                return server + ":" + port;
+                return resolveLocalIp() + ":" + port;
             }
 
             @Override public void onRestartServer() {
