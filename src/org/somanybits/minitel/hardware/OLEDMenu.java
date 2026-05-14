@@ -297,10 +297,13 @@ public class OLEDMenu {
         scheduleRender();
     }
 
-    /** Appelé par MinitelClient à chaque appui bouton joystick. */
-    public void onJoystickButton(int player, int button) {
+    /** Appelé par MinitelClient pour tout événement joystick (bouton ou axe mappé). */
+    public void onJoystickEvent(int player, String label) {
         if (!inJoyTest || player < 0 || player >= joyLabel.length) return;
-        synchronized (this) { joyLabel[player] = String.valueOf(button); }
+        synchronized (this) {
+            if (label.equals(joyLabel[player])) return;
+            joyLabel[player] = label;
+        }
         scheduleRender();
     }
 

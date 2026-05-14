@@ -750,15 +750,17 @@ t.setEcho(false);
             public void onButton(int button, boolean pressed) {
                 // Debug: System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
                 if (!pressed) return;
-                if (oledMenu != null) oledMenu.onJoystickButton(playerIndex, button);
+                if (oledMenu != null) oledMenu.onJoystickEvent(playerIndex, String.valueOf(button));
                 handleJoystickButton(playerIndex, button);
             }
-            
+
             @Override
             public void onAxis(int axis, int value) {
-                // Debug: if (Math.abs(value) > 10000) {
-                //     System.out.println("🎮 [P" + playerIndex + "] Axe " + axis + " = " + value);
-                // }
+                if (oledMenu != null) {
+                    JoystickMapping mapping = (playerIndex == 0) ? joystickMapping : joystickMapping2;
+                    String action = mapping.getAxisAction(axis, value);
+                    if (action != null) oledMenu.onJoystickEvent(playerIndex, action);
+                }
                 handleJoystickAxis(playerIndex, axis, value);
             }
         });
