@@ -998,7 +998,7 @@ t.setEcho(false);
                     if (addr instanceof java.net.Inet4Address && !addr.isLoopbackAddress()) {
                         byte[] mac = iface.getHardwareAddress();
                         if (mac == null || mac.length < 6) return "N/A";
-                        return String.format("%02X%02X:%02X%02X:%02X%02X",
+                        return String.format("%02X:%02X:%02X:%02X:%02X:%02X",
                             mac[0] & 0xFF, mac[1] & 0xFF,
                             mac[2] & 0xFF, mac[3] & 0xFF,
                             mac[4] & 0xFF, mac[5] & 0xFF);
