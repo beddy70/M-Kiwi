@@ -1,4 +1,8 @@
-<minitel title="MO5">
+<minitel title="M-Kiwi Accueil">
+
+	<key name="sommaire" link="index.vtml"/>
+	<key name="guide" link="guide.vtml"/>
+	<key name="telephone" link="contact.vtml"/>
 
 	<!--<img src="images/plant_border2.png" left="1" top="1" width="38" height="24" style="dithering">-->
 	
