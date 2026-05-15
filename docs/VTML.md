@@ -1462,3 +1462,7 @@ root/
     ├── logo.jpg
     └── banner.png
 ```
+
+---
+
+> Pour la référence complète de l'API JavaScript (variables globales, storage, `_teletel`, joystick, layers, DOM…), voir [JS.md](JS.md).
