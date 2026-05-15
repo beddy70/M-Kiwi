@@ -39,6 +39,9 @@ public class OLEDDisplay {
 
     private final byte[] buffer = new byte[WIDTH * PAGES];  // 1024 octets
 
+    // Mode headless requis pour Graphics2D sur Raspberry Pi sans écran
+    static { System.setProperty("java.awt.headless", "true"); }
+
     private Context pi4j;
     private I2C i2c;
     private boolean available = false;
@@ -224,6 +227,135 @@ public class OLEDDisplay {
         if (!available) return;
         cmd(0x81);
         cmd(value & 0xFF);
+    }
+
+    // ── Pixels et images ─────────────────────────────────────────────────────
+
+    /**
+     * Allume ou éteint un pixel individuel dans le buffer.
+     * Le buffer SSD1306 est organisé en pages de 8 lignes : chaque byte
+     * représente une colonne de 8 pixels (bit 0 = ligne du haut de la page).
+     *
+     * @param x  colonne (0–127)
+     * @param y  ligne en pixels (0–63)
+     * @param on true = pixel allumé
+     */
+    public void drawPixel(int x, int y, boolean on) {
+        if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+        int idx = (y / 8) * WIDTH + x;
+        if (on) buffer[idx] = (byte)(buffer[idx] |  (1 << (y % 8)));
+        else    buffer[idx] = (byte)(buffer[idx] & ~(1 << (y % 8)));
+    }
+
+    /**
+     * Dessine un {@link java.awt.image.BufferedImage} dans le buffer.
+     * L'image est redimensionnée à {@code width × height} pixels, puis binarisée
+     * par seuillage de luminance (ITU-R BT.601 : 0.299R + 0.587G + 0.114B).
+     *
+     * @param src       image source (tout format AWT)
+     * @param x         colonne de départ (0–127)
+     * @param y         ligne de départ en pixels (0–63)
+     * @param width     largeur cible en pixels
+     * @param height    hauteur cible en pixels
+     * @param threshold seuil de binarisation 0–255 ; luminance ≥ seuil → pixel allumé.
+     *                  128 convient aux logos ; baisser pour les images claires.
+     */
+    public void drawImage(java.awt.image.BufferedImage src,
+                          int x, int y, int width, int height, int threshold) {
+        if (src == null || width <= 0 || height <= 0) return;
+
+        java.awt.image.BufferedImage scaled =
+            new java.awt.image.BufferedImage(width, height,
+                                             java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = scaled.createGraphics();
+        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                           java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.drawImage(src, 0, 0, width, height, null);
+        g.dispose();
+
+        for (int py = 0; py < height; py++) {
+            for (int px = 0; px < width; px++) {
+                int sx = x + px, sy = y + py;
+                if (sx >= WIDTH || sy >= HEIGHT) continue;
+                int rgb = scaled.getRGB(px, py);
+                int lum = ((rgb >> 16 & 0xFF) * 77
+                         + (rgb >>  8 & 0xFF) * 150
+                         + ( rgb      & 0xFF) * 29) >> 8;
+                drawPixel(sx, sy, lum >= threshold);
+            }
+        }
+    }
+
+    /** Variante avec seuil par défaut (128). */
+    public void drawImage(java.awt.image.BufferedImage src,
+                          int x, int y, int width, int height) {
+        drawImage(src, x, y, width, height, 128);
+    }
+
+    /**
+     * Charge un fichier image (PNG, GIF, JPEG, BMP…) et le dessine dans le buffer.
+     *
+     * @param path      chemin vers le fichier
+     * @param x         colonne de départ (0–127)
+     * @param y         ligne de départ en pixels (0–63)
+     * @param width     largeur cible en pixels
+     * @param height    hauteur cible en pixels
+     * @param threshold seuil de binarisation (0–255)
+     * @return true si chargé et dessiné avec succès
+     */
+    public boolean drawImageFile(String path, int x, int y,
+                                 int width, int height, int threshold) {
+        try {
+            java.awt.image.BufferedImage img =
+                javax.imageio.ImageIO.read(new java.io.File(path));
+            if (img == null) {
+                System.out.println("OLEDDisplay: format non reconnu — " + path);
+                return false;
+            }
+            drawImage(img, x, y, width, height, threshold);
+            return true;
+        } catch (java.io.IOException e) {
+            System.out.println("OLEDDisplay: erreur chargement — " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Variante avec seuil par défaut (128). */
+    public boolean drawImageFile(String path, int x, int y, int width, int height) {
+        return drawImageFile(path, x, y, width, height, 128);
+    }
+
+    /**
+     * Charge une image depuis un flux (ressource JAR, réseau…) et la dessine.
+     *
+     * @param is        flux d'entrée (PNG, GIF, JPEG…)
+     * @param x         colonne de départ (0–127)
+     * @param y         ligne de départ en pixels (0–63)
+     * @param width     largeur cible en pixels
+     * @param height    hauteur cible en pixels
+     * @param threshold seuil de binarisation (0–255)
+     * @return true si lu et dessiné avec succès
+     */
+    public boolean drawImageStream(java.io.InputStream is, int x, int y,
+                                   int width, int height, int threshold) {
+        try {
+            java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(is);
+            if (img == null) {
+                System.out.println("OLEDDisplay: format non reconnu depuis le flux");
+                return false;
+            }
+            drawImage(img, x, y, width, height, threshold);
+            return true;
+        } catch (java.io.IOException e) {
+            System.out.println("OLEDDisplay: erreur lecture flux — " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Variante avec seuil par défaut (128). */
+    public boolean drawImageStream(java.io.InputStream is,
+                                   int x, int y, int width, int height) {
+        return drawImageStream(is, x, y, width, height, 128);
     }
 
     /** Libère les ressources Pi4J. */
