@@ -465,6 +465,17 @@ public class MinitelPageReader {
                 return new VTMLBrComponent();
             }
 
+            case "fillchar" -> {
+                int left       = parseInt(attrs.get("left"),   0);
+                int top        = parseInt(attrs.get("top"),    0);
+                int width      = parseInt(attrs.get("width"),  40);
+                int height     = parseInt(attrs.get("height"), 1);
+                String fillCh  = attrs.get("char");
+                String ink     = attrs.get("ink");
+                String bg      = attrs.get("background");
+                return new VTMLFillcharComponent(left, top, width, height, fillCh, ink, bg);
+            }
+
             case "menu" -> {
                 String name = attrs.get("name");
                 String keytype = attrs.get("keytype");
