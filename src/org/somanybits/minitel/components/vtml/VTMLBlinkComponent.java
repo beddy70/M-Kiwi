@@ -34,22 +34,24 @@ public class VTMLBlinkComponent extends ModelMComponent {
 
     @Override
     public byte[] getBytes() {
+        return getBytesClipped(Integer.MAX_VALUE);
+    }
+
+    public byte[] getBytesClipped(int maxChars) {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            
-            // Activer le clignotement
+
             out.write(GetTeletelCode.setBlink(true));
-            
-            // Ajouter le texte
+
             if (text != null && !text.isEmpty()) {
-                out.write(text.getBytes("ISO-8859-1"));
+                String t = text.length() > maxChars ? text.substring(0, maxChars) : text;
+                out.write(t.getBytes("ISO-8859-1"));
             }
-            
-            // Désactiver le clignotement (retour à fixe)
+
             out.write(GetTeletelCode.setBlink(false));
-            
+
             return out.toByteArray();
-            
+
         } catch (IOException e) {
             e.printStackTrace();
             return new byte[0];

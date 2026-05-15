@@ -51,15 +51,32 @@ public class VTMLRowComponent extends ModelMComponent {
             setY(getParent().getY());
             divdata.write(GetTeletelCode.setCursor(getParent().getX(), getParent().getY()));
             parent.setY(getParent().getY() + 1);
-            
-            // Écrire le texte s'il existe
+
+            int parentWidth = getParent().getWidth();
+            int budget = parentWidth > 0 ? parentWidth : Integer.MAX_VALUE;
+
             if (text != null && !text.isEmpty()) {
-                divdata.write(text.getBytes());
+                String t = (budget < Integer.MAX_VALUE && text.length() > budget)
+                        ? text.substring(0, budget) : text;
+                budget = (budget == Integer.MAX_VALUE) ? Integer.MAX_VALUE : budget - t.length();
+                divdata.write(t.getBytes("ISO-8859-1"));
             }
-            
-            // Traiter les enfants (comme <color>, <blink>, etc.)
+
             for (var child : getChilds()) {
-                divdata.write(child.getBytes());
+                if (budget <= 0) break;
+                if (child instanceof VTMLColorComponent cc) {
+                    divdata.write(cc.getBytesClipped(budget));
+                    String ct = cc.getText();
+                    if (ct != null && budget < Integer.MAX_VALUE)
+                        budget -= Math.min(ct.length(), budget);
+                } else if (child instanceof VTMLBlinkComponent bc) {
+                    divdata.write(bc.getBytesClipped(budget));
+                    String bt = bc.getText();
+                    if (bt != null && budget < Integer.MAX_VALUE)
+                        budget -= Math.min(bt.length(), budget);
+                } else {
+                    divdata.write(child.getBytes());
+                }
             }
 
             return divdata.toByteArray();

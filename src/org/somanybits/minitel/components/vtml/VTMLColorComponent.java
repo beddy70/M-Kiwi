@@ -95,28 +95,26 @@ public class VTMLColorComponent extends ModelMComponent {
 
     @Override
     public byte[] getBytes() {
+        return getBytesClipped(Integer.MAX_VALUE);
+    }
+
+    public byte[] getBytesClipped(int maxChars) {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            
-            // Définir la couleur de fond si spécifiée
+
             byte bgColor = parseColor(background);
-            if (bgColor >= 0) {
-                out.write(GetTeletelCode.setBGColor(bgColor));
-            }
-            
-            // Définir la couleur d'encre si spécifiée
+            if (bgColor >= 0) out.write(GetTeletelCode.setBGColor(bgColor));
+
             byte inkColor = parseColor(ink);
-            if (inkColor >= 0) {
-                out.write(GetTeletelCode.setTextColor(inkColor));
-            }
-            
-            // Ajouter le texte inline si présent
+            if (inkColor >= 0) out.write(GetTeletelCode.setTextColor(inkColor));
+
             if (text != null && !text.isEmpty()) {
-                out.write(text.getBytes("ISO-8859-1"));
+                String t = text.length() > maxChars ? text.substring(0, maxChars) : text;
+                out.write(t.getBytes("ISO-8859-1"));
             }
-            
+
             return out.toByteArray();
-            
+
         } catch (IOException e) {
             e.printStackTrace();
             return new byte[0];
