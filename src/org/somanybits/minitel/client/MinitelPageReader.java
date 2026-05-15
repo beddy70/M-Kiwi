@@ -687,15 +687,22 @@ public class MinitelPageReader {
                 String event = attrs.get("event");
                 int interval = parseInt(attrs.get("interval"), 200);
                 System.out.println("🎮 Timer: event=" + event + ", interval=" + interval + "ms");
-                // Chercher le layers parent
+                // Chercher un layers parent
                 MComponent parent = currentComponent;
+                boolean foundLayers = false;
                 while (parent != null) {
                     if (parent instanceof VTMLLayersComponent layers) {
                         layers.setTickFunction(event, interval);
                         System.out.println("🎮 Timer configuré sur layers");
+                        foundLayers = true;
                         break;
                     }
                     parent = (parent instanceof ModelMComponent m) ? m.getParent() : null;
+                }
+                if (!foundLayers) {
+                    // Timer au niveau de la page (ex: horloge)
+                    page.setTimer(event, interval);
+                    System.out.println("⏱ Timer page: " + event + "() toutes les " + interval + "ms");
                 }
                 return null;  // Pas de composant visuel
             }

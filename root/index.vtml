@@ -8,7 +8,7 @@
 	
    	<div name="banner" left="10" top="1" width="32" height="24">
    		<row> __  __   _  ___          _</row>
-	    <row>|  \/  | | |/ (_)_      _(_)</row>
+	    <row>|  \/  | | |/ (s_)_      _(_)</row>
 	    <row>| |\/| |-| ' /| \ \ /\ / / |</row>
 	    <row>| |  | |-| . \| |\ V  V /| |</row>
 	    <row>|_|  |_| |_|\_\_| \_/\_/ |_|</row>
@@ -19,9 +19,20 @@
 
 	<fillchar char=" " ink="white" background="blue" left="0" top="1" width="9" height="24"/>
 
-	<div left="0" top="22" width="9" height="1">
-		<row><color ink="yellow" background="blue"> </color><script>var d=new Date();var h=("0"+d.getHours()).slice(-2);var m=("0"+d.getMinutes()).slice(-2);var s=("0"+d.getSeconds()).slice(-2);output=h+":"+m+":"+s;</script></row>
-	</div>  
+	<timer event="updateClock" interval="1000"/>
+	<script>
+		function updateClock() {
+			var d = new Date();
+			var h = ("0" + d.getHours()).slice(-2);
+			var m = ("0" + d.getMinutes()).slice(-2);
+			var s = ("0" + d.getSeconds()).slice(-2);
+			_teletel.setCursor(0, 22);
+			_teletel.setTextColor(3);
+			_teletel.setBGColor(4);
+			_teletel.writeString(" " + h + ":" + m + ":" + s);
+		}
+		updateClock();
+	</script>
 	
 	<div name="banner" left="1" top="7" width="15" height="1">
 		<row><color ink="black">MENU:</color></row>
@@ -30,7 +41,7 @@
 	<menu name="main" left="1" top="9" width="15" height="10" keytype="number">
 		<item link="concerts/hugo.vtml">Aide</item>
 		<item link="concerts/hugo.vtml">Demo</item>
-		<item link="bar/">Jeu</item>	
+		<item link="games/">Jeu</item>	
 		<item link="mickey.vtml">Image</item>
 		<item link="ServerStatus.mod?val1=69&val2=hello">Info</item>
 		<item link="ServerStatus.mod?val1=69&val2=hello">Liens</item>

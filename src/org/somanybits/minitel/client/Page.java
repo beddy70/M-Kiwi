@@ -33,6 +33,8 @@ public class Page {
     private String title;
     private String url;
     private int refreshSeconds = 0;
+    private String timerFunction = null;
+    private int timerInterval = 0;
 
     private ByteArrayOutputStream buf = new ByteArrayOutputStream(1024);
 
@@ -56,6 +58,11 @@ public class Page {
 
     public int getRefreshSeconds() { return refreshSeconds; }
     public void setRefreshSeconds(int s) { this.refreshSeconds = s; }
+
+    public String getTimerFunction() { return timerFunction; }
+    public int    getTimerInterval() { return timerInterval; }
+    public boolean hasTimer() { return timerFunction != null && timerInterval > 0; }
+    public void setTimer(String fn, int intervalMs) { this.timerFunction = fn; this.timerInterval = intervalMs; }
 
     /**
      * Réinitialise les données de la page (pour reload)

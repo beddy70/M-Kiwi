@@ -2,6 +2,12 @@
   <div left="0" top="1">
     <row><color ink="red">VTML 1.0</color></row>
     <br>
+    <row> __  __ _ _  ___          _</row>
+    <row>|  \/  (_) |/ (_)_      _(_)</row>
+    <row>| |\/| | | ' /| \ \ /\ / / |</row>
+    <row>| |  | | | . \| |\ V  V /| |</row>
+    <row>|_|  |_|_|_|\_\_| \_/\_/ |_|</row>
+    <row></row>
     <row><color ink="red">Client version 1.0 (C) 2025</color></row>
     <row><color ink="red">Author : Eddy BRIERE</color></row>
     <row><color ink="red">email  : peassembler@yahoo.fr</color></row>

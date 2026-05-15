@@ -83,6 +83,10 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     // Game loop
     private Thread gameLoopThread = null;
     private volatile boolean gameLoopRunning = false;
+
+    // Page timer (ex: horloge via <timer event="fn" interval="N"/>)
+    private Thread pageTimerThread = null;
+    private volatile boolean pageTimerRunning = false;
     
     // Verrou pour synchroniser l'accès au script engine et au layers
     private final Object scriptLock = new Object();
@@ -163,6 +167,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         mc.addCodeSequenceEvent(this);
 
         t = new Teletel(mc);
+        VTMLScriptEngine.getInstance().setVariable("_teletel", t);
         t.clear();
         t.clearLineZero();
 
@@ -552,8 +557,8 @@ t.setEcho(false);
      * Par défaut, le focus commence sur le menu (formHasFocus = false)
      */
     private void updateCurrentForm(Page page) {
-        // Arrêter le game loop précédent avant de changer de page
         stopGameLoop();
+        stopPageTimer();
         
         currentForm = page.getForm();
         currentStatus = page.getStatus();
@@ -594,6 +599,10 @@ t.setEcho(false);
         } else {
             currentForm = null;
             formHasFocus = false;
+        }
+
+        if (page.hasTimer()) {
+            startPageTimer(page.getTimerFunction(), page.getTimerInterval());
         }
 
         scheduleRefresh(page);
@@ -734,6 +743,38 @@ t.setEcho(false);
         }
     }
     
+    private void startPageTimer(String timerFunc, int interval) {
+        if (pageTimerRunning) return;
+        pageTimerRunning = true;
+        pageTimerThread = new Thread(() -> {
+            while (pageTimerRunning) {
+                try {
+                    synchronized (scriptLock) {
+                        VTMLScriptEngine.getInstance().execute(timerFunc + "()");
+                    }
+                    Thread.sleep(interval);
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Exception e) {
+                    System.err.println("❌ Erreur page timer: " + e.getMessage());
+                }
+            }
+        }, "PageTimer");
+        pageTimerThread.setDaemon(true);
+        pageTimerThread.start();
+        System.out.println("⏱ Page timer démarré: " + timerFunc + "() toutes les " + interval + "ms");
+    }
+
+    private void stopPageTimer() {
+        if (pageTimerRunning) {
+            pageTimerRunning = false;
+            if (pageTimerThread != null) {
+                pageTimerThread.interrupt();
+                pageTimerThread = null;
+            }
+        }
+    }
+
     // ========== JOYSTICK USB ==========
     
     private void initJoystick() {
