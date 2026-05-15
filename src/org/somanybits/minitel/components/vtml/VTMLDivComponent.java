@@ -36,8 +36,10 @@ public class VTMLDivComponent extends ModelMComponent {
             int top   = getY();
             int width = getWidth();
 
-            String text = getTextContent();
-            if (text != null && !text.trim().isEmpty()) {
+            String rawText = getTextContent();
+            // Trim indentation whitespace from VTML file before processing
+            String text = (rawText != null) ? rawText.trim() : null;
+            if (text != null && !text.isEmpty()) {
                 if (width > 0) {
                     // Wrap text at width, capped at height lines when height > 0
                     int height = getHeight();
