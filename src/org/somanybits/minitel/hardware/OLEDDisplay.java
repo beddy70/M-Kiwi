@@ -21,7 +21,7 @@ import com.pi4j.io.i2c.I2CConfig;
  * Graceful degradation : si Pi4J ou l'I2C ne sont pas disponibles,
  * {@link #isAvailable()} retourne false et aucune exception n'est propagée.
  */
-public class OLEDDisplay {
+public class OLEDDisplay  {
 
     public static final int DEFAULT_BUS     = 1;       // /dev/i2c-1
     public static final int DEFAULT_ADDRESS = 0x3C;    // SSD1306 adresse courante

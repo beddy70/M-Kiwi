@@ -169,20 +169,31 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //        t.setBGColor(Teletel.COLOR_GREEN);
 //        t.setTextColor(Teletel.COLOR_WHITE);
 //        t.writeString(" ");
-        t.setTextColor(Teletel.COLOR_RED);
-        t.setCursor(0, 1);
-        t.writeString("VTML 1.0");
-        t.setCursor(0, 3);
-        t.writeString("Client version " + VERSION + " (C) 2025");
-        t.setCursor(0, 4);
-        t.writeString("Author : Eddy BRIERE");
-        t.setCursor(0, 5);
-        t.writeString("email  : peassembler@yahoo.fr");
-        t.setCursor(0, 7);
-        t.setTextColor(Teletel.COLOR_WHITE);
-        t.setBlink(true);
-        t.writeString("Initialisation ! Waiting please... ");
-        t.setBlink(false);
+        java.io.File splashFile = new java.io.File("message.vtml");
+        if (splashFile.exists()) {
+            try {
+                Page splashPage = new MinitelPageReader(server, port).getFromFile(splashFile);
+                byte[] data = splashPage.getData();
+                if (data != null) mc.writeBytes(data);
+            } catch (Exception e) {
+                logmgr.addLog("message.vtml: " + e.getMessage(), LogManager.MSG_TYPE_ERROR);
+            }
+        } else {
+            t.setTextColor(Teletel.COLOR_RED);
+            t.setCursor(0, 1);
+            t.writeString("VTML 1.0");
+            t.setCursor(0, 3);
+            t.writeString("Client version " + VERSION + " (C) 2025");
+            t.setCursor(0, 4);
+            t.writeString("Author : Eddy BRIERE");
+            t.setCursor(0, 5);
+            t.writeString("email  : peassembler@yahoo.fr");
+            t.setCursor(0, 7);
+            t.setTextColor(Teletel.COLOR_WHITE);
+            t.setBlink(true);
+            t.writeString("Initialisation ! Waiting please... ");
+            t.setBlink(false);
+        }
 
 
 

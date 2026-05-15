@@ -53,13 +53,6 @@ public class MinitelPageReader {
             url = "http://" + domain + ":" + Integer.toString(port) + "/" + url;
         }
 
-        page = new Page(Page.MODE_40_COL);
-
-        // Initialiser la structure de composants
-        rootComponent = null;
-        currentComponent = null;
-
-        // READ LINK
         Document doc;
         try {
             doc = Jsoup.connect(url)
@@ -68,9 +61,39 @@ public class MinitelPageReader {
                     .get();
         } catch (IOException ex) {
             System.err.println("Error reading page: " + ex.getMessage());
-            page.addData(("Error:" + ex.getMessage()).getBytes());
-            return page;
+            Page p = new Page(Page.MODE_40_COL);
+            p.addData(("Error:" + ex.getMessage()).getBytes());
+            return p;
         }
+
+        return parsePage(doc);
+    }
+
+    /**
+     * Charge un fichier VTML depuis le disque et retourne les données Minitel.
+     * Permet d'afficher un écran local sans connexion au serveur HTTP.
+     *
+     * @param file fichier VTML à charger (UTF-8)
+     * @return Page avec les données Minitel, ou page vide en cas d'erreur
+     */
+    public Page getFromFile(java.io.File file) throws IOException {
+        Document doc;
+        try {
+            doc = Jsoup.parse(file, "UTF-8");
+        } catch (IOException ex) {
+            System.err.println("Erreur lecture fichier VTML: " + ex.getMessage());
+            Page p = new Page(Page.MODE_40_COL);
+            p.addData(("Error:" + ex.getMessage()).getBytes());
+            return p;
+        }
+        return parsePage(doc);
+    }
+
+    /** Parse un document Jsoup déjà chargé et construit la Page Minitel. */
+    private Page parsePage(Document doc) throws IOException {
+        page = new Page(Page.MODE_40_COL);
+        rootComponent = null;
+        currentComponent = null;
 
         // Parcourir le document et construire l'arbre de composants
         NodeTraversor.traverse(new NodeVisitor() {
@@ -78,30 +101,22 @@ public class MinitelPageReader {
             public void head(Node node, int depth) {
                 if (node instanceof Element el) {
                     if (depth >= MINITEL_TAG_DEPTH) {
-                        // Récupérer les attributs
                         Map<String, String> attrs = new LinkedHashMap<>();
                         for (Attribute a : el.attributes()) {
                             attrs.put(a.getKey(), a.getValue());
                         }
-
-                        // Récupérer le texte direct de l'élément (préserver les espaces multiples)
-                        // Pour les scripts, utiliser data() qui préserve le contenu brut
                         String textContent;
                         if ("script".equals(el.normalName())) {
                             textContent = el.data();
                         } else {
                             textContent = el.wholeOwnText();
                         }
-
-                        // Créer le composant et l'ajouter à l'arbre
                         buildComponentFromElement(el.normalName(), depth, attrs, textContent);
                     }
                 } else if (node instanceof TextNode textNode) {
-                    // Capturer le texte entre les tags (ex: entre <putchar> dans un <row>)
                     if (depth >= MINITEL_TAG_DEPTH) {
                         String text = textNode.getWholeText();
                         if (!text.isEmpty() && currentComponent instanceof VTMLRowComponent) {
-                            // Chercher la map parente
                             MComponent parent = currentComponent;
                             while (parent != null) {
                                 if (parent instanceof VTMLMapComponent map) {
@@ -119,20 +134,13 @@ public class MinitelPageReader {
             public void tail(Node node, int depth) {
                 if (node instanceof Element el) {
                     if (depth >= MINITEL_TAG_DEPTH) {
-                        // Remonter au parent seulement si c'était un conteneur
                         closeCurrentComponent(el.normalName());
                     }
                 }
             }
         }, doc);
 
-        // Générer les données Minitel à partir de l'arbre de composants
         if (rootComponent != null) {
-            // Debug: afficher l'arbre des composants (désactivé)
-            // System.out.println("=== ARBRE DES COMPOSANTS ===");
-            // printComponentTree(rootComponent, 0);
-            // System.out.println("============================");
-
             renderComponentTree(rootComponent);
         }
 

@@ -412,7 +412,7 @@ public class OLEDMenu {
         synchronized (this) { inAbout = true; }
         scheduleRender();
         aboutThread = new Thread(() -> {
-            try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
+            try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
             synchronized (OLEDMenu.this) { inAbout = false; }
             scheduleRender();
         }, "about-timer");
@@ -726,10 +726,10 @@ public class OLEDMenu {
     private MenuItem[] buildMainMenu() {
         return new MenuItem[]{
             new MenuItem("System",    buildSystemMenu()),
-            new MenuItem("Server",    buildServerMenu()),
-            new MenuItem("JoySticks", buildJoysticksMenu()),
-            new MenuItem("NetWork",   buildNetworkMenu()),
             new MenuItem("Client",    buildClientMenu()),
+            new MenuItem("Server",    buildServerMenu()),
+            new MenuItem("NetWork",   buildNetworkMenu()),
+            new MenuItem("JoySticks", buildJoysticksMenu()),
             new MenuItem("About",     (Runnable) this::enterAbout),
         };
     }
