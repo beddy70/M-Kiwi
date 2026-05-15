@@ -87,6 +87,10 @@ public class OLEDMenu {
     private volatile boolean inBrightnessMenu = false;
     private volatile int     brightnessLevel  = 3;
 
+    // Écran About (5 s puis retour auto)
+    private volatile boolean inAbout     = false;
+    private Thread           aboutThread = null;
+
     // Test interactif des boutons
     private boolean inButtonTest = false;
     private final boolean[] btnPressed = {false, false, false};
@@ -191,6 +195,10 @@ public class OLEDMenu {
             if (index == 0) exitNetworkInfo();
             return;
         }
+        if (inAbout) {
+            exitAbout();
+            return;
+        }
         switch (index) {
             case 0 -> enter();
             case 1 -> moveUp();
@@ -239,6 +247,8 @@ public class OLEDMenu {
         brightnessLevel  = 3;  // retour au niveau par défaut (0xCF)
         inNetworkInfo    = false;
         stopMacScroll();
+        inAbout          = false;
+        if (aboutThread != null) { aboutThread.interrupt(); aboutThread = null; }
 
         // Exécuter via le thread de rendu pour éviter tout conflit I2C
         renderQueue.clear();
@@ -398,6 +408,24 @@ public class OLEDMenu {
         }
     }
 
+    private void enterAbout() {
+        synchronized (this) { inAbout = true; }
+        scheduleRender();
+        aboutThread = new Thread(() -> {
+            try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
+            synchronized (OLEDMenu.this) { inAbout = false; }
+            scheduleRender();
+        }, "about-timer");
+        aboutThread.setDaemon(true);
+        aboutThread.start();
+    }
+
+    private void exitAbout() {
+        synchronized (this) { inAbout = false; }
+        if (aboutThread != null) { aboutThread.interrupt(); aboutThread = null; }
+        scheduleRender();
+    }
+
     /** Appelé par MinitelClient pour tout événement joystick (bouton ou axe mappé). */
     public void onJoystickEvent(int player, String label) {
         if (!inJoyTest || player < 0 || player >= joyLabel.length) return;
@@ -524,6 +552,7 @@ public class OLEDMenu {
         final String  joy0, joy1;
         final boolean brightMenu;
         final int     brightLevel;
+        final boolean aboutScreen;
         final boolean netInfo;
         final String  nIp, nMac;
         final int     nMacScroll;
@@ -539,6 +568,7 @@ public class OLEDMenu {
             joy1        = joyLabel[1];
             brightMenu  = inBrightnessMenu;
             brightLevel = brightnessLevel;
+            aboutScreen = inAbout;
             netInfo     = inNetworkInfo;
             nIp         = netIp;
             nMac        = netMac;
@@ -620,6 +650,20 @@ public class OLEDMenu {
             return;
         }
 
+        // Écran About
+        if (aboutScreen) {
+            display.drawText8x8("                ", 0, 0);
+            display.drawText8x8("----------------", 0, 1);
+            display.drawText8x8("   Written by   ", 0, 2);
+            display.drawText8x8("  Eddy BRIERE   ", 0, 3);
+            display.drawText8x8("      2026      ", 0, 4);
+            display.drawText8x8("----------------", 0, 5);
+            display.drawText8x8("                ", 0, 6);
+            display.drawText8x8("                ", 0, 7);
+            display.flush();
+            return;
+        }
+
         // Écran Network Info
         if (netInfo) {
             display.drawText8x8(fit("Network Info"), 0, 0);
@@ -686,6 +730,7 @@ public class OLEDMenu {
             new MenuItem("JoySticks", buildJoysticksMenu()),
             new MenuItem("NetWork",   buildNetworkMenu()),
             new MenuItem("Client",    buildClientMenu()),
+            new MenuItem("About",     (Runnable) this::enterAbout),
         };
     }
 
