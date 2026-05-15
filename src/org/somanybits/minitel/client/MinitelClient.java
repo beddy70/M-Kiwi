@@ -102,6 +102,10 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private String   server   = null;
     private int      port     = 0;
 
+    // Rafraîchissement automatique de page (<refresh seconds="N"/>)
+    private java.util.concurrent.ScheduledExecutorService refreshScheduler;
+    private volatile java.util.concurrent.ScheduledFuture<?> refreshFuture;
+
     public static void main(String[] args) throws Exception {
 
         logmgr = Kernel.getInstance().getLogManager();
@@ -229,8 +233,16 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         // Initialiser le menu OLED + GPIO
         oledMenu = new OLEDMenu(VERSION, createMenuActions());
         oledMenu.init();
+
+        refreshScheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread th = new Thread(r, "page-refresh");
+            th.setDaemon(true);
+            return th;
+        });
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (oledMenu != null) oledMenu.close();
+            if (refreshScheduler != null) refreshScheduler.shutdownNow();
         }, "shutdown-menu"));
 
         //currentpage = mtr.get("");
@@ -583,8 +595,37 @@ t.setEcho(false);
             currentForm = null;
             formHasFocus = false;
         }
+
+        scheduleRefresh(page);
     }
-    
+
+    private void cancelRefresh() {
+        if (refreshFuture != null && !refreshFuture.isDone()) {
+            refreshFuture.cancel(false);
+        }
+        refreshFuture = null;
+    }
+
+    private void scheduleRefresh(Page page) {
+        cancelRefresh();
+        if (page == null || page.getRefreshSeconds() <= 0) return;
+        int seconds = page.getRefreshSeconds();
+        refreshFuture = refreshScheduler.schedule(() -> {
+            try {
+                PageManager pmgr = Kernel.getInstance().getPageManager();
+                Page reloaded = pmgr.reload();
+                if (reloaded != null) {
+                    synchronized (scriptLock) {
+                        mc.writeBytes(reloaded.getData());
+                        updateCurrentForm(reloaded);
+                    }
+                }
+            } catch (Exception e) {
+                logmgr.addLog("auto-refresh: " + e.getMessage(), LogManager.MSG_TYPE_ERROR);
+            }
+        }, seconds, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
     /**
      * Affiche un message dans la zone status si elle est définie
      * Puis repositionne le curseur sur l'input courant si on est en mode form

@@ -32,6 +32,7 @@ public class Page {
     private int mode;
     private String title;
     private String url;
+    private int refreshSeconds = 0;
 
     private ByteArrayOutputStream buf = new ByteArrayOutputStream(1024);
 
@@ -52,6 +53,9 @@ public class Page {
     public void setUrl(String url) {
         this.url = url;
     }
+
+    public int getRefreshSeconds() { return refreshSeconds; }
+    public void setRefreshSeconds(int s) { this.refreshSeconds = s; }
 
     /**
      * Réinitialise les données de la page (pour reload)

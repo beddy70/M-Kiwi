@@ -219,6 +219,11 @@ public class MinitelPageReader {
                 // Ajouter comme enfant du composant courant
                 currentComponent.addChild(component);
 
+                // Enregistrer le refresh interval sur la page
+                if (component instanceof VTMLRefreshComponent refreshComp) {
+                    page.setRefreshSeconds(refreshComp.getSeconds());
+                }
+
                 // Si c'est un formulaire, l'enregistrer dans la page
                 if (component instanceof VTMLFormComponent formComponent) {
                     page.setForm(formComponent);
@@ -463,6 +468,11 @@ public class MinitelPageReader {
 
             case "br" -> {
                 return new VTMLBrComponent();
+            }
+
+            case "refresh" -> {
+                int seconds = parseInt(attrs.get("seconds"), 0);
+                return new VTMLRefreshComponent(seconds);
             }
 
             case "fillchar" -> {
