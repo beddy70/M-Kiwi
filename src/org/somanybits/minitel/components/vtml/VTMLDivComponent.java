@@ -39,9 +39,10 @@ public class VTMLDivComponent extends ModelMComponent {
             String text = getTextContent();
             if (text != null && !text.trim().isEmpty()) {
                 if (width > 0) {
-                    // Wrap text at width, repositioning cursor at left for each line
+                    // Wrap text at width, capped at height lines when height > 0
+                    int height = getHeight();
                     int row = 0;
-                    for (int pos = 0; pos < text.length(); pos += width) {
+                    for (int pos = 0; pos < text.length() && (height <= 0 || row < height); pos += width) {
                         String chunk = text.substring(pos, Math.min(pos + width, text.length()));
                         divdata.write(GetTeletelCode.setCursor(left, top + row));
                         divdata.write(chunk.getBytes("ISO-8859-1"));
