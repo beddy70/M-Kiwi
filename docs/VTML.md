@@ -6,59 +6,60 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 
 - [Attributs communs](#attributs-communs)
 - [Structure de base](#structure-de-base)
-
-### Tags de Structure
-- [`<minitel>`](#minitel) - Élément racine
-- [`<div>`](#div) - Conteneur de positionnement
-- [`<row>`](#row) - Ligne de texte
-- [`<br>`](#br) - Saut de ligne
-- [`<fillchar>`](#fillchar) - Remplissage d'une zone par un caractère
-
-### Tags de Navigation
-- [`<menu>`](#menu) - Menu interactif
-- [`<item>`](#item) - Élément de menu
-
-### Tags Médias
-- [`<img>`](#img) - Image semi-graphique
-  - [Modes de rendu](#modes-de-rendu-attribut-style)
-- [`<qrcode>`](#qrcode) - QR code
-
-### Tags Formulaires
-- [`<form>`](#form) - Formulaire
-- [`<input>`](#input) - Champ de saisie
-- [`<status>`](#status) - Zone de statut
-
-### Tags Jeux (Layers)
-- [`<layers>`](#layers) - Zone de jeu
-- [`<map>`](#map) - Fond de jeu
-- [`<colormap>`](#colormap) - Couleurs de texte d'une map
-- [`<chardef>`](#chardef) - Définition de caractères mosaïques
-- [`<putchar>`](#putchar) - Insertion de caractères mosaïques
-- [`<spritedef>`](#spritedef) - Définition de sprite
-  - [Types de sprites](#types-de-sprites)
-- [`<sprite>`](#sprite) - Frame d'animation
-- [`<colorsprite>`](#colorsprite) - Couleurs de texte d'un sprite
-  - [Mode char](#mode-char)
-  - [Mode bitmap](#mode-bitmap)
-- [`<line>`](#line) - Ligne de sprite
-- [`<label>`](#label) - Texte dynamique
-- [`<keypad>`](#keypad) - Mapping clavier
-  - [Mode action](#mode-action-avec-joystick)
-  - [Mode touche directe](#mode-touche-directe-sans-action)
-- [`<timer>`](#timer) - Boucle de jeu / timer de page
-- [Exemple complet de jeu (Pong)](#exemple-complet-de-jeu-pong)
-- [API JavaScript pour les jeux](#api-javascript-pour-les-jeux)
-  - [API Sprite](#api-sprite)
-
-### Tags Scripting
-- [`<script>`](#script) - Code JavaScript
-  - [Variables globales](#variables-globales)
-    - [`_teletel`](#variables-globales) - Accès direct au terminal
-  - [Fonctions disponibles](#fonctions-disponibles)
-  - [API Storage](#api-storage-persistant-entre-pages)
-  - [Création dynamique d'éléments](#création-dynamique-déléments)
-  - [Requêtes HTTP](#requêtes-http)
-  - [Classes Java accessibles](#classes-java-accessibles)
+- **Tags de Structure**
+  - [`<minitel>`](#minitel) — Élément racine
+  - [`<div>`](#div) — Conteneur de positionnement
+  - [`<row>`](#row) — Ligne de texte
+  - [`<br>`](#br) — Saut de ligne
+  - [`<fillchar>`](#fillchar) — Remplissage d'une zone par un caractère
+- **Tags de Navigation**
+  - [`<menu>`](#menu) — Menu interactif avec touches
+  - [`<item>`](#item) — Élément de menu
+  - [`<key>`](#key) — Touche de fonction Minitel (SOMMAIRE, GUIDE…)
+- **Tags Mise en forme**
+  - [`<color>`](#color) — Couleurs d'encre et de fond
+  - [`<blink>`](#blink) — Texte clignotant
+- **Tags Médias**
+  - [`<img>`](#img) — Image semi-graphique
+    - [Modes de rendu](#modes-de-rendu-attribut-style)
+  - [`<qrcode>`](#qrcode) — QR code (URL, WiFi, vCard)
+- **Tags Formulaires**
+  - [`<form>`](#form) — Formulaire (méthode GET)
+  - [`<input>`](#input) — Champ de saisie texte
+  - [`<status>`](#status) — Zone d'affichage du focus
+- **Tags Jeux (Layers)**
+  - [`<layers>`](#layers) — Zone de jeu (maps + sprites)
+  - [`<map>`](#map) — Fond de jeu
+  - [`<colormap>`](#colormap) — Couleurs de texte d'une map
+  - [`<chardef>`](#chardef) — Définition de caractères mosaïques
+  - [`<putchar>`](#putchar) — Insertion de caractères mosaïques
+  - [`<spritedef>`](#spritedef) — Définition de sprite
+    - [Types de sprites](#types-de-sprites)
+  - [`<sprite>`](#sprite) — Frame d'animation
+  - [`<colorsprite>`](#colorsprite) — Couleurs de texte d'un sprite
+    - [Mode char](#mode-char)
+    - [Mode bitmap](#mode-bitmap)
+  - [`<line>`](#line) — Ligne de sprite ou colorsprite
+  - [`<label>`](#label) — Texte dynamique modifiable par JS
+  - [`<keypad>`](#keypad) — Mapping clavier / joystick
+    - [Mode action](#mode-action-avec-joystick)
+    - [Mode touche directe](#mode-touche-directe-sans-action)
+  - [`<timer>`](#timer) — Boucle de jeu / timer de page
+  - [Exemple complet de jeu (Pong)](#exemple-complet-de-jeu-pong)
+  - [API JavaScript pour les jeux](#api-javascript-pour-les-jeux)
+    - [API Sprite](#api-sprite)
+- **Tags Scripting**
+  - [`<script>`](#script) — Code JavaScript côté serveur
+    - [Variables globales](#variables-globales) (`_currentLayers`, `_currentPage`, `_teletel`)
+    - [Fonctions disponibles](#fonctions-disponibles)
+    - [Protection Ligne 0](#protection-ligne-0)
+    - [API Storage](#api-storage-persistant-entre-pages)
+    - [Création dynamique d'éléments](#création-dynamique-déléments)
+    - [Requêtes HTTP](#requêtes-http)
+    - [Classes Java accessibles](#classes-java-accessibles)
+- [Exemple complet](#exemple-complet)
+- [Dimensions écran Minitel](#dimensions-écran-minitel)
+- [Fichiers](#fichiers)
 
 ---
 
