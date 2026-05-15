@@ -12,6 +12,7 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 - [`<div>`](#div) - Conteneur de positionnement
 - [`<row>`](#row) - Ligne de texte
 - [`<br>`](#br) - Saut de ligne
+- [`<fillchar>`](#fillchar) - Remplissage d'une zone par un caractère
 
 ### Tags de Navigation
 - [`<menu>`](#menu) - Menu interactif
@@ -44,7 +45,7 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 - [`<keypad>`](#keypad) - Mapping clavier
   - [Mode action](#mode-action-avec-joystick)
   - [Mode touche directe](#mode-touche-directe-sans-action)
-- [`<timer>`](#timer) - Boucle de jeu
+- [`<timer>`](#timer) - Boucle de jeu / timer de page
 - [Exemple complet de jeu (Pong)](#exemple-complet-de-jeu-pong)
 - [API JavaScript pour les jeux](#api-javascript-pour-les-jeux)
   - [API Sprite](#api-sprite)
@@ -52,6 +53,7 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
 ### Tags Scripting
 - [`<script>`](#script) - Code JavaScript
   - [Variables globales](#variables-globales)
+    - [`_teletel`](#variables-globales) - Accès direct au terminal
   - [Fonctions disponibles](#fonctions-disponibles)
   - [API Storage](#api-storage-persistant-entre-pages)
   - [Création dynamique d'éléments](#création-dynamique-déléments)
@@ -156,6 +158,37 @@ Saut de ligne simple.
 <br>
 <row>Ligne 3 (après saut)</row>
 ```
+
+---
+
+### `<fillchar>`
+
+Remplit une zone rectangulaire de l'écran avec un caractère répété, avec contrôle des couleurs.
+
+| Attribut     | Type   | Défaut  | Description                            |
+|--------------|--------|---------|----------------------------------------|
+| `char`       | string | `" "`   | Caractère de remplissage (1 caractère) |
+| `ink`        | string | `white` | Couleur du texte (encre)               |
+| `background` | string | `black` | Couleur de fond                        |
+| `left`       | int    | 0       | Position X (0-39)                      |
+| `top`        | int    | 0       | Position Y (0-24)                      |
+| `width`      | int    | 1       | Largeur en caractères                  |
+| `height`     | int    | 1       | Hauteur en lignes                      |
+
+```xml
+<!-- Colonne bleue en bordure gauche -->
+<fillchar char=" " ink="white" background="blue" left="0" top="1" width="9" height="24"/>
+
+<!-- Ligne de séparation en tirets jaunes -->
+<fillchar char="-" ink="yellow" background="black" left="0" top="12" width="40" height="1"/>
+
+<!-- Zone de fond verte -->
+<fillchar char=" " ink="white" background="green" left="10" top="5" width="20" height="3"/>
+```
+
+**Valeurs de couleur** : identiques à `<color>` — `noir/black`, `rouge/red`, `vert/green`, `jaune/yellow`, `bleu/blue`, `magenta`, `cyan`, `blanc/white`.
+
+**Règle fond coloré** : pour que la couleur de fond soit respectée par le Minitel, chaque ligne commence automatiquement par un espace supplémentaire. La largeur effective du caractère `char` est donc `width - 1` quand `background` est non noir.
 
 ---
 
@@ -724,18 +757,49 @@ Pour mapper une touche arbitraire (chiffres, lettres, etc.) directement vers une
 
 ### `<timer>`
 
-Définit une boucle de jeu (game loop) qui appelle une fonction JavaScript à intervalle régulier.
+Appelle une fonction JavaScript à intervalle régulier. Fonctionne dans deux contextes :
 
-| Attribut   | Type   | Défaut | Description                           |
-|------------|--------|--------|---------------------------------------|
+- **À l'intérieur de `<layers>`** : game loop (boucle de jeu)
+- **Au niveau de `<minitel>`** : timer de page (horloge, animation hors jeu)
+
+| Attribut   | Type   | Défaut | Description                             |
+|------------|--------|--------|-----------------------------------------|
 | `event`    | string | -      | Nom de la fonction JavaScript à appeler |
-| `interval` | int    | 200    | Intervalle en millisecondes           |
+| `interval` | int    | 200    | Intervalle en millisecondes             |
 
 ```xml
+<!-- Game loop dans un <layers> -->
 <timer event="moveBall" interval="300"></timer>
+
+<!-- Timer de page (horloge temps réel) -->
+<timer event="updateClock" interval="1000"/>
 ```
 
-**Note** : Utilisez la syntaxe avec balise fermante `</timer>` (pas auto-fermante).
+**Note** : Dans un `<layers>`, utilisez la syntaxe avec balise fermante `</timer>`. Au niveau page, la syntaxe auto-fermante `/>` est acceptée.
+
+**Timer de page — exemple complet :**
+
+```xml
+<minitel title="Accueil">
+
+  <timer event="updateClock" interval="1000"/>
+
+  <script>
+    function updateClock() {
+      var d = new Date();
+      var h = ("0" + d.getHours()).slice(-2);
+      var m = ("0" + d.getMinutes()).slice(-2);
+      var s = ("0" + d.getSeconds()).slice(-2);
+      _teletel.setCursor(0, 22);
+      _teletel.setTextColor(3);   // jaune
+      _teletel.setBGColor(4);     // bleu
+      _teletel.writeString(" " + h + ":" + m + ":" + s);
+    }
+    updateClock();  // affichage immédiat au chargement
+  </script>
+
+</minitel>
+```
 
 ---
 
@@ -977,10 +1041,11 @@ Exécute du JavaScript côté serveur. Permet de générer du contenu dynamique.
 
 #### Variables globales
 
-| Variable          | Description                                      |
-|-------------------|--------------------------------------------------|
-| `_currentLayers`  | Référence au VTMLLayersComponent courant         |
-| `_currentPage`    | Référence à la page courante                     |
+| Variable          | Description                                                  |
+|-------------------|--------------------------------------------------------------|
+| `_currentLayers`  | Référence au VTMLLayersComponent courant                     |
+| `_currentPage`    | Référence à la page courante                                 |
+| `_teletel`        | Instance Teletel pour écriture directe sur le terminal       |
 
 #### Fonctions disponibles
 
