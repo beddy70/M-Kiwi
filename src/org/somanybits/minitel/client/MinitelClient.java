@@ -1284,7 +1284,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             handleMkiwiUrl(url);
             return;
         }
-        displayPage(pmgr.navigate(url));
+        Page page = pmgr.navigate(url);
+        // Page vide + errorPage = page non VTML (HTML ordinaire) → goto screen
+        // Page avec data + errorPage = erreur HTTP → on l'affiche (RETOUR disponible)
+        if (page == null || (page.isErrorPage() && page.getData().length == 0)) {
+            showGotoScreen("Format non VTML. Essayez une autre adresse.");
+            return;
+        }
+        displayPage(page);
     }
 
     private void handleMkiwiUrl(String url) throws IOException {

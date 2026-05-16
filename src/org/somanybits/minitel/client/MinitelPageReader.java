@@ -155,9 +155,14 @@ public class MinitelPageReader {
             }
         }, doc);
 
-        if (rootComponent != null) {
-            renderComponentTree(rootComponent);
+        if (rootComponent == null) {
+            System.err.println("⚠️ Aucun tag <minitel> trouvé — page non VTML ignorée");
+            Page p = new Page(Page.MODE_40_COL);
+            p.setErrorPage(true);
+            return p;
         }
+
+        renderComponentTree(rootComponent);
 
         return page;
     }
