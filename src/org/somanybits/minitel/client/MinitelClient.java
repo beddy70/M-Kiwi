@@ -1473,7 +1473,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             return;
         }
         if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
-            rawUrl = "http://" + rawUrl;
+            rawUrl = "https://" + rawUrl;
         }
 
         String host;
