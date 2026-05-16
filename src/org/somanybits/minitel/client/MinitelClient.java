@@ -174,6 +174,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         t = new Teletel(mc);
         VTMLScriptEngine.getInstance().setVariable("_teletel", t);
+        echoLocalOFF();
         t.clear();
         t.clearLineZero();
 
@@ -1186,6 +1187,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         };
     }
 
+    // ========== INITIALISATION TERMINAL ==========
+
+    /** Désactive l'écho local du Minitel (séquence 1B 3B 64). */
+    private void echoLocalOFF() throws IOException {
+        mc.writeBytes(new byte[]{0x1B, 0x3B, 0x64});
+    }
+
     // ========== MODE SAISIE SERVEUR ==========
 
     private void showServerSelectionScreen(String statusMsg) throws IOException {
@@ -1210,7 +1218,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         t.setCursor(2, 13);
         t.setTextColor(Teletel.COLOR_CYAN);
-        t.writeString("Format: http://adresse:port");
+        t.writeString("Format: adresse:port");
 
         t.setCursor(2, 15);
         t.setTextColor(Teletel.COLOR_GREEN);
