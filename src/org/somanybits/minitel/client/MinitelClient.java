@@ -112,14 +112,16 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private volatile java.util.concurrent.ScheduledFuture<?> refreshFuture;
 
     // Mode saisie URL (GOTO = changer de serveur, CONFIG = modifier le serveur par défaut)
-    private enum InputMode { NONE, GOTO, CONFIG, CONFIG_DIRECTORY, SERVER_DIRECTORY }
+    private enum InputMode { NONE, GOTO, CONFIG, SERVER_DIRECTORY }
     private InputMode inputMode = InputMode.NONE;
-    private StringBuilder urlInputBuffer = new StringBuilder();
+    private StringBuilder urlInputBuffer  = new StringBuilder();
+    private StringBuilder urlInputBuffer2 = new StringBuilder();
+    private int configActiveField = 0; // 0 = serveur local, 1 = annuaire
     private ServerDirectoryScreen directoryScreen = null;
-    private String pendingConfigServer = null;
-    private int pendingConfigPort = 0;
-    private static final int SERVER_INPUT_ROW = 11;
-    private static final int SERVER_INPUT_MAX = 33;
+    private static final int SERVER_INPUT_ROW  = 11;
+    private static final int CONFIG_FIELD1_ROW = 7;
+    private static final int CONFIG_FIELD2_ROW = 11;
+    private static final int SERVER_INPUT_MAX  = 33;
 
     public static void main(String[] args) throws Exception {
 
@@ -356,14 +358,12 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             break;
                         case KeyPressedEvent.KEY_RETOUR:
                             pmgr.back();
-                            mc.writeBytes(pmgr.getCurrentPage().getData());
-                            updateCurrentForm(pmgr.getCurrentPage());
+                            displayPage(pmgr.getCurrentPage());
                             keyvalue = "RETOUR";
                             break;
                         case KeyPressedEvent.KEY_REPETITION:
                             pmgr.reload();
-                            mc.writeBytes(pmgr.getCurrentPage().getData());
-                            updateCurrentForm(pmgr.getCurrentPage());
+                            displayPage(pmgr.getCurrentPage());
                             keyvalue = "REPETITION";
                             break;
                         case KeyPressedEvent.KEY_GUIDE:
@@ -386,8 +386,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             break;
                         case KeyPressedEvent.KEY_SUITE:
                             pmgr.forward();
-                            mc.writeBytes(pmgr.getCurrentPage().getData());
-                            updateCurrentForm(pmgr.getCurrentPage());
+                            displayPage(pmgr.getCurrentPage());
                             keyvalue = "SUITE";
                             break;
                         case KeyPressedEvent.KEY_ENVOI:
@@ -1221,6 +1220,16 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
             @Override
             public void onRestartClient() {
+                try {
+                    t.clear();
+                    t.setCursor(6, 10);
+                    t.setTextColor(Teletel.COLOR_YELLOW);
+                    t.writeString("Redemarrage en cours...");
+                    t.setCursor(6, 12);
+                    t.setTextColor(Teletel.COLOR_WHITE);
+                    t.writeString("Veuillez patienter");
+                    Thread.sleep(1500);
+                } catch (Exception ignored) {}
                 System.exit(0);
             }
 
@@ -1259,16 +1268,23 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     // ========== MODE SAISIE URL (mkiwi:goto / mkiwi:config) ==========
 
+    /** Arrête timer/gameloop/refresh PUIS affiche la page. Garantit qu'aucun
+     *  thread de l'ancienne page n'écrit après le chargement de la nouvelle. */
+    private void displayPage(Page page) throws IOException {
+        if (page == null) return;
+        stopGameLoop();
+        stopPageTimer();
+        cancelRefresh();
+        mc.writeBytes(page.getData());
+        updateCurrentForm(page);
+    }
+
     private void navigateToPage(PageManager pmgr, String url) throws IOException {
         if (url != null && url.startsWith("mkiwi:")) {
             handleMkiwiUrl(url);
             return;
         }
-        Page page = pmgr.navigate(url);
-        if (page != null) {
-            mc.writeBytes(page.getData());
-            updateCurrentForm(page);
-        }
+        displayPage(pmgr.navigate(url));
     }
 
     private void handleMkiwiUrl(String url) throws IOException {
@@ -1373,72 +1389,64 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     private void showConfigEditorScreen() throws IOException {
         inputMode = InputMode.CONFIG;
-        urlInputBuffer = new StringBuilder();
+        configActiveField = 0;
+        urlInputBuffer  = new StringBuilder();
+        urlInputBuffer2 = new StringBuilder();
         try {
             Config cfg = Kernel.getInstance().getConfig();
             urlInputBuffer.append(cfg.client.default_server).append(":").append(cfg.client.default_port);
+            urlInputBuffer2.append(cfg.client.server_directory);
         } catch (IOException e) {
             urlInputBuffer.append("localhost:8080");
+            urlInputBuffer2.append("http://localhost:8000");
         }
 
         t.clear();
 
-        t.setCursor(8, 3);
+        t.setCursor(8, 2);
         t.setTextColor(Teletel.COLOR_WHITE);
         t.writeString("M-Kiwi  Client VTML");
 
-        t.setCursor(2, 5);
+        t.setCursor(2, 4);
         t.setTextColor(Teletel.COLOR_CYAN);
-        t.writeString("Configuration - etape 1/2");
+        t.writeString("Configuration");
 
-        t.setCursor(2, 8);
+        t.setCursor(2, 6);
         t.setTextColor(Teletel.COLOR_WHITE);
-        t.writeString("Serveur par defaut (adresse:port) :");
+        t.writeString("Serveur local :");
+
+        t.setCursor(2, 9);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("Annuaire :");
 
         t.setCursor(2, 13);
         t.setTextColor(Teletel.COLOR_CYAN);
-        t.writeString("Format: adresse:port");
+        t.writeString("Format 1: adresse:port");
+        t.setCursor(2, 14);
+        t.writeString("Format 2: http://adresse:port");
 
-        t.setCursor(2, 15);
+        t.setCursor(2, 16);
         t.setTextColor(Teletel.COLOR_GREEN);
-        t.writeString("ENVOI=suivant  RETOUR=annuler");
+        t.writeString("ENVOI=sauvegarder  RETOUR=annuler");
 
-        drawUrlInputLine();
+        drawConfigFields();
     }
 
-    private void showConfigDirectoryScreen() throws IOException {
-        inputMode = InputMode.CONFIG_DIRECTORY;
-        urlInputBuffer = new StringBuilder();
-        try {
-            Config cfg = Kernel.getInstance().getConfig();
-            urlInputBuffer.append(cfg.client.server_directory);
-        } catch (IOException e) {
-            urlInputBuffer.append("http://localhost:8000");
-        }
+    private void drawConfigFields() throws IOException {
+        drawConfigField(urlInputBuffer,  CONFIG_FIELD1_ROW, configActiveField == 0);
+        drawConfigField(urlInputBuffer2, CONFIG_FIELD2_ROW, configActiveField == 1);
+    }
 
-        t.clear();
-
-        t.setCursor(8, 3);
+    private void drawConfigField(StringBuilder buf, int row, boolean active) throws IOException {
+        t.setCursor(0, row);
+        t.setBGColor(active ? Teletel.COLOR_BLUE : Teletel.COLOR_BLACK);
         t.setTextColor(Teletel.COLOR_WHITE);
-        t.writeString("M-Kiwi  Client VTML");
-
-        t.setCursor(2, 5);
-        t.setTextColor(Teletel.COLOR_CYAN);
-        t.writeString("Configuration - etape 2/2");
-
-        t.setCursor(2, 8);
-        t.setTextColor(Teletel.COLOR_WHITE);
-        t.writeString("URL de l'annuaire de serveurs :");
-
-        t.setCursor(2, 13);
-        t.setTextColor(Teletel.COLOR_CYAN);
-        t.writeString("Format: http://adresse:port");
-
-        t.setCursor(2, 15);
-        t.setTextColor(Teletel.COLOR_GREEN);
-        t.writeString("ENVOI=sauvegarder  RETOUR=etape 1");
-
-        drawUrlInputLine();
+        String content = buf.toString();
+        StringBuilder line = new StringBuilder(" > ");
+        line.append(content);
+        for (int i = content.length(); i < SERVER_INPUT_MAX; i++) line.append(' ');
+        t.writeString(line.toString());
+        t.setBGColor(Teletel.COLOR_BLACK);
     }
 
     private void drawUrlInputLine() throws IOException {
@@ -1470,12 +1478,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         String host;
         int connectPort;
+        String connectScheme;
         try {
             java.net.URI parsedUri = java.net.URI.create(rawUrl);
             host = parsedUri.getHost();
             connectPort = parsedUri.getPort();
+            connectScheme = parsedUri.getScheme();
+            if (connectScheme == null) connectScheme = "http";
             if (connectPort == -1) {
-                connectPort = 80;
+                connectPort = "https".equals(connectScheme) ? 443 : 80;
             }
             if (host == null || host.isEmpty()) {
                 throw new Exception("Host vide");
@@ -1487,10 +1498,10 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         t.setCursor(0, SERVER_INPUT_ROW + 2);
         t.setTextColor(Teletel.COLOR_YELLOW);
-        t.writeString(" Connexion a " + host + ":" + connectPort + "...");
+        t.writeString(" Connexion a " + connectScheme + "://" + host + ":" + connectPort + "...");
 
         PageManager pmgr = Kernel.getInstance().getPageManager();
-        pmgr.setServer(host, connectPort);
+        pmgr.setServer(host, connectPort, connectScheme);
         pmgr.navigate("");
         Page page = pmgr.getCurrentPage();
 
@@ -1506,6 +1517,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     private void tryConnectAndSave() throws IOException {
         String raw = urlInputBuffer.toString().trim();
+        String directoryUrl = urlInputBuffer2.toString().trim();
+
         if (raw.isEmpty()) {
             showConfigEditorScreen();
             return;
@@ -1522,70 +1535,68 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 host = raw;
                 connectPort = 8080;
             }
-            if (host.isEmpty()) {
-                throw new Exception("Host vide");
-            }
+            if (host.isEmpty()) throw new Exception("Host vide");
         } catch (Exception e) {
-            t.setCursor(0, SERVER_INPUT_ROW + 2);
+            t.setCursor(2, 19);
             t.setTextColor(Teletel.COLOR_RED);
-            t.writeString(" Format invalide. Ex: localhost:8080 ");
+            t.writeString("Format invalide. Ex: localhost:8080   ");
             return;
         }
 
-        pendingConfigServer = host;
-        pendingConfigPort = connectPort;
-        showConfigDirectoryScreen();
-    }
-
-    private void tryConnectAndSaveDirectory() throws IOException {
-        String raw = urlInputBuffer.toString().trim();
-        if (raw.isEmpty()) {
-            showConfigDirectoryScreen();
-            return;
-        }
-
-        t.setCursor(0, SERVER_INPUT_ROW + 2);
+        t.setCursor(2, 19);
         t.setTextColor(Teletel.COLOR_YELLOW);
-        t.writeString(" Connexion a " + pendingConfigServer + ":" + pendingConfigPort + "...");
+        t.writeString("Connexion a " + host + ":" + connectPort + "...   ");
 
         PageManager pmgr = Kernel.getInstance().getPageManager();
-        pmgr.setServer(pendingConfigServer, pendingConfigPort);
+        pmgr.setServer(host, connectPort);
         pmgr.navigate("");
         Page page = pmgr.getCurrentPage();
 
         if (page != null && !page.isErrorPage()) {
             Config cfg = Kernel.getInstance().getConfig();
-            cfg.client.default_server = pendingConfigServer;
-            cfg.client.default_port = pendingConfigPort;
-            cfg.client.server_directory = raw;
+            cfg.client.default_server = host;
+            cfg.client.default_port = connectPort;
+            if (!directoryUrl.isEmpty()) cfg.client.server_directory = directoryUrl;
             Kernel.getInstance().saveConfig();
             inputMode = InputMode.NONE;
-            pendingConfigServer = null;
             t.clear();
             mc.writeBytes(page.getData());
             updateCurrentForm(page);
         } else {
-            t.setCursor(0, SERVER_INPUT_ROW + 3);
+            t.setCursor(2, 19);
             t.setTextColor(Teletel.COLOR_RED);
-            t.writeString(" Serveur introuvable. Reessayez.      ");
+            t.writeString("Serveur introuvable. Reessayez.       ");
         }
     }
 
     private void handleInputModeKey(KeyPressedEvent event) throws IOException {
         switch (event.getType()) {
-            case KeyPressedEvent.TYPE_KEY_CHAR_EVENT:
+            case KeyPressedEvent.TYPE_KEY_CHAR_EVENT: {
                 char car = (char) event.getKeyCode();
-                if (car == 0x08 || car == 0x7F) {
-                    if (urlInputBuffer.length() > 0) {
-                        urlInputBuffer.deleteCharAt(urlInputBuffer.length() - 1);
-                        drawUrlInputLine();
+
+                // Entrée : switcher entre les deux champs (mode CONFIG uniquement)
+                if (car == 0x0D || car == 0x0A) {
+                    if (inputMode == InputMode.CONFIG) {
+                        configActiveField = (configActiveField == 0) ? 1 : 0;
+                        drawConfigFields();
                     }
-                } else if (car >= 0x20 && car < 0x7F
-                        && urlInputBuffer.length() < SERVER_INPUT_MAX) {
-                    urlInputBuffer.append(car);
-                    drawUrlInputLine();
+                    break;
+                }
+
+                StringBuilder activeBuf = (inputMode == InputMode.CONFIG && configActiveField == 1)
+                        ? urlInputBuffer2 : urlInputBuffer;
+
+                if (car == 0x08 || car == 0x7F) {
+                    if (activeBuf.length() > 0) {
+                        activeBuf.deleteCharAt(activeBuf.length() - 1);
+                        if (inputMode == InputMode.CONFIG) drawConfigFields(); else drawUrlInputLine();
+                    }
+                } else if (car >= 0x20 && car < 0x7F && activeBuf.length() < SERVER_INPUT_MAX) {
+                    activeBuf.append(car);
+                    if (inputMode == InputMode.CONFIG) drawConfigFields(); else drawUrlInputLine();
                 }
                 break;
+            }
             case KeyPressedEvent.TYPE_KEY_MENU_EVENT:
                 switch (event.getKeyCode()) {
                     case KeyPressedEvent.KEY_ENVOI:
@@ -1593,27 +1604,24 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             tryConnectToServer();
                         } else if (inputMode == InputMode.CONFIG) {
                             tryConnectAndSave();
-                        } else if (inputMode == InputMode.CONFIG_DIRECTORY) {
-                            tryConnectAndSaveDirectory();
                         }
                         break;
-                    case KeyPressedEvent.KEY_CORRECTION:
-                        if (urlInputBuffer.length() > 0) {
-                            urlInputBuffer.deleteCharAt(urlInputBuffer.length() - 1);
-                            drawUrlInputLine();
+                    case KeyPressedEvent.KEY_CORRECTION: {
+                        StringBuilder activeBuf = (inputMode == InputMode.CONFIG && configActiveField == 1)
+                                ? urlInputBuffer2 : urlInputBuffer;
+                        if (activeBuf.length() > 0) {
+                            activeBuf.deleteCharAt(activeBuf.length() - 1);
+                            if (inputMode == InputMode.CONFIG) drawConfigFields(); else drawUrlInputLine();
                         }
                         break;
+                    }
                     case KeyPressedEvent.KEY_RETOUR:
-                        if (inputMode == InputMode.CONFIG_DIRECTORY) {
-                            showConfigEditorScreen();
-                        } else {
-                            inputMode = InputMode.NONE;
-                            Page currentPage = Kernel.getInstance().getPageManager().getCurrentPage();
-                            if (currentPage != null) {
-                                t.clear();
-                                mc.writeBytes(currentPage.getData());
-                                updateCurrentForm(currentPage);
-                            }
+                        inputMode = InputMode.NONE;
+                        Page currentPage = Kernel.getInstance().getPageManager().getCurrentPage();
+                        if (currentPage != null) {
+                            t.clear();
+                            mc.writeBytes(currentPage.getData());
+                            updateCurrentForm(currentPage);
                         }
                         break;
                     default:

@@ -16,6 +16,7 @@ public class PageManager {
     private int currentIndex;
     private String domain;
     private int port;
+    private String scheme = "http";
 
     public PageManager(String domain, int port) {
         history = new ArrayList<>();
@@ -37,7 +38,7 @@ public class PageManager {
         Page previousPage = getCurrentPage();
         
         // Créer un nouveau reader pour chaque requête
-        MinitelPageReader pageReader = new MinitelPageReader(domain, port);
+        MinitelPageReader pageReader = new MinitelPageReader(domain, port, scheme);
         Page page = pageReader.get(url);
         page.setUrl(fullUrl);  // Stocker l'URL complète
         
@@ -207,6 +208,14 @@ public class PageManager {
     public void setServer(String domain, int port) {
         this.domain = domain;
         this.port = port;
+        this.scheme = "http";
+        clearHistory();
+    }
+
+    public void setServer(String domain, int port, String scheme) {
+        this.domain = domain;
+        this.port = port;
+        this.scheme = (scheme != null && !scheme.isEmpty()) ? scheme : "http";
         clearHistory();
     }
 

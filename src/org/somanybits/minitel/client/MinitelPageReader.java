@@ -31,6 +31,7 @@ public class MinitelPageReader {
 
     private int port = 0;
     private String domain;
+    private String scheme = "http";
     private Page page;
 
     // Structure de composants VTML (nouvelle architecture)
@@ -44,13 +45,19 @@ public class MinitelPageReader {
         this.domain = domain;
     }
 
+    public MinitelPageReader(String domain, int port, String scheme) {
+        this.port = port;
+        this.domain = domain;
+        this.scheme = (scheme != null && !scheme.isEmpty()) ? scheme : "http";
+    }
+
     /**
      * Charge une page VTML et retourne les données Minitel
      */
     public Page get(String url) throws IOException {
 
         if (!isHttpHostOrHostPort(url)) {
-            url = "http://" + domain + ":" + Integer.toString(port) + "/" + url;
+            url = scheme + "://" + domain + ":" + Integer.toString(port) + "/" + url;
         }
 
         Document doc;
@@ -535,7 +542,7 @@ public class MinitelPageReader {
                 String style = attrs.get("style");  // "dithering", "bitmap", ou null (couleur)
 
                 VTMLImgComponent img = new VTMLImgComponent(src, left, top, width, height, negative, style);
-                img.setBaseUrl("http://" + domain + ":" + port);
+                img.setBaseUrl(scheme + "://" + domain + ":" + port);
                 return img;
             }
 

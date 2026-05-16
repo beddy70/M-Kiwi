@@ -215,13 +215,15 @@ public class OLEDMenu {
     private void startResetCountdown() {
         if (resetPending) return;
         resetPending = true;
-        System.out.println("OLEDMenu: combo BTN1+BTN2 détecté — réinitialisation dans 3 s");
+        System.out.println("OLEDMenu: combo UP+DOWN détecté — redémarrage client dans 3 s");
         resetThread = new Thread(() -> {
             try {
                 Thread.sleep(3000);
                 if (resetPending && btnPressed[1] && btnPressed[2]) {
-                    System.out.println("OLEDMenu: réinitialisation déclenchée");
-                    doReinit();
+                    System.out.println("OLEDMenu: redémarrage client déclenché");
+                    showOverlay("M-Kiwi", "restarting...");
+                    Thread.sleep(800);
+                    if (actions != null) actions.onRestartClient();
                 }
             } catch (InterruptedException ignored) {}
             resetPending = false;
@@ -236,41 +238,7 @@ public class OLEDMenu {
         if (resetThread != null) { resetThread.interrupt(); resetThread = null; }
     }
 
-    /** Réinitialise l'écran OLED et revient au menu principal. */
-    private void doReinit() {
-        // Arrêter les modes test en cours
-        inButtonTest     = false;
-        ledTestRunning   = false;
-        if (ledTestThread != null) { ledTestThread.interrupt(); ledTestThread = null; }
-        inLedTest        = false;
-        inBrightnessMenu = false;
-        brightnessLevel  = 3;  // retour au niveau par défaut (0xCF)
-        inNetworkInfo    = false;
-        stopMacScroll();
-        inAbout          = false;
-        if (aboutThread != null) { aboutThread.interrupt(); aboutThread = null; }
 
-        // Exécuter via le thread de rendu pour éviter tout conflit I2C
-        renderQueue.clear();
-        renderQueue.offer(() -> {
-            if (display != null) { display.close(); display = null; }
-            display = new OLEDDisplay();
-            if (!display.init()) {
-                System.out.println("OLEDMenu: réinitialisation OLED échouée");
-                display = null;
-            } else {
-                System.out.println("OLEDMenu: OLED réinitialisé");
-            }
-            synchronized (OLEDMenu.this) {
-                menuStack.clear();
-                indexStack.clear();
-                currentItems  = buildMainMenu();
-                selectedIndex = 0;
-                scrollOffset  = 0;
-            }
-            doRender();
-        });
-    }
 
     private synchronized void enterButtonTest() {
         btnPressed[0] = false;

@@ -1,8 +1,8 @@
-<minitel title="M-Kiwi Accueil">
+<minitel title="M-Kiwi Aide">
 
 	<key name="sommaire" link="index.vtml"/>
-	<key name="guide" link="guide.vtml"/>
-	<key name="telephone" link="contact.vtml"/>
+	<key name="guide" link="mkiwi:server_directory"/>
+	<!--<key name="telephone" link=""mkiwi:server_directory"/>-->
 
 	<!--<img src="images/plant_border2.png" left="1" top="3" width="38" height="22" style="dithering">-->
 	
@@ -39,13 +39,14 @@
 	</div>
 
 	<menu name="main" left="1" top="9" width="15" height="10" keytype="number">
-		<item link="concerts/hugo.vtml">Aide</item>
-		<item link="concerts/hugo.vtml">Demo</item>
-		<item link="games/">Jeu</item>
+		<item link="help.vtml">Aide</item>
+		<item link="concerts/hugo.vtml">Demos</item>
+		<item link="games/">Jeu</item>	
 		<item link="mickey.vtml">Image</item>
 		<item link="ServerStatus.mod?val1=69&val2=hello">Info</item>
-		<item link="ServerStatus.mod?val1=69&val2=hello">Liens</item>
-		<item link="mkiwi:server_directory">Annuaire</item>
+		<item link="mkiwi:server_directory">Liens</item>
+		<item link="mkiwi:goto">Goto</item>
+		<item link="mkiwi:config">Config</item>
 	</menu>
 	
 	<div name="banner" left="10" top="9" width="29" height="14">
