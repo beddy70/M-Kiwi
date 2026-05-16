@@ -57,14 +57,26 @@ public class MinitelPageReader {
     public Page get(String url) throws IOException {
 
         if (!isHttpHostOrHostPort(url)) {
-            url = scheme + "://" + domain + ":" + Integer.toString(port) + "/" + url;
+            // Strip le slash initial pour éviter le double slash (ex: /games → games)
+            String rel = url.startsWith("/") ? url.substring(1) : url;
+            url = scheme + "://" + domain + ":" + Integer.toString(port) + "/" + rel;
         }
 
-        // Pas de fichier après l'hôte → index.vtml par défaut
+        // index.vtml par défaut si pas de fichier dans le chemin
         try {
             String path = new java.net.URI(url).getPath();
             if (path == null || path.isEmpty() || path.equals("/")) {
+                // Pas de chemin : https://host:port/ → index.vtml
                 url = url.endsWith("/") ? url + "index.vtml" : url + "/index.vtml";
+            } else if (path.endsWith("/")) {
+                // Dossier avec slash final : /games/ → /games/index.vtml
+                url = url + "index.vtml";
+            } else {
+                // Pas d'extension dans le dernier segment : /games → /games/index.vtml
+                String lastSegment = path.substring(path.lastIndexOf('/') + 1);
+                if (!lastSegment.contains(".")) {
+                    url = url + "/index.vtml";
+                }
             }
         } catch (java.net.URISyntaxException ignored) { }
 

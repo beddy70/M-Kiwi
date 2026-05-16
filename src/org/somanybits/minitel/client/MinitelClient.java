@@ -1488,12 +1488,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         String host;
         int connectPort;
         String connectScheme;
+        String connectPath;
         try {
             java.net.URI parsedUri = java.net.URI.create(rawUrl);
             host = parsedUri.getHost();
             connectPort = parsedUri.getPort();
             connectScheme = parsedUri.getScheme();
-            if (connectScheme == null) connectScheme = "http";
+            connectPath = parsedUri.getPath();   // peut être null, "", ou "/games/..."
+            if (connectScheme == null) connectScheme = "https";
             if (connectPort == -1) {
                 connectPort = "https".equals(connectScheme) ? 443 : 80;
             }
@@ -1505,14 +1507,18 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             return;
         }
 
-        System.out.println("🌐 goto: " + connectScheme + "://" + host + ":" + connectPort + "/");
+        // Chemin relatif transmis à navigate() (strip du / initial)
+        String navPath = (connectPath == null || connectPath.isEmpty() || connectPath.equals("/"))
+                ? "" : connectPath.substring(1);
+
+        System.out.println("🌐 goto: " + connectScheme + "://" + host + ":" + connectPort + "/" + navPath);
         t.setCursor(0, SERVER_INPUT_ROW + 2);
         t.setTextColor(Teletel.COLOR_YELLOW);
         t.writeString(" Connexion a " + connectScheme + "://" + host + ":" + connectPort + "...");
 
         PageManager pmgr = Kernel.getInstance().getPageManager();
         pmgr.setServer(host, connectPort, connectScheme);
-        pmgr.navigate("");
+        pmgr.navigate(navPath);
         Page page = pmgr.getCurrentPage();
 
         if (page != null && !page.isErrorPage()) {
