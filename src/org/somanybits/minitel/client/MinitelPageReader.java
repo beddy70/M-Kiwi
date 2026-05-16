@@ -80,6 +80,8 @@ public class MinitelPageReader {
             }
         } catch (java.net.URISyntaxException ignored) { }
 
+        System.out.println("📡 fetch: " + url);
+
         Document doc;
         try {
             doc = Jsoup.connect(url)
@@ -94,6 +96,9 @@ public class MinitelPageReader {
                 try { return getFromFile(errorFile); } catch (IOException ignored) { }
             }
             return buildErrorPage(code);
+        } catch (org.jsoup.UnsupportedMimeTypeException mime) {
+            System.err.println("Type MIME non supporté: " + mime.getMimeType() + " pour " + url);
+            return buildErrorPage(0);
         } catch (IOException ex) {
             System.err.println("Error reading page: " + ex.getMessage());
             Page p = buildErrorPage(0);
