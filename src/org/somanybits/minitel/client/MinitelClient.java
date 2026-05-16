@@ -1503,6 +1503,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             return;
         }
 
+        System.out.println("🌐 goto: " + connectScheme + "://" + host + ":" + connectPort + "/");
         t.setCursor(0, SERVER_INPUT_ROW + 2);
         t.setTextColor(Teletel.COLOR_YELLOW);
         t.writeString(" Connexion a " + connectScheme + "://" + host + ":" + connectPort + "...");
