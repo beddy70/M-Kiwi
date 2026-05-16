@@ -1475,11 +1475,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     private void tryConnectToServer() throws IOException {
         String rawUrl = urlInputBuffer.toString().trim();
+        System.out.println("🌐 goto saisie: \"" + rawUrl + "\"");
         if (rawUrl.isEmpty()) {
             showGotoScreen("URL vide, veuillez reessayer.");
             return;
         }
-        if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
+        String rawUrlLower = rawUrl.toLowerCase();
+        if (!rawUrlLower.startsWith("http://") && !rawUrlLower.startsWith("https://")) {
             rawUrl = "https://" + rawUrl;
         }
 
