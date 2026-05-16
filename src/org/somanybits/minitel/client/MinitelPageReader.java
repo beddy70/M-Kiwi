@@ -86,6 +86,7 @@ public class MinitelPageReader {
         try {
             doc = Jsoup.connect(url)
                     .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36)")
+                    .ignoreContentType(true)
                     .timeout(15_000)
                     .get();
         } catch (org.jsoup.HttpStatusException hse) {
