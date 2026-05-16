@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.7";
+    private static final String VERSION = "0.7.8";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -118,6 +118,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private StringBuilder urlInputBuffer2 = new StringBuilder();
     private int configActiveField = 0; // 0 = serveur local, 1 = annuaire
     private ServerDirectoryScreen directoryScreen = null;
+    private Page gotoReturnPage = null; // Page à afficher si RETOUR depuis mkiwi:goto
     private static final int SERVER_INPUT_ROW  = 11;
     private static final int CONFIG_FIELD1_ROW = 7;
     private static final int CONFIG_FIELD2_ROW = 11;
@@ -1367,6 +1368,10 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     }
 
     private void showGotoScreen(String statusMsg) throws IOException {
+        if (inputMode != InputMode.GOTO) {
+            // Première ouverture : mémoriser la page courante pour RETOUR
+            gotoReturnPage = Kernel.getInstance().getPageManager().getCurrentPage();
+        }
         inputMode = InputMode.GOTO;
         urlInputBuffer = new StringBuilder();
 
@@ -1526,6 +1531,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         if (page != null && !page.isErrorPage()) {
             inputMode = InputMode.NONE;
+            gotoReturnPage = null;
             t.clear();
             mc.writeBytes(page.getData());
             updateCurrentForm(page);
@@ -1724,6 +1730,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                         if (inputMode == InputMode.SYSINFO) {
                             inputMode = InputMode.NONE;
                             displayPage(Kernel.getInstance().getPageManager().getCurrentPage());
+                        } else if (inputMode == InputMode.GOTO) {
+                            inputMode = InputMode.NONE;
+                            Page returnPage = gotoReturnPage;
+                            gotoReturnPage = null;
+                            if (returnPage != null) {
+                                t.clear();
+                                mc.writeBytes(returnPage.getData());
+                                updateCurrentForm(returnPage);
+                            }
                         } else {
                             inputMode = InputMode.NONE;
                             Page currentPage = Kernel.getInstance().getPageManager().getCurrentPage();
