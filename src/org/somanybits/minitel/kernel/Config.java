@@ -109,6 +109,13 @@ public class Config {
         /** Délai entre les blocs en ms (défaut: 10, augmenter pour Philips) */
         public int serial_chunk_delay_ms = 10;
         
+        /** Adresse du serveur VTML par défaut (ex: localhost, 192.168.1.10) */
+        public String default_server = "localhost";
+        /** Port du serveur VTML par défaut */
+        public int default_port = 8080;
+        /** URL du serveur d'annuaire VTML (ex: http://localhost:8000) */
+        public String server_directory = "http://localhost:8000";
+
         /** Périphérique joystick Linux pour joueur 0 (ex: /dev/input/js0) */
         public String joystick_device_0 = "/dev/input/js0";
         /** Périphérique joystick Linux pour joueur 1 (ex: /dev/input/js1) */

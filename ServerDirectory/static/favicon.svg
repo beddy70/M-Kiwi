@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Ombre portée -->
+  <rect x="7" y="5" width="20" height="24" rx="2" fill="rgba(0,0,0,0.12)"/>
+  <!-- Tranche des pages (droite) -->
+  <rect x="6" y="4" width="20" height="24" rx="2" fill="#e8eef7"/>
+  <!-- Couverture -->
+  <rect x="5" y="3" width="19" height="24" rx="2" fill="#1a73e8"/>
+  <!-- Dos du livre (spine) -->
+  <rect x="5" y="3" width="4" height="24" rx="2" fill="#0d5cbf"/>
+  <!-- Reflet haut spine -->
+  <rect x="6" y="4" width="2" height="22" rx="1" fill="rgba(255,255,255,0.15)"/>
+  <!-- Lignes de texte -->
+  <rect x="11" y="9"  width="10" height="1.8" rx="0.9" fill="rgba(255,255,255,0.85)"/>
+  <rect x="11" y="13" width="12" height="1.8" rx="0.9" fill="rgba(255,255,255,0.85)"/>
+  <rect x="11" y="17" width="9"  height="1.8" rx="0.9" fill="rgba(255,255,255,0.85)"/>
+  <rect x="11" y="21" width="11" height="1.8" rx="0.9" fill="rgba(255,255,255,0.85)"/>
+  <!-- Signet -->
+  <polygon points="21,3 24,3 24,11 22.5,9.5 21,11" fill="#e53935"/>
+</svg>

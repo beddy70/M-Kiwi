@@ -4,11 +4,11 @@
 	<key name="guide" link="guide.vtml"/>
 	<key name="telephone" link="contact.vtml"/>
 
-	<!--<img src="images/plant_border2.png" left="1" top="1" width="38" height="24" style="dithering">-->
+	<!--<img src="images/plant_border2.png" left="1" top="3" width="38" height="22" style="dithering">-->
 	
    	<div name="banner" left="10" top="1" width="32" height="24">
    		<row> __  __   _  ___          _</row>
-	    <row>|  \/  | | |/ (s_)_      _(_)</row>
+	    <row>|  \/  | | |/ (_)_      _(_)</row>
 	    <row>| |\/| |-| ' /| \ \ /\ / / |</row>
 	    <row>| |  | |-| . \| |\ V  V /| |</row>
 	    <row>|_|  |_| |_|\_\_| \_/\_/ |_|</row>
@@ -17,7 +17,7 @@
 	
 	</div>
 
-	<fillchar char=" " ink="white" background="blue" left="0" top="1" width="9" height="24"/>
+	<fillchar char=" " ink="white" background="blue" left="0" top="2" width="9" height="22"/>
 
 	<timer event="updateClock" interval="1000"/>
 	<script>
@@ -26,10 +26,10 @@
 			var h = ("0" + d.getHours()).slice(-2);
 			var m = ("0" + d.getMinutes()).slice(-2);
 			var s = ("0" + d.getSeconds()).slice(-2);
-			_teletel.setCursor(0, 22);
+			_teletel.setCursor(0, 1);
 			_teletel.setTextColor(3);
-			_teletel.setBGColor(4);
-			_teletel.writeString(" " + h + ":" + m + ":" + s);
+			//_teletel.setBGColor(4);
+			_teletel.writeString( h + ":" + m + ":" + s);
 		}
 		updateClock();
 	</script>
@@ -41,10 +41,11 @@
 	<menu name="main" left="1" top="9" width="15" height="10" keytype="number">
 		<item link="concerts/hugo.vtml">Aide</item>
 		<item link="concerts/hugo.vtml">Demo</item>
-		<item link="games/">Jeu</item>	
+		<item link="games/">Jeu</item>
 		<item link="mickey.vtml">Image</item>
 		<item link="ServerStatus.mod?val1=69&val2=hello">Info</item>
 		<item link="ServerStatus.mod?val1=69&val2=hello">Liens</item>
+		<item link="mkiwi:server_directory">Annuaire</item>
 	</menu>
 	
 	<div name="banner" left="10" top="9" width="29" height="14">
@@ -58,6 +59,6 @@
 	</div>
 	
 
-	<refresh seconds="30"/>
+	
 
 </minitel>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Annuaire VTML — M-Kiwi</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>&#9632; ANNUAIRE <span>M-KIWI</span></h1>
+  <div class="header-search">
+    <input type="text" id="global-search" placeholder="Rechercher un serveur..." autocomplete="off">
+  </div>
+  <div class="header-actions">
+    <button class="btn-primary" onclick="openAddModal()">+ Ajouter</button>
+  </div>
+</header>
+
+<main>
+  <div class="settings-bar">
+    <label>Clé API&nbsp;:</label>
+    <input type="password" id="api-key" placeholder="API key pour écriture" style="max-width:220px">
+    <button class="btn-ghost btn-sm" onclick="saveApiKey()">Enregistrer</button>
+    <span id="api-key-status" style="font-size:12px;color:var(--text-dim)"></span>
+  </div>
+
+  <div class="toolbar">
+    <span class="count" id="count-label"></span>
+    <button class="btn-ghost btn-sm" onclick="loadServers()">&#8635; Actualiser</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="td-id">#</th>
+          <th class="td-name">Nom</th>
+          <th class="td-url">Adresse</th>
+          <th class="td-port">Port</th>
+          <th class="td-desc">Description</th>
+          <th class="td-cats">Catégories</th>
+          <th>Statut</th>
+          <th>Accès</th>
+          <th class="td-acts">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="server-list">
+        <tr><td colspan="8" class="empty-state">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Modal Ajout / Édition -->
+<div class="modal-overlay" id="server-modal">
+  <div class="modal">
+    <h2 id="modal-title">Ajouter un serveur</h2>
+    <form id="server-form" onsubmit="submitForm(event)">
+      <input type="hidden" id="f-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nom *</label>
+          <input type="text" id="f-name" required maxlength="80" placeholder="Mon Serveur VTML">
+        </div>
+        <div class="form-group">
+          <label>URL / Adresse IP *</label>
+          <input type="text" id="f-url" required placeholder="192.168.0.10 ou monserveur.com">
+        </div>
+        <div class="form-group">
+          <label>Port *</label>
+          <input type="number" id="f-port" value="8080" min="1" max="65535" required>
+        </div>
+        <div class="form-group">
+          <label>Version VTML</label>
+          <input type="text" id="f-vtml" value="1.0" maxlength="10">
+        </div>
+        <div class="form-group full">
+          <label>Description</label>
+          <textarea id="f-desc" maxlength="255" placeholder="Courte description du serveur"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Catégories</label>
+          <input type="text" id="f-categories" placeholder="jeu, retro, public">
+          <span class="hint">Séparées par des virgules</span>
+        </div>
+        <div class="form-group">
+          <label>Mots-clés</label>
+          <input type="text" id="f-keywords" placeholder="minitel, vtml">
+          <span class="hint">Séparés par des virgules</span>
+        </div>
+        <div class="form-group">
+          <label>Email admin</label>
+          <input type="email" id="f-email" placeholder="admin@exemple.com">
+        </div>
+        <div class="form-group">
+          <label>Site web / GitHub</label>
+          <input type="text" id="f-website" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label>Version M-Kiwi supportée</label>
+          <input type="text" id="f-mkiwi" value="1.0" maxlength="10">
+        </div>
+        <div class="form-group" style="justify-content:flex-end;flex-direction:row;align-items:center;gap:8px;">
+          <label for="f-enabled">Actif</label>
+          <input type="checkbox" id="f-enabled" checked style="width:auto">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" onclick="closeModal()">Annuler</button>
+        <button type="submit" class="btn-primary" id="modal-submit-btn">Ajouter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirmation suppression -->
+<div id="confirm-box">
+  <div class="confirm-inner">
+    <p id="confirm-msg">Supprimer ce serveur ?</p>
+    <div class="confirm-btns">
+      <button class="btn-ghost" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-danger" id="confirm-ok-btn">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div id="toast"></div>
+
+<script src="/static/admin.js"></script>
+</body>
+</html>

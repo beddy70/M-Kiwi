@@ -35,25 +35,26 @@ import org.somanybits.minitel.kernel.Kernel;
 /**
  * Client Minitel principal.
  * <p>
- * Cette classe gère l'interface entre le terminal Minitel physique et le serveur.
- * Elle implémente les listeners pour les événements clavier et les séquences de contrôle.
+ * Cette classe gère l'interface entre le terminal Minitel physique et le
+ * serveur. Elle implémente les listeners pour les événements clavier et les
+ * séquences de contrôle.
  * </p>
- * 
+ *
  * <h2>Fonctionnalités principales</h2>
  * <ul>
- *   <li>Connexion série au Minitel (1200/4800/9600 bauds)</li>
- *   <li>Gestion des touches fonction (SOMMAIRE, RETOUR, ENVOI, etc.)</li>
- *   <li>Navigation entre pages VTML</li>
- *   <li>Gestion des formulaires et saisie utilisateur</li>
- *   <li>Support des jeux avec layers, sprites et game loop</li>
- *   <li>Support joystick USB pour les jeux</li>
+ * <li>Connexion série au Minitel (1200/4800/9600 bauds)</li>
+ * <li>Gestion des touches fonction (SOMMAIRE, RETOUR, ENVOI, etc.)</li>
+ * <li>Navigation entre pages VTML</li>
+ * <li>Gestion des formulaires et saisie utilisateur</li>
+ * <li>Support des jeux avec layers, sprites et game loop</li>
+ * <li>Support joystick USB pour les jeux</li>
  * </ul>
- * 
+ *
  * <h2>Utilisation</h2>
  * <pre>{@code
  * java -jar Minitel.jar localhost 8080
  * }</pre>
- * 
+ *
  * @author Eddy Briere
  * @version 0.5
  * @see MinitelConnection
@@ -72,14 +73,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     MinitelPageReader mtr;
 
     Teletel t;
-    
+
     // Système de focus pour les formulaires
     private VTMLFormComponent currentForm = null;
     private VTMLStatusComponent currentStatus = null;
     private VTMLLayersComponent currentLayers = null;
     private boolean formHasFocus = false;  // true = focus sur form/inputs, false = focus sur menu
     private boolean layersHasFocus = false; // true = focus sur layers (mode jeu)
-    
+
     // Game loop
     private Thread gameLoopThread = null;
     private volatile boolean gameLoopRunning = false;
@@ -87,10 +88,10 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     // Page timer (ex: horloge via <timer event="fn" interval="N"/>)
     private Thread pageTimerThread = null;
     private volatile boolean pageTimerRunning = false;
-    
+
     // Verrou pour synchroniser l'accès au script engine et au layers
     private final Object scriptLock = new Object();
-    
+
     // Joystick USB - Support 2 joueurs avec plug & play
     private JoystickReader joystick = null;      // Joueur 1
     private JoystickReader joystick2 = null;     // Joueur 2
@@ -103,16 +104,20 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     // Menu OLED + GPIO (LEDs et boutons)
     private OLEDMenu oledMenu = null;
-    private String   server   = null;
-    private int      port     = 0;
+    private String server = null;
+    private int port = 0;
 
     // Rafraîchissement automatique de page (<refresh seconds="N"/>)
     private java.util.concurrent.ScheduledExecutorService refreshScheduler;
     private volatile java.util.concurrent.ScheduledFuture<?> refreshFuture;
 
-    // Mode saisie serveur (affiché quand le serveur par défaut est inaccessible)
-    private boolean serverSelectionMode = false;
-    private StringBuilder serverUrlBuffer = new StringBuilder();
+    // Mode saisie URL (GOTO = changer de serveur, CONFIG = modifier le serveur par défaut)
+    private enum InputMode { NONE, GOTO, CONFIG, CONFIG_DIRECTORY, SERVER_DIRECTORY }
+    private InputMode inputMode = InputMode.NONE;
+    private StringBuilder urlInputBuffer = new StringBuilder();
+    private ServerDirectoryScreen directoryScreen = null;
+    private String pendingConfigServer = null;
+    private int pendingConfigPort = 0;
     private static final int SERVER_INPUT_ROW = 11;
     private static final int SERVER_INPUT_MAX = 33;
 
@@ -121,12 +126,19 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         logmgr = Kernel.getInstance().getLogManager();
         logmgr.setPrefix("> ");
 
-        if (args.length == 0) {
-            logmgr.addLog("Usage:  Minitel <DOCUMENT_ROOT> [PORT]", LogManager.MSG_TYPE_ERROR);
-            System.exit(1);
+        String server;
+        int port;
+        if (args.length >= 2) {
+            server = args[0];
+            port = Integer.parseInt(args[1]);
+        } else if (args.length == 1) {
+            server = args[0];
+            port = 8080;
+        } else {
+            Config cfg = Kernel.getInstance().getConfig();
+            server = cfg.client.default_server;
+            port = cfg.client.default_port;
         }
-        String server = args[0];
-        int port = (args.length >= 2) ? Integer.parseInt(args[1]) : 8080;
 
         logmgr.addLog(LogManager.ANSI_BOLD_GREEN + "M-Kiwi Client  version " + VERSION);
         logmgr.addLog(LogManager.ANSI_WHITE + "Connection to " + server + ":" + port + "/");
@@ -136,31 +148,31 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public MinitelClient(String server, int port) throws IOException, InterruptedException {
         this.server = server;
-        this.port   = port;
+        this.port = port;
 
         PageManager pmgr = Kernel.getInstance().getPageManager();
         Config cfg = Kernel.getInstance().getConfig();
-        
+
         // Utiliser la config pour le port série
         String serialPort = cfg.client.serial_port;
         int serialBaud = cfg.client.serial_baud;
         System.out.println("📋 Config: Serial " + serialPort + " @ " + serialBaud + " baud");
-        
+
         mc = new MinitelConnection(serialPort, serialBaud);
-        
+
         // Appliquer la configuration stty depuis config.json
         mc.setSttyConfig(
-            cfg.client.serial_databits,
-            cfg.client.serial_parity,
-            cfg.client.serial_parity_odd,
-            cfg.client.serial_stopbits,
-            cfg.client.serial_flow_hw,
-            cfg.client.serial_flow_sw,
-            cfg.client.serial_echo,
-            cfg.client.serial_icanon,
-            cfg.client.serial_opost
+                cfg.client.serial_databits,
+                cfg.client.serial_parity,
+                cfg.client.serial_parity_odd,
+                cfg.client.serial_stopbits,
+                cfg.client.serial_flow_hw,
+                cfg.client.serial_flow_sw,
+                cfg.client.serial_echo,
+                cfg.client.serial_icanon,
+                cfg.client.serial_opost
         );
-        
+
         // Appliquer le throttling pour compatibilité Minitel Philips
         mc.setThrottling(cfg.client.serial_chunk_size, cfg.client.serial_chunk_delay_ms);
         System.out.println("📋 Throttling: " + cfg.client.serial_chunk_size + " bytes, " + cfg.client.serial_chunk_delay_ms + "ms delay");
@@ -174,13 +186,11 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         t = new Teletel(mc);
         VTMLScriptEngine.getInstance().setVariable("_teletel", t);
-        echoLocalOFF();
+        //echoLocalOFF();
         t.clear();
         t.clearLineZero();
 
         t.setScreenMode(Teletel.MODE_VIDEOTEXT);
-        
-   
 
 //        t.setBGColor(Teletel.COLOR_GREEN);
 //        t.setTextColor(Teletel.COLOR_WHITE);
@@ -190,7 +200,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             try {
                 Page splashPage = new MinitelPageReader(server, port).getFromFile(splashFile);
                 byte[] data = splashPage.getData();
-                if (data != null) mc.writeBytes(data);
+                if (data != null) {
+                    mc.writeBytes(data);
+                }
             } catch (Exception e) {
                 logmgr.addLog("message.vtml: " + e.getMessage(), LogManager.MSG_TYPE_ERROR);
             }
@@ -211,8 +223,6 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             t.setBlink(false);
         }
 
-
-
 //        byte[] bitmap= {
 //            (byte)0b11111111, (byte)0b11111111,
 //            (byte)0b11000001, (byte)0b10000011,
@@ -231,7 +241,6 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 //        gfx.writeBitmap(img.getBitmap());
 //        gfx.inverseBitmap();
 //        gfx.drawToPage(t, 0, 1);
-
         // try {
         //     Thread.sleep(1000); // pause de 1000 millisecondes = 1 seconde
         // } catch (InterruptedException e) {
@@ -239,7 +248,6 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         //     Thread.currentThread().interrupt(); // bonne pratique
         //     System.err.println("Pause interrompue");
         // }
-
         mtr = new MinitelPageReader(server, port);
 
         // Initialiser le menu OLED + GPIO
@@ -253,8 +261,12 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         });
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (oledMenu != null) oledMenu.close();
-            if (refreshScheduler != null) refreshScheduler.shutdownNow();
+            if (oledMenu != null) {
+                oledMenu.close();
+            }
+            if (refreshScheduler != null) {
+                refreshScheduler.shutdownNow();
+            }
         }, "shutdown-menu"));
 
         //currentpage = mtr.get("");
@@ -262,7 +274,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.setEcho(false);
         Page firstPage = pmgr.getCurrentPage();
         if (firstPage != null && firstPage.isErrorPage()) {
-            showServerSelectionScreen("Serveur " + server + ":" + port + " introuvable.");
+            showGotoScreen("Serveur " + server + ":" + port + " introuvable.");
         } else {
             mc.writeBytes(firstPage.getData());
             updateCurrentForm(firstPage);
@@ -307,8 +319,12 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     public void keyPressed(KeyPressedEvent event) {
 
         try {
-            if (serverSelectionMode) {
-                handleServerSelectionKey(event);
+            if (inputMode != InputMode.NONE) {
+                if (inputMode == InputMode.SERVER_DIRECTORY) {
+                    handleDirectoryKey(event);
+                } else {
+                    handleInputModeKey(event);
+                }
                 return;
             }
 
@@ -324,9 +340,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             // Naviguer vers l'URL associée à SOMMAIRE si définie
                             if (pmgr.getCurrentPage() != null && pmgr.getCurrentPage().hasFunctionKey("SOMMAIRE")) {
                                 String link = pmgr.getCurrentPage().getFunctionKeyLink("SOMMAIRE");
-                                pmgr.navigate(link);
-                                mc.writeBytes(pmgr.getCurrentPage().getData());
-                                updateCurrentForm(pmgr.getCurrentPage());
+                                navigateToPage(pmgr, link);
                             }
                             keyvalue = "SOMMAIRE";
                             break;
@@ -356,9 +370,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             // Naviguer vers l'URL associée à GUIDE si définie
                             if (pmgr.getCurrentPage() != null && pmgr.getCurrentPage().hasFunctionKey("GUIDE")) {
                                 String link = pmgr.getCurrentPage().getFunctionKeyLink("GUIDE");
-                                pmgr.navigate(link);
-                                mc.writeBytes(pmgr.getCurrentPage().getData());
-                                updateCurrentForm(pmgr.getCurrentPage());
+                                navigateToPage(pmgr, link);
                             }
                             keyvalue = "GUIDE";
                             break;
@@ -383,19 +395,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             if (currentForm != null && currentForm.hasInputs()) {
                                 String actionUrl = currentForm.buildActionUrl();
                                 System.out.println("📤 ENVOI -> " + actionUrl);
-                                pmgr.navigate(actionUrl);
-                                mc.writeBytes(pmgr.getCurrentPage().getData());
-                                updateCurrentForm(pmgr.getCurrentPage());
+                                navigateToPage(pmgr, actionUrl);
                             }
                             keyvalue = "ENVOI";
                             break;
                         case KeyPressedEvent.KEY_TELEPHONE:
-                            // Naviguer vers l'URL associée à TELEPHONE si définie
                             if (pmgr.getCurrentPage() != null && pmgr.getCurrentPage().hasFunctionKey("TELEPHONE")) {
-                                String link = pmgr.getCurrentPage().getFunctionKeyLink("TELEPHONE");
-                                pmgr.navigate(link);
-                                mc.writeBytes(pmgr.getCurrentPage().getData());
-                                updateCurrentForm(pmgr.getCurrentPage());
+                                navigateToPage(pmgr, pmgr.getCurrentPage().getFunctionKeyLink("TELEPHONE"));
+                            } else {
+                                handleMkiwiUrl("mkiwi:server_directory");
                             }
                             keyvalue = "TELEPHONE";
                             break;
@@ -409,7 +417,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 case KeyPressedEvent.TYPE_KEY_CHAR_EVENT:
                     keyvalue = event.getKeyCode() + "";
                     char car = (char) event.getKeyCode();
-                    
+
                     // Touche Entrée = basculer entre form et menu
                     if (car == 0x0D || car == 0x0A) {
                         if (currentForm != null && currentForm.hasInputs()) {
@@ -418,7 +426,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                 VTMLInputComponent currentInput = currentForm.getCurrentInput();
                                 int currentIdx = currentForm.getCurrentInputIndex();
                                 int totalInputs = currentForm.getFocusableInputs().size();
-                                
+
                                 if (currentIdx < totalInputs - 1) {
                                     // Pas encore au dernier input : passer au suivant
                                     if (currentInput != null) {
@@ -448,13 +456,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                     mc.writeBytes(firstInput.onFocusGained());
                                     showStatusMessage(">> " + firstInput.getFocusLabel() + " <<");
                                 }
-                               
+
                                 System.out.println("🔄 Focus -> FORM (input 0)");
                             }
                         }
                         break;
                     }
-                    
+
                     // Si focus sur layers : capturer les touches pour le jeu
                     if (layersHasFocus && currentLayers != null) {
                         // Synchroniser avec le game loop et les actions joystick
@@ -475,7 +483,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                 }
                                 break;
                             }
-                            
+
                             // 2. Sinon, vérifier les actions de jeu (UP, DOWN, LEFT, RIGHT, ACTION1, ACTION2)
                             // Trouver le keypad correspondant à cette touche pour avoir le bon joueur
                             VTMLKeypadComponent keypad = currentLayers.getKeypadForKey(car);
@@ -504,7 +512,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                         // Touche non reconnue : rien à faire, l'écho est désactivé
                         break;
                     }
-                    
+
                     // Si focus sur form : capturer les caractères pour l'input
                     if (currentForm != null && formHasFocus && currentForm.hasInputs()) {
                         VTMLInputComponent currentInput = currentForm.getCurrentInput();
@@ -520,17 +528,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             }
                         }
                     }
-                    
+
                     // Focus sur menu (ou pas de form) : comportement navigation
                     Page currentpage = pmgr.getCurrentPage();
                     if (currentpage != null) {
                         if (currentpage.getLink("" + car) != null) {
                             System.out.println("key=" + ((char) car) + " link=" + currentpage.getLink((char) car + ""));
                             try {
-                                currentpage = pmgr.navigate(currentpage.getLink((char) car + ""));
-                                mc.writeBytes(currentpage.getData());
-                                // Mettre à jour le formulaire si la nouvelle page en a un
-                                updateCurrentForm(currentpage);
+                                navigateToPage(pmgr, currentpage.getLink((char) car + ""));
                             } catch (IOException ex) {
                                 System.getLogger(MinitelClient.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
                             }
@@ -561,24 +566,24 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
             System.out.println(">" + keyvalue);
         } catch (IOException ex) {
-             
+
             System.getLogger(MinitelClient.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
     }
 
     /**
-     * Met à jour le formulaire courant à partir de la page
-     * Cherche un VTMLFormComponent dans la page et initialise le focus
-     * Par défaut, le focus commence sur le menu (formHasFocus = false)
+     * Met à jour le formulaire courant à partir de la page Cherche un
+     * VTMLFormComponent dans la page et initialise le focus Par défaut, le
+     * focus commence sur le menu (formHasFocus = false)
      */
     private void updateCurrentForm(Page page) {
         stopGameLoop();
         stopPageTimer();
-        
+
         currentForm = page.getForm();
         currentStatus = page.getStatus();
         currentLayers = page.getLayers();
-        
+
         // Si la page a un layers, activer le mode jeu
         if (currentLayers != null) {
             layersHasFocus = true;
@@ -586,29 +591,29 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             System.out.println("🎮 Layers détecté - Mode jeu activé");
             // Note: L'écho doit être désactivé manuellement avec Fnct+T E
             showStatusMessage(">> Jeu <<");
-            
+
             // Démarrer le game loop si configuré
             if (currentLayers.hasGameLoop()) {
                 startGameLoop();
             }
             return;
         }
-        
+
         layersHasFocus = false;
-        
+
         // Masquer le curseur pour les pages normales (mode menu)
         try {
             mc.writeBytes(GetTeletelCode.showCursor(false));
         } catch (IOException e) {
             System.err.println("Erreur init curseur: " + e.getMessage());
         }
-        
+
         if (currentForm != null && currentForm.hasInputs()) {
             // Par défaut, on commence sur le menu
             formHasFocus = false;
             currentForm.setInputIndex(0);
             System.out.println("📋 Formulaire détecté avec " + currentForm.getFocusableInputs().size() + " inputs (focus: MENU)");
-            
+
             // Afficher indicateur menu si zone status définie
             showStatusMessage(">> Menu <<");
         } else {
@@ -632,7 +637,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     private void scheduleRefresh(Page page) {
         cancelRefresh();
-        if (page == null || page.getRefreshSeconds() <= 0) return;
+        if (page == null || page.getRefreshSeconds() <= 0) {
+            return;
+        }
         int seconds = page.getRefreshSeconds();
         refreshFuture = refreshScheduler.schedule(() -> {
             try {
@@ -651,20 +658,20 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     }
 
     /**
-     * Affiche un message dans la zone status si elle est définie
-     * Puis repositionne le curseur sur l'input courant si on est en mode form
+     * Affiche un message dans la zone status si elle est définie Puis
+     * repositionne le curseur sur l'input courant si on est en mode form
      */
     private void showStatusMessage(String message) {
         if (currentStatus != null) {
             try {
                 mc.writeBytes(currentStatus.showMessage(message));
-                
+
                 // Repositionner le curseur sur l'input si on est en mode form
                 if (formHasFocus && currentForm != null) {
                     VTMLInputComponent currentInput = currentForm.getCurrentInput();
                     if (currentInput != null) {
-                        int cursorX = currentInput.getAbsoluteX() + 
-                                     (currentInput.getValue() != null ? currentInput.getValue().length() : 0);
+                        int cursorX = currentInput.getAbsoluteX()
+                                + (currentInput.getValue() != null ? currentInput.getValue().length() : 0);
                         int cursorY = currentInput.getAbsoluteY();
                         mc.writeBytes(org.somanybits.minitel.GetTeletelCode.setCursor(cursorX, cursorY));
                     }
@@ -675,7 +682,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         }
         // Si pas de status défini, on n'affiche rien
     }
-    
+
     @Override
     public void SequenceSent(CodeSequenceSentEvent event) {
         byte[] sequence = event.getSequenceCode();
@@ -697,20 +704,19 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 System.out.println("#" + MinitelConnection.toHex(event.getSequenceCode()));
         }
     }
-    
+
     // ========== GAME LOOP ==========
-    
     private void startGameLoop() {
         if (gameLoopRunning || currentLayers == null || !currentLayers.hasGameLoop()) {
             return;
         }
-        
+
         gameLoopRunning = true;
         String tickFunc = currentLayers.getTickFunction();
         int interval = currentLayers.getTickInterval();
-        
+
         System.out.println("🎮 Démarrage game loop: " + tickFunc + "() toutes les " + interval + "ms");
-        
+
         gameLoopThread = new Thread(() -> {
             while (gameLoopRunning && currentLayers != null) {
                 try {
@@ -718,7 +724,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     synchronized (scriptLock) {
                         // Appeler la fonction JavaScript
                         VTMLScriptEngine.getInstance().execute(tickFunc + "()");
-                        
+
                         // Rafraîchir l'affichage
                         byte[] update = currentLayers.getDifferentialBytes();
                         if (update.length > 0) {
@@ -726,7 +732,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                                 mc.writeBytes(update);
                             }
                         }
-                        
+
                         // Gérer le beep si demandé
                         if (currentLayers.consumeBeep()) {
                             synchronized (mc) {
@@ -734,7 +740,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                             }
                         }
                     }
-                    
+
                     Thread.sleep(interval);
                 } catch (InterruptedException e) {
                     break;
@@ -743,23 +749,26 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 }
             }
         }, "GameLoop");
-        
+
         gameLoopThread.start();
     }
-    
+
     private void stopGameLoop() {
         if (gameLoopRunning) {
             gameLoopRunning = false;
             if (gameLoopThread != null) {
                 gameLoopThread.interrupt();
+                try { gameLoopThread.join(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 gameLoopThread = null;
             }
             System.out.println("🎮 Arrêt game loop demandé");
         }
     }
-    
+
     private void startPageTimer(String timerFunc, int interval) {
-        if (pageTimerRunning) return;
+        if (pageTimerRunning) {
+            return;
+        }
         pageTimerRunning = true;
         pageTimerThread = new Thread(() -> {
             while (pageTimerRunning) {
@@ -785,13 +794,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             pageTimerRunning = false;
             if (pageTimerThread != null) {
                 pageTimerThread.interrupt();
+                try { pageTimerThread.join(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 pageTimerThread = null;
             }
         }
     }
 
     // ========== JOYSTICK USB ==========
-    
     private void initJoystick() {
         Config cfg;
         try {
@@ -800,26 +809,26 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             System.err.println("🎮 Joystick: erreur config - " + e.getMessage());
             return;
         }
-        
+
         // Vérifier si le joystick est activé dans la config
         if (!cfg.client.joystick_enabled) {
             System.out.println("🎮 Joystick: désactivé dans la config");
             return;
         }
-        
+
         String device0 = cfg.client.joystick_device_0;
         String device1 = cfg.client.joystick_device_1;
-        
+
         // Charger les mappings
         joystickMapping.loadFromConfig(cfg.client.joystick_mapping_0);
         joystickMapping2.loadFromConfig(cfg.client.joystick_mapping_1);
         VTMLScriptEngine.getInstance().setVariable("_joystickMapping", joystickMapping);
         VTMLScriptEngine.getInstance().setVariable("_joystickMapping2", joystickMapping2);
-        
+
         // Initialiser les joysticks déjà connectés
         connectJoystick(0, device0);
         connectJoystick(1, device1);
-        
+
         // Démarrer la surveillance plug & play
         joystickWatcher = new JoystickWatcher(device0, device1);
         joystickWatcher.setListener(new JoystickWatcher.JoystickConnectionListener() {
@@ -827,7 +836,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             public void onJoystickConnected(int index, String devicePath) {
                 connectJoystick(index, devicePath);
             }
-            
+
             @Override
             public void onJoystickDisconnected(int index, String devicePath) {
                 disconnectJoystick(index);
@@ -835,7 +844,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         });
         joystickWatcher.start();
     }
-    
+
     /**
      * Connecte un joystick à l'index spécifié.
      */
@@ -844,21 +853,25 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             System.out.println("🎮 Joystick " + index + ": " + device + " non disponible");
             return;
         }
-        
+
         // Déconnecter l'ancien si présent
         disconnectJoystick(index);
-        
+
         System.out.println("🎮 Joystick " + index + ": connexion à " + device);
-        
+
         JoystickReader reader = new JoystickReader(device);
         final int playerIndex = index;
-        
+
         reader.addListener(new JoystickListener() {
             @Override
             public void onButton(int button, boolean pressed) {
                 // Debug: System.out.println("🎮 [P" + playerIndex + "] Bouton " + button + " = " + pressed);
-                if (!pressed) return;
-                if (oledMenu != null) oledMenu.onJoystickEvent(playerIndex, String.valueOf(button));
+                if (!pressed) {
+                    return;
+                }
+                if (oledMenu != null) {
+                    oledMenu.onJoystickEvent(playerIndex, String.valueOf(button));
+                }
                 handleJoystickButton(playerIndex, button);
             }
 
@@ -867,14 +880,16 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 if (oledMenu != null) {
                     JoystickMapping mapping = (playerIndex == 0) ? joystickMapping : joystickMapping2;
                     String action = mapping.getAxisAction(axis, value);
-                    if (action != null) oledMenu.onJoystickEvent(playerIndex, action);
+                    if (action != null) {
+                        oledMenu.onJoystickEvent(playerIndex, action);
+                    }
                 }
                 handleJoystickAxis(playerIndex, axis, value);
             }
         });
-        
+
         reader.start();
-        
+
         if (index == 0) {
             joystick = reader;
             // Initialiser le rumble
@@ -903,45 +918,55 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             System.out.println("🎮 Joystick 1: déconnecté");
         }
     }
-    
+
     private void handleJoystickButton(int player, int button) {
-        if (!layersHasFocus || currentLayers == null) return;
-        
+        if (!layersHasFocus || currentLayers == null) {
+            return;
+        }
+
         // Utiliser le mapping configurable selon le joueur
         JoystickMapping mapping = (player == 0) ? joystickMapping : joystickMapping2;
         String action = mapping.getButtonAction(button);
-        if (action == null) return;
-        
+        if (action == null) {
+            return;
+        }
+
         triggerJoystickAction(player, action);
     }
-    
+
     private void handleJoystickAxis(int player, int axis, int value) {
-        if (!layersHasFocus || currentLayers == null) return;
-        
+        if (!layersHasFocus || currentLayers == null) {
+            return;
+        }
+
         String[] lastActions = (player == 0) ? lastAxisAction : lastAxisAction2;
-        if (axis < 0 || axis >= lastActions.length) return;
-        
+        if (axis < 0 || axis >= lastActions.length) {
+            return;
+        }
+
         // Utiliser le mapping configurable selon le joueur
         JoystickMapping mapping = (player == 0) ? joystickMapping : joystickMapping2;
         String action = mapping.getAxisAction(axis, value);
-        
+
         // Éviter les répétitions: ne déclencher que si l'action change
         String lastAction = lastActions[axis];
         if (action == null) {
             lastActions[axis] = null;
             return;
         }
-        
+
         if (action.equals(lastAction)) {
             return;
         }
-        
+
         lastActions[axis] = action;
         triggerJoystickAction(player, action);
     }
-    
+
     private void triggerJoystickAction(int player, String action) {
-        if (currentLayers == null) return;
+        if (currentLayers == null) {
+            return;
+        }
         String event = currentLayers.getKeypadEvent(player, action);
         if (event != null) {
             // Exécuter dans un thread séparé pour ne jamais bloquer le thread joystick
@@ -958,16 +983,18 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             }, "JoystickAction").start();
         }
     }
-    
+
     /**
      * Obtenir le mapping joystick pour modification via JavaScript
      */
     public JoystickMapping getJoystickMapping() {
         return joystickMapping;
     }
-    
+
     private void refreshLayersDisplay() {
-        if (currentLayers == null) return;
+        if (currentLayers == null) {
+            return;
+        }
         try {
             byte[] update = currentLayers.getDifferentialBytes();
             if (update.length > 0) {
@@ -984,7 +1011,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             System.err.println("❌ Erreur refresh display: " + t.getClass().getSimpleName() + " - " + t.getMessage());
         }
     }
-    
+
     /**
      * Vérifie si une navigation a été demandée via gotoPage() et l'exécute
      */
@@ -993,15 +1020,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         if (pendingUrl != null) {
             try {
                 System.out.println("🔀 Navigation vers: " + pendingUrl);
-                Page newPage = pmgr.navigate(pendingUrl);
-                mc.writeBytes(newPage.getData());
-                updateCurrentForm(newPage);
+                navigateToPage(pmgr, pendingUrl);
             } catch (IOException e) {
                 System.err.println("Erreur navigation gotoPage: " + e.getMessage());
             }
         }
     }
-    
+
     /**
      * Vérifie si un focus a été demandé via setFocus() et l'applique
      */
@@ -1011,15 +1036,17 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             try {
                 PageManager pmgr = Kernel.getInstance().getPageManager();
                 Page currentPage = pmgr.getCurrentPage();
-                if (currentPage == null) return;
-                
+                if (currentPage == null) {
+                    return;
+                }
+
                 // Chercher le composant par nom
                 Object component = currentPage.getComponentByName(componentName);
                 if (component == null) {
                     System.err.println("⚠️ Composant non trouvé pour focus: " + componentName);
                     return;
                 }
-                
+
                 // Gérer le focus selon le type de composant
                 if (component instanceof VTMLFormComponent) {
                     VTMLFormComponent form = (VTMLFormComponent) component;
@@ -1047,8 +1074,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     if (currentForm != null) {
                         java.util.List<VTMLInputComponent> inputs = currentForm.getFocusableInputs();
                         for (int i = 0; i < inputs.size(); i++) {
-                            if (inputs.get(i) == input || 
-                                (input.getName() != null && input.getName().equals(inputs.get(i).getName()))) {
+                            if (inputs.get(i) == input
+                                    || (input.getName() != null && input.getName().equals(inputs.get(i).getName()))) {
                                 currentForm.setInputIndex(i);
                                 formHasFocus = true;
                                 layersHasFocus = false;
@@ -1069,18 +1096,19 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     }
 
     // ========== MENU OLED ==========
-
     /**
-     * Retourne la première IP locale non-loopback (ex. 192.168.x.x).
-     * Replie sur 127.0.0.1 si aucune interface réseau n'est active.
+     * Retourne la première IP locale non-loopback (ex. 192.168.x.x). Replie sur
+     * 127.0.0.1 si aucune interface réseau n'est active.
      */
     private static String resolveLocalIp() {
         try {
-            java.util.Enumeration<java.net.NetworkInterface> ifaces =
-                java.net.NetworkInterface.getNetworkInterfaces();
+            java.util.Enumeration<java.net.NetworkInterface> ifaces
+                    = java.net.NetworkInterface.getNetworkInterfaces();
             while (ifaces.hasMoreElements()) {
                 java.net.NetworkInterface iface = ifaces.nextElement();
-                if (!iface.isUp() || iface.isLoopback()) continue;
+                if (!iface.isUp() || iface.isLoopback()) {
+                    continue;
+                }
                 java.util.Enumeration<java.net.InetAddress> addrs = iface.getInetAddresses();
                 while (addrs.hasMoreElements()) {
                     java.net.InetAddress addr = addrs.nextElement();
@@ -1089,116 +1117,232 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     }
                 }
             }
-        } catch (java.net.SocketException ignored) {}
+        } catch (java.net.SocketException ignored) {
+        }
         return "127.0.0.1";
     }
 
     private static String resolveLocalMac() {
         try {
-            java.util.Enumeration<java.net.NetworkInterface> ifaces =
-                java.net.NetworkInterface.getNetworkInterfaces();
+            java.util.Enumeration<java.net.NetworkInterface> ifaces
+                    = java.net.NetworkInterface.getNetworkInterfaces();
             while (ifaces.hasMoreElements()) {
                 java.net.NetworkInterface iface = ifaces.nextElement();
-                if (!iface.isUp() || iface.isLoopback()) continue;
+                if (!iface.isUp() || iface.isLoopback()) {
+                    continue;
+                }
                 java.util.Enumeration<java.net.InetAddress> addrs = iface.getInetAddresses();
                 while (addrs.hasMoreElements()) {
                     java.net.InetAddress addr = addrs.nextElement();
                     if (addr instanceof java.net.Inet4Address && !addr.isLoopbackAddress()) {
                         byte[] mac = iface.getHardwareAddress();
-                        if (mac == null || mac.length < 6) return "N/A";
+                        if (mac == null || mac.length < 6) {
+                            return "N/A";
+                        }
                         return String.format("%02X:%02X:%02X:%02X:%02X:%02X",
-                            mac[0] & 0xFF, mac[1] & 0xFF,
-                            mac[2] & 0xFF, mac[3] & 0xFF,
-                            mac[4] & 0xFF, mac[5] & 0xFF);
+                                mac[0] & 0xFF, mac[1] & 0xFF,
+                                mac[2] & 0xFF, mac[3] & 0xFF,
+                                mac[4] & 0xFF, mac[5] & 0xFF);
                     }
                 }
             }
-        } catch (java.net.SocketException ignored) {}
+        } catch (java.net.SocketException ignored) {
+        }
         return "N/A";
     }
 
     private OLEDMenu.Actions createMenuActions() {
         return new OLEDMenu.Actions() {
 
-            @Override public void onCheckButtons() {
+            @Override
+            public void onCheckButtons() {
                 System.out.println("Menu: test boutons");
             }
 
-            @Override public void onCheckLeds() {
+            @Override
+            public void onCheckLeds() {
                 System.out.println("Menu: test LEDs");
             }
 
-            @Override public void onReboot() {
-                try { Runtime.getRuntime().exec(new String[]{"sudo", "reboot"}); }
-                catch (java.io.IOException e) { System.err.println("Reboot: " + e.getMessage()); }
+            @Override
+            public void onReboot() {
+                try {
+                    Runtime.getRuntime().exec(new String[]{"sudo", "reboot"});
+                } catch (java.io.IOException e) {
+                    System.err.println("Reboot: " + e.getMessage());
+                }
             }
 
-            @Override public String getNetworkInfo() {
+            @Override
+            public String getNetworkInfo() {
                 try {
                     Process p = Runtime.getRuntime().exec("hostname -I");
                     String ip = new String(p.getInputStream().readAllBytes()).trim();
                     return ip.isEmpty() ? "No IP" : ip;
-                } catch (java.io.IOException e) { return "N/A"; }
+                } catch (java.io.IOException e) {
+                    return "N/A";
+                }
             }
 
-            @Override public String getNetworkMac() {
+            @Override
+            public String getNetworkMac() {
                 return resolveLocalMac();
             }
 
-            @Override public void onRenewDhcp() {
-                try { Runtime.getRuntime().exec(new String[]{"sudo", "dhclient"}); }
-                catch (java.io.IOException e) { System.err.println("DHCP: " + e.getMessage()); }
+            @Override
+            public void onRenewDhcp() {
+                try {
+                    Runtime.getRuntime().exec(new String[]{"sudo", "dhclient"});
+                } catch (java.io.IOException e) {
+                    System.err.println("DHCP: " + e.getMessage());
+                }
             }
 
-            @Override public String getCurrentUrl() {
+            @Override
+            public String getCurrentUrl() {
                 try {
                     PageManager pmgr = Kernel.getInstance().getPageManager();
                     Page p = pmgr.getCurrentPage();
                     return p != null ? p.getUrl() : "none";
-                } catch (Exception e) { return "N/A"; }
+                } catch (Exception e) {
+                    return "N/A";
+                }
             }
 
-            @Override public String getSizeHistory() {
+            @Override
+            public String getSizeHistory() {
                 try {
                     PageManager pmgr = Kernel.getInstance().getPageManager();
                     return "Page: " + pmgr.getCurrentPage().getUrl();
-                } catch (Exception e) { return "N/A"; }
+                } catch (Exception e) {
+                    return "N/A";
+                }
             }
 
-            @Override public void onRestartClient() { System.exit(0); }
+            @Override
+            public void onRestartClient() {
+                System.exit(0);
+            }
 
-            @Override public String getServerInfo() {
+            @Override
+            public String getServerInfo() {
                 return resolveLocalIp() + ":" + port;
             }
 
-            @Override public void onRestartServer() {
+            @Override
+            public void onRestartServer() {
                 System.out.println("Menu: restart serveur (non implémenté)");
             }
 
-            @Override public String getJoystickInfo() {
-                String j0 = (joystick  != null) ? "J1: OK" : "J1: ---";
+            @Override
+            public String getJoystickInfo() {
+                String j0 = (joystick != null) ? "J1: OK" : "J1: ---";
                 String j1 = (joystick2 != null) ? "J2: OK" : "J2: ---";
                 return j0 + " " + j1;
             }
 
-            @Override public void onTestJoystick() {
+            @Override
+            public void onTestJoystick() {
                 System.out.println("Menu: test joystick");
             }
         };
     }
 
     // ========== INITIALISATION TERMINAL ==========
-
-    /** Désactive l'écho local du Minitel (séquence 1B 3B 64). */
+    /**
+     * Désactive l'écho local du Minitel (séquence 1B 3B 64).
+     */
     private void echoLocalOFF() throws IOException {
         mc.writeBytes(new byte[]{0x1B, 0x3B, 0x64});
+        mc.writeBytes(new byte[]{0x1B, 0x3A, 0x1B, 0x3A, 0x70, (byte)0xA1});
     }
 
-    // ========== MODE SAISIE SERVEUR ==========
+    // ========== MODE SAISIE URL (mkiwi:goto / mkiwi:config) ==========
 
-    private void showServerSelectionScreen(String statusMsg) throws IOException {
-        serverSelectionMode = true;
-        serverUrlBuffer = new StringBuilder();
+    private void navigateToPage(PageManager pmgr, String url) throws IOException {
+        if (url != null && url.startsWith("mkiwi:")) {
+            handleMkiwiUrl(url);
+            return;
+        }
+        Page page = pmgr.navigate(url);
+        if (page != null) {
+            mc.writeBytes(page.getData());
+            updateCurrentForm(page);
+        }
+    }
+
+    private void handleMkiwiUrl(String url) throws IOException {
+        stopGameLoop();
+        stopPageTimer();
+        cancelRefresh();
+        switch (url) {
+            case "mkiwi:goto":
+                showGotoScreen(null);
+                break;
+            case "mkiwi:config":
+                showConfigEditorScreen();
+                break;
+            case "mkiwi:server_directory":
+                openServerDirectory();
+                break;
+            default:
+                System.err.println("URL mkiwi inconnue: " + url);
+        }
+    }
+
+    private void openServerDirectory() throws IOException {
+        try { Kernel.getInstance().reloadConfig(); } catch (IOException ignored) {}
+        Config cfg = Kernel.getInstance().getConfig();
+        directoryScreen = new ServerDirectoryScreen(t, cfg.client.server_directory);
+        inputMode = InputMode.SERVER_DIRECTORY;
+        directoryScreen.show();
+    }
+
+    private void handleDirectoryKey(KeyPressedEvent event) throws IOException {
+        if (directoryScreen == null) {
+            inputMode = InputMode.NONE;
+            return;
+        }
+        ServerDirectoryScreen.ActionResult result = directoryScreen.handleKey(event);
+        switch (result) {
+            case CANCEL: {
+                inputMode = InputMode.NONE;
+                directoryScreen = null;
+                Page current = Kernel.getInstance().getPageManager().getCurrentPage();
+                if (current != null) {
+                    t.clear();
+                    mc.writeBytes(current.getData());
+                    updateCurrentForm(current);
+                }
+                break;
+            }
+            case NAVIGATE: {
+                String host = directoryScreen.getPendingHost();
+                int connectPort = directoryScreen.getPendingPort();
+                PageManager pmgr = Kernel.getInstance().getPageManager();
+                pmgr.setServer(host, connectPort);
+                pmgr.navigate("");
+                Page page = pmgr.getCurrentPage();
+                if (page != null && !page.isErrorPage()) {
+                    inputMode = InputMode.NONE;
+                    directoryScreen = null;
+                    t.clear();
+                    mc.writeBytes(page.getData());
+                    updateCurrentForm(page);
+                } else {
+                    directoryScreen.showError("Serveur " + host + ":" + connectPort + " introuvable.");
+                }
+                break;
+            }
+            case NONE:
+            default:
+                break;
+        }
+    }
+
+    private void showGotoScreen(String statusMsg) throws IOException {
+        inputMode = InputMode.GOTO;
+        urlInputBuffer = new StringBuilder();
 
         t.clear();
 
@@ -1206,11 +1350,11 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.setTextColor(Teletel.COLOR_WHITE);
         t.writeString("M-Kiwi  Client VTML");
 
-        t.setCursor(2, 6);
-        t.setTextColor(Teletel.COLOR_YELLOW);
-        String msg = (statusMsg != null && !statusMsg.isEmpty()) ? statusMsg
-                     : "Serveur local introuvable.";
-        t.writeString(msg.length() > 36 ? msg.substring(0, 36) : msg);
+        if (statusMsg != null && !statusMsg.isEmpty()) {
+            t.setCursor(2, 6);
+            t.setTextColor(Teletel.COLOR_YELLOW);
+            t.writeString(statusMsg.length() > 36 ? statusMsg.substring(0, 36) : statusMsg);
+        }
 
         t.setCursor(2, 8);
         t.setTextColor(Teletel.COLOR_WHITE);
@@ -1222,7 +1366,77 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         t.setCursor(2, 15);
         t.setTextColor(Teletel.COLOR_GREEN);
-        t.writeString("Touche ENVOI pour valider.");
+        t.writeString("ENVOI=valider  RETOUR=annuler");
+
+        drawUrlInputLine();
+    }
+
+    private void showConfigEditorScreen() throws IOException {
+        inputMode = InputMode.CONFIG;
+        urlInputBuffer = new StringBuilder();
+        try {
+            Config cfg = Kernel.getInstance().getConfig();
+            urlInputBuffer.append(cfg.client.default_server).append(":").append(cfg.client.default_port);
+        } catch (IOException e) {
+            urlInputBuffer.append("localhost:8080");
+        }
+
+        t.clear();
+
+        t.setCursor(8, 3);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("M-Kiwi  Client VTML");
+
+        t.setCursor(2, 5);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Configuration - etape 1/2");
+
+        t.setCursor(2, 8);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("Serveur par defaut (adresse:port) :");
+
+        t.setCursor(2, 13);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Format: adresse:port");
+
+        t.setCursor(2, 15);
+        t.setTextColor(Teletel.COLOR_GREEN);
+        t.writeString("ENVOI=suivant  RETOUR=annuler");
+
+        drawUrlInputLine();
+    }
+
+    private void showConfigDirectoryScreen() throws IOException {
+        inputMode = InputMode.CONFIG_DIRECTORY;
+        urlInputBuffer = new StringBuilder();
+        try {
+            Config cfg = Kernel.getInstance().getConfig();
+            urlInputBuffer.append(cfg.client.server_directory);
+        } catch (IOException e) {
+            urlInputBuffer.append("http://localhost:8000");
+        }
+
+        t.clear();
+
+        t.setCursor(8, 3);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("M-Kiwi  Client VTML");
+
+        t.setCursor(2, 5);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Configuration - etape 2/2");
+
+        t.setCursor(2, 8);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("URL de l'annuaire de serveurs :");
+
+        t.setCursor(2, 13);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Format: http://adresse:port");
+
+        t.setCursor(2, 15);
+        t.setTextColor(Teletel.COLOR_GREEN);
+        t.writeString("ENVOI=sauvegarder  RETOUR=etape 1");
 
         drawUrlInputLine();
     }
@@ -1232,20 +1446,22 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.setTextColor(Teletel.COLOR_WHITE);
         t.setBGColor(Teletel.COLOR_BLUE);
 
-        String buf = serverUrlBuffer.toString();
+        String buf = urlInputBuffer.toString();
         StringBuilder line = new StringBuilder(" > ");
         line.append(buf);
         int pad = SERVER_INPUT_MAX - buf.length();
-        for (int i = 0; i < pad; i++) line.append(' ');
+        for (int i = 0; i < pad; i++) {
+            line.append(' ');
+        }
         t.writeString(line.toString());
 
         t.setBGColor(Teletel.COLOR_BLACK);
     }
 
     private void tryConnectToServer() throws IOException {
-        String rawUrl = serverUrlBuffer.toString().trim();
+        String rawUrl = urlInputBuffer.toString().trim();
         if (rawUrl.isEmpty()) {
-            showServerSelectionScreen("URL vide, veuillez reessayer.");
+            showGotoScreen("URL vide, veuillez reessayer.");
             return;
         }
         if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
@@ -1253,61 +1469,151 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         }
 
         String host;
-        int port;
+        int connectPort;
         try {
-            java.net.URL parsedUrl = new java.net.URL(rawUrl);
-            host = parsedUrl.getHost();
-            port = parsedUrl.getPort();
-            if (port == -1) port = 80;
-            if (host == null || host.isEmpty()) throw new Exception("Host vide");
+            java.net.URI parsedUri = java.net.URI.create(rawUrl);
+            host = parsedUri.getHost();
+            connectPort = parsedUri.getPort();
+            if (connectPort == -1) {
+                connectPort = 80;
+            }
+            if (host == null || host.isEmpty()) {
+                throw new Exception("Host vide");
+            }
         } catch (Exception e) {
-            showServerSelectionScreen("Adresse invalide : " + serverUrlBuffer);
+            showGotoScreen("Adresse invalide : " + urlInputBuffer);
             return;
         }
 
         t.setCursor(0, SERVER_INPUT_ROW + 2);
         t.setTextColor(Teletel.COLOR_YELLOW);
-        t.writeString(" Connexion a " + host + ":" + port + "...");
+        t.writeString(" Connexion a " + host + ":" + connectPort + "...");
 
         PageManager pmgr = Kernel.getInstance().getPageManager();
-        pmgr.setServer(host, port);
+        pmgr.setServer(host, connectPort);
         pmgr.navigate("");
         Page page = pmgr.getCurrentPage();
 
         if (page != null && !page.isErrorPage()) {
-            serverSelectionMode = false;
+            inputMode = InputMode.NONE;
             t.clear();
             mc.writeBytes(page.getData());
             updateCurrentForm(page);
         } else {
-            showServerSelectionScreen("Serveur " + host + ":" + port + " introuvable.");
+            showGotoScreen("Serveur " + host + ":" + connectPort + " introuvable.");
         }
     }
 
-    private void handleServerSelectionKey(KeyPressedEvent event) throws IOException {
+    private void tryConnectAndSave() throws IOException {
+        String raw = urlInputBuffer.toString().trim();
+        if (raw.isEmpty()) {
+            showConfigEditorScreen();
+            return;
+        }
+
+        String host;
+        int connectPort;
+        try {
+            if (raw.contains(":")) {
+                String[] parts = raw.split(":", 2);
+                host = parts[0].trim();
+                connectPort = Integer.parseInt(parts[1].trim());
+            } else {
+                host = raw;
+                connectPort = 8080;
+            }
+            if (host.isEmpty()) {
+                throw new Exception("Host vide");
+            }
+        } catch (Exception e) {
+            t.setCursor(0, SERVER_INPUT_ROW + 2);
+            t.setTextColor(Teletel.COLOR_RED);
+            t.writeString(" Format invalide. Ex: localhost:8080 ");
+            return;
+        }
+
+        pendingConfigServer = host;
+        pendingConfigPort = connectPort;
+        showConfigDirectoryScreen();
+    }
+
+    private void tryConnectAndSaveDirectory() throws IOException {
+        String raw = urlInputBuffer.toString().trim();
+        if (raw.isEmpty()) {
+            showConfigDirectoryScreen();
+            return;
+        }
+
+        t.setCursor(0, SERVER_INPUT_ROW + 2);
+        t.setTextColor(Teletel.COLOR_YELLOW);
+        t.writeString(" Connexion a " + pendingConfigServer + ":" + pendingConfigPort + "...");
+
+        PageManager pmgr = Kernel.getInstance().getPageManager();
+        pmgr.setServer(pendingConfigServer, pendingConfigPort);
+        pmgr.navigate("");
+        Page page = pmgr.getCurrentPage();
+
+        if (page != null && !page.isErrorPage()) {
+            Config cfg = Kernel.getInstance().getConfig();
+            cfg.client.default_server = pendingConfigServer;
+            cfg.client.default_port = pendingConfigPort;
+            cfg.client.server_directory = raw;
+            Kernel.getInstance().saveConfig();
+            inputMode = InputMode.NONE;
+            pendingConfigServer = null;
+            t.clear();
+            mc.writeBytes(page.getData());
+            updateCurrentForm(page);
+        } else {
+            t.setCursor(0, SERVER_INPUT_ROW + 3);
+            t.setTextColor(Teletel.COLOR_RED);
+            t.writeString(" Serveur introuvable. Reessayez.      ");
+        }
+    }
+
+    private void handleInputModeKey(KeyPressedEvent event) throws IOException {
         switch (event.getType()) {
             case KeyPressedEvent.TYPE_KEY_CHAR_EVENT:
                 char car = (char) event.getKeyCode();
                 if (car == 0x08 || car == 0x7F) {
-                    if (serverUrlBuffer.length() > 0) {
-                        serverUrlBuffer.deleteCharAt(serverUrlBuffer.length() - 1);
+                    if (urlInputBuffer.length() > 0) {
+                        urlInputBuffer.deleteCharAt(urlInputBuffer.length() - 1);
                         drawUrlInputLine();
                     }
                 } else if (car >= 0x20 && car < 0x7F
-                           && serverUrlBuffer.length() < SERVER_INPUT_MAX) {
-                    serverUrlBuffer.append(car);
+                        && urlInputBuffer.length() < SERVER_INPUT_MAX) {
+                    urlInputBuffer.append(car);
                     drawUrlInputLine();
                 }
                 break;
             case KeyPressedEvent.TYPE_KEY_MENU_EVENT:
                 switch (event.getKeyCode()) {
                     case KeyPressedEvent.KEY_ENVOI:
-                        tryConnectToServer();
+                        if (inputMode == InputMode.GOTO) {
+                            tryConnectToServer();
+                        } else if (inputMode == InputMode.CONFIG) {
+                            tryConnectAndSave();
+                        } else if (inputMode == InputMode.CONFIG_DIRECTORY) {
+                            tryConnectAndSaveDirectory();
+                        }
                         break;
                     case KeyPressedEvent.KEY_CORRECTION:
-                        if (serverUrlBuffer.length() > 0) {
-                            serverUrlBuffer.deleteCharAt(serverUrlBuffer.length() - 1);
+                        if (urlInputBuffer.length() > 0) {
+                            urlInputBuffer.deleteCharAt(urlInputBuffer.length() - 1);
                             drawUrlInputLine();
+                        }
+                        break;
+                    case KeyPressedEvent.KEY_RETOUR:
+                        if (inputMode == InputMode.CONFIG_DIRECTORY) {
+                            showConfigEditorScreen();
+                        } else {
+                            inputMode = InputMode.NONE;
+                            Page currentPage = Kernel.getInstance().getPageManager().getCurrentPage();
+                            if (currentPage != null) {
+                                t.clear();
+                                mc.writeBytes(currentPage.getData());
+                                updateCurrentForm(currentPage);
+                            }
                         }
                         break;
                     default:

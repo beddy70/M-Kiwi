@@ -1,2 +1,2 @@
 #!/bin/bash
-java -jar Minitel.jar localhost 8080
+java -jar Minitel.jar

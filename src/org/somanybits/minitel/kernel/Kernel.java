@@ -57,7 +57,7 @@ public class Kernel {
         }
         
         // Initialiser le PageManager avec la config
-        pageManager = new PageManager("localhost", cfg.server.port);
+        pageManager = new PageManager(cfg.client.default_server, cfg.client.default_port);
 
     }
 
@@ -114,5 +114,20 @@ public class Kernel {
         return pageManager;
     }
 
+    /**
+     * Sauvegarde la configuration courante dans config.json.
+     */
+    public void saveConfig() throws IOException {
+        new com.fasterxml.jackson.databind.ObjectMapper()
+                .writerWithDefaultPrettyPrinter()
+                .writeValue(new java.io.File("./config.json"), cfg);
+    }
+
+    /**
+     * Relit config.json depuis le disque et met à jour l'objet cfg en mémoire.
+     */
+    public void reloadConfig() throws IOException {
+        cfg = ConfigLoader.load(java.nio.file.Path.of("./config.json"));
+    }
 
 }

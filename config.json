@@ -24,6 +24,9 @@
     "serial_chunk_delay_ms": 200,
     "joystick_device_0": "/dev/input/js0",
     "joystick_device_1": "/dev/input/js1",
+    "default_server": "localhost",
+    "default_port": 8080,
+    "server_directory": "http://192.168.0.207:8000",
     "joystick_enabled": true,
     "joystick_mapping_0": {
       "buttons": {

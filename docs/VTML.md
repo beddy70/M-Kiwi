@@ -219,6 +219,8 @@ Conteneur de menu interactif avec navigation par touches.
 </menu>
 ```
 
+> **Note** : Quand une page contient à la fois un `<menu>` et un `<form>`, la touche **Entrée** permet de basculer le focus entre les deux blocs. Le menu est actif par défaut au chargement de la page.
+
 **Exemple avec plus de 9 items :**
 
 ```xml
@@ -1238,6 +1240,14 @@ Conteneur de formulaire pour la saisie utilisateur. Utilise la méthode GET.
   <input name="ville" left="0" top="2" width="15" label="Ville: ">
 </form>
 ```
+
+**Cycle de focus avec la touche Entrée** (quand la page contient `<menu>` + `<form>`) :
+
+1. Focus sur le menu → **Entrée** → focus sur le premier `<input>`
+2. Sur un `<input>` (pas le dernier) → **Entrée** → input suivant
+3. Sur le dernier `<input>` → **Entrée** → retour au menu
+
+La touche **ENVOI** soumet le formulaire depuis n'importe quel input. La touche **ANNULATION** efface tous les champs.
 
 ---
 

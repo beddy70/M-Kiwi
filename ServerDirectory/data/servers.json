@@ -1,0 +1,172 @@
+[
+  {
+    "id": 1,
+    "url": "somanybits.com",
+    "port": 80,
+    "name": "Somanybits",
+    "description": "Serveur VTML de démonstration officiel",
+    "keywords": [
+      "minitel",
+      "vtml",
+      "demo",
+      "retro"
+    ],
+    "admin_email": "admin@somanybits.com",
+    "website": "https://somanybits.com",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [
+      "demo",
+      "retro",
+      "public"
+    ],
+    "enabled": true
+  },
+  {
+    "id": 2,
+    "url": "192.168.0.155",
+    "port": 8080,
+    "name": "M-Kiwi Local",
+    "description": "Serveur VTML local de développement",
+    "keywords": [
+      "local",
+      "test",
+      "dev"
+    ],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [
+      "local",
+      "dev"
+    ],
+    "enabled": true
+  },
+  {
+    "url": "192.168.0.211",
+    "port": 8080,
+    "name": "M-Kiwi Dev",
+    "description": "Serveur de dev de M-Kiwi",
+    "keywords": [],
+    "admin_email": "peassembler@yahoo.fr",
+    "website": "https://somanybits.com",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 3
+  },
+  {
+    "url": "192.168.0.211",
+    "port": 8080,
+    "name": "Bidon1",
+    "description": "",
+    "keywords": [],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 4
+  },
+  {
+    "url": "192.168.0.211",
+    "port": 8080,
+    "name": "Bidon2",
+    "description": "",
+    "keywords": [],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 5
+  },
+  {
+    "url": "192.168.0.211",
+    "port": 8080,
+    "name": "Bidon3",
+    "description": "",
+    "keywords": [],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 6
+  },
+  {
+    "url": "192.168.0.211",
+    "port": 8080,
+    "name": "bidon4",
+    "description": "",
+    "keywords": [],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 7
+  },
+  {
+    "url": "192.168.0.211",
+    "port": 8080,
+    "name": "bidon5",
+    "description": "",
+    "keywords": [],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 8
+  },
+  {
+    "url": "1",
+    "port": 8080,
+    "name": "bidon6",
+    "description": "",
+    "keywords": [],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 9
+  },
+  {
+    "url": "192.168.0.211",
+    "port": 8080,
+    "name": "bidon7",
+    "description": "",
+    "keywords": [],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 10
+  },
+  {
+    "url": "192.168.0.155",
+    "port": 8080,
+    "name": "Bidon7",
+    "description": "",
+    "keywords": [],
+    "admin_email": "",
+    "website": "",
+    "vtml_version": "1.0",
+    "mkiwi_server_version": "1.0",
+    "categories": [],
+    "enabled": true,
+    "id": 11
+  }
+]
