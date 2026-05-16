@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.8";
+    private static final String VERSION = "0.7.9";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -1230,7 +1230,17 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     t.setTextColor(Teletel.COLOR_WHITE);
                     t.writeString("Veuillez patienter");
                     Thread.sleep(1500);
-                } catch (Exception ignored) {}
+                    String java = ProcessHandle.current().info().command()
+                            .orElse(System.getProperty("java.home") + "/bin/java");
+                    java.io.File jar = new java.io.File(
+                            MinitelClient.class.getProtectionDomain()
+                                    .getCodeSource().getLocation().toURI());
+                    new ProcessBuilder(java, "-jar", jar.getAbsolutePath())
+                            .inheritIO()
+                            .start();
+                } catch (Exception e) {
+                    System.err.println("Restart: " + e.getMessage());
+                }
                 System.exit(0);
             }
 
