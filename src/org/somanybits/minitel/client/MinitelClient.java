@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.6";
+    private static final String VERSION = "0.7.7";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -112,7 +112,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private volatile java.util.concurrent.ScheduledFuture<?> refreshFuture;
 
     // Mode saisie URL (GOTO = changer de serveur, CONFIG = modifier le serveur par défaut)
-    private enum InputMode { NONE, GOTO, CONFIG, SERVER_DIRECTORY }
+    private enum InputMode { NONE, GOTO, CONFIG, SERVER_DIRECTORY, SYSINFO }
     private InputMode inputMode = InputMode.NONE;
     private StringBuilder urlInputBuffer  = new StringBuilder();
     private StringBuilder urlInputBuffer2 = new StringBuilder();
@@ -1308,6 +1308,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             case "mkiwi:server_directory":
                 openServerDirectory();
                 break;
+            case "mkiwi:sysinfo":
+                showSysInfoScreen();
+                break;
             default:
                 System.err.println("URL mkiwi inconnue: " + url);
         }
@@ -1585,6 +1588,92 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         }
     }
 
+    private void showSysInfoScreen() throws IOException {
+        inputMode = InputMode.SYSINFO;
+        t.clear();
+
+        // ── Titre ──────────────────────────────────────────────────────────
+        t.setCursor(2, 2);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("M-Kiwi Infos Systeme");
+
+        // ── Disque ─────────────────────────────────────────────────────────
+        t.setCursor(2, 4);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Disque");
+        String disk = runSysCmd("bash", "-c",
+            "df -h / | awk 'NR==2 {print \"Util:\"$3\" / \"$2\" libre:\"$4}'");
+        t.setCursor(4, 5);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString(siTrunc(disk, 36));
+
+        // ── Systeme ────────────────────────────────────────────────────────
+        t.setCursor(2, 7);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Systeme");
+        String kernel   = runSysCmd("uname", "-r");
+        String hostname = runSysCmd("hostname");
+        t.setCursor(4, 8);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString(siTrunc("Linux " + kernel, 36));
+        t.setCursor(4, 9);
+        t.writeString(siTrunc("Host: " + hostname, 36));
+
+        // ── Reseau ─────────────────────────────────────────────────────────
+        t.setCursor(2, 11);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Reseau");
+        // IP + passerelle en une seule commande
+        String route = runSysCmd("bash", "-c",
+            "ip route get 8.8.8.8 2>/dev/null | awk 'NR==1{for(i=1;i<=NF;i++){if($i==\"src\")ip=$(i+1);if($i==\"via\")gw=$(i+1)}print ip\"|\"gw}'");
+        String ip = "", gw = "";
+        if (route.contains("|")) {
+            ip = route.split("\\|")[0].trim();
+            gw = route.split("\\|").length > 1 ? route.split("\\|")[1].trim() : "";
+        }
+        if (ip.isEmpty()) ip = runSysCmd("bash", "-c", "hostname -I | awk '{print $1}'");
+        String dns = runSysCmd("bash", "-c",
+            "grep nameserver /etc/resolv.conf | awk '{print $2}' | head -1");
+        t.setCursor(4, 12);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString(siTrunc("IP: " + ip, 36));
+        t.setCursor(4, 13);
+        t.writeString(siTrunc("Passerelle: " + gw, 36));
+        t.setCursor(4, 14);
+        t.writeString(siTrunc("DNS: " + dns, 36));
+
+        // ── Memoire ────────────────────────────────────────────────────────
+        t.setCursor(2, 16);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Memoire");
+        String mem = runSysCmd("bash", "-c",
+            "free -h | awk 'NR==2 {print \"Tot:\"$2\"  Util:\"$3\"  Lib:\"$4}'");
+        t.setCursor(4, 17);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString(siTrunc(mem, 36));
+
+        // ── Footer ─────────────────────────────────────────────────────────
+        t.setCursor(2, 21);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("RETOUR : quitter");
+        t.setTextColor(Teletel.COLOR_WHITE);
+    }
+
+    private static String runSysCmd(String... cmd) {
+        try {
+            Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+            p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
+            return new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+        } catch (Exception e) {
+            return "N/A";
+        }
+    }
+
+    private static String siTrunc(String s, int max) {
+        if (s == null || s.isBlank()) return "N/A";
+        return s.length() > max ? s.substring(0, max) : s;
+    }
+
     private void handleInputModeKey(KeyPressedEvent event) throws IOException {
         switch (event.getType()) {
             case KeyPressedEvent.TYPE_KEY_CHAR_EVENT: {
@@ -1632,12 +1721,17 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                         break;
                     }
                     case KeyPressedEvent.KEY_RETOUR:
-                        inputMode = InputMode.NONE;
-                        Page currentPage = Kernel.getInstance().getPageManager().getCurrentPage();
-                        if (currentPage != null) {
-                            t.clear();
-                            mc.writeBytes(currentPage.getData());
-                            updateCurrentForm(currentPage);
+                        if (inputMode == InputMode.SYSINFO) {
+                            inputMode = InputMode.NONE;
+                            displayPage(Kernel.getInstance().getPageManager().getCurrentPage());
+                        } else {
+                            inputMode = InputMode.NONE;
+                            Page currentPage = Kernel.getInstance().getPageManager().getCurrentPage();
+                            if (currentPage != null) {
+                                t.clear();
+                                mc.writeBytes(currentPage.getData());
+                                updateCurrentForm(currentPage);
+                            }
                         }
                         break;
                     default:
