@@ -534,8 +534,9 @@ public class MinitelPageReader {
                 boolean negative = "true".equalsIgnoreCase(attrs.get("negative"));
                 String style = attrs.get("style");  // "dithering", "bitmap", ou null (couleur)
 
-                // baseUrl sera récupéré depuis Kernel.getConfig() si non défini
-                return new VTMLImgComponent(src, left, top, width, height, negative, style);
+                VTMLImgComponent img = new VTMLImgComponent(src, left, top, width, height, negative, style);
+                img.setBaseUrl("http://" + domain + ":" + port);
+                return img;
             }
 
             case "script" -> {
