@@ -66,9 +66,17 @@ public class MinitelPageReader {
                     .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36)")
                     .timeout(15_000)
                     .get();
+        } catch (org.jsoup.HttpStatusException hse) {
+            int code = hse.getStatusCode();
+            System.err.println("HTTP " + code + ": " + url);
+            java.io.File errorFile = new java.io.File("root/erreurhttp/" + code + ".vtml");
+            if (errorFile.exists()) {
+                try { return getFromFile(errorFile); } catch (IOException ignored) { }
+            }
+            return buildErrorPage(code);
         } catch (IOException ex) {
             System.err.println("Error reading page: " + ex.getMessage());
-            Page p = new Page(Page.MODE_40_COL);
+            Page p = buildErrorPage(0);
             p.setErrorPage(true);
             return p;
         }
@@ -959,6 +967,84 @@ public class MinitelPageReader {
         } catch (NumberFormatException e) {
             return 1;
         }
+    }
+
+    /**
+     * Génère une page d'erreur Minitel avec les bytes bruts (clear + couleurs + texte).
+     * Appelée quand aucun fichier root/erreurhttp/{code}.vtml n'est disponible.
+     */
+    private Page buildErrorPage(int statusCode) {
+        String title = httpErrorTitle(statusCode);
+        String desc  = httpErrorDesc(statusCode);
+        int inkColor = statusCode == 0 ? GetTeletelCode.COLOR_YELLOW : GetTeletelCode.COLOR_RED;
+        String codePrefix = statusCode == 0 ? "" : statusCode + " ";
+
+        try {
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+
+            out.write(GetTeletelCode.clear());
+            out.write(GetTeletelCode.setBGColor(GetTeletelCode.COLOR_BLACK));
+            out.write(GetTeletelCode.setTextColor(GetTeletelCode.COLOR_WHITE));
+
+            out.write(GetTeletelCode.setCursor(2, 5));
+            out.write(" M-Kiwi".getBytes("ISO-8859-1"));
+
+            out.write(GetTeletelCode.setCursor(2, 7));
+            out.write(GetTeletelCode.setTextColor(inkColor));
+            out.write((" " + codePrefix + title).getBytes("ISO-8859-1"));
+
+            out.write(GetTeletelCode.setCursor(2, 9));
+            out.write(GetTeletelCode.setTextColor(GetTeletelCode.COLOR_WHITE));
+            out.write((" " + desc).getBytes("ISO-8859-1"));
+
+            out.write(GetTeletelCode.setCursor(2, 20));
+            out.write(GetTeletelCode.setTextColor(GetTeletelCode.COLOR_CYAN));
+            out.write(" RETOUR: page precedente".getBytes("ISO-8859-1"));
+
+            out.write(GetTeletelCode.setTextColor(GetTeletelCode.COLOR_WHITE));
+
+            Page p = new Page(Page.MODE_40_COL);
+            p.addData(out.toByteArray());
+            return p;
+        } catch (java.io.IOException e) {
+            Page p = new Page(Page.MODE_40_COL);
+            p.setErrorPage(true);
+            return p;
+        }
+    }
+
+    private static String httpErrorTitle(int code) {
+        return switch (code) {
+            case 0   -> "Serveur inaccessible";
+            case 400 -> "Requete invalide";
+            case 401 -> "Non autorise";
+            case 403 -> "Acces interdit";
+            case 404 -> "Page introuvable";
+            case 408 -> "Delai depasse";
+            case 500 -> "Erreur serveur";
+            case 502 -> "Mauvaise passerelle";
+            case 503 -> "Service indisponible";
+            default  -> code >= 500 ? "Erreur serveur " + code
+                      : code >  0   ? "Erreur HTTP " + code
+                      :               "Connexion impossible";
+        };
+    }
+
+    private static String httpErrorDesc(int code) {
+        return switch (code) {
+            case 0   -> "Le serveur ne repond pas";
+            case 400 -> "La requete est mal formee";
+            case 401 -> "Authentification requise";
+            case 403 -> "Vous n'avez pas acces";
+            case 404 -> "Cette page n'existe pas";
+            case 408 -> "Timeout - reessayez";
+            case 500 -> "Erreur interne du serveur";
+            case 502 -> "Passerelle injoignable";
+            case 503 -> "Service momentanement indisponible";
+            default  -> code >= 500 ? "Verifiez le serveur"
+                      : code >  0   ? "Code HTTP: " + code
+                      :               "Verifiez la connexion reseau";
+        };
     }
 
     /**

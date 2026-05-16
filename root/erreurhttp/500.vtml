@@ -1,0 +1,25 @@
+<minitel title="Erreur 500">
+
+	<key name="sommaire" link="index.vtml"/>
+
+	<fillchar char=" " ink="white" background="black" left="0" top="1" width="40" height="24"/>
+
+	<div name="header" left="1" top="4" width="38" height="1">
+		<row><color ink="white"> M-Kiwi</color></row>
+	</div>
+
+	<div name="code" left="1" top="6" width="38" height="1">
+		<row><color ink="yellow"> 500 - Erreur serveur</color></row>
+	</div>
+
+	<div name="desc" left="1" top="8" width="38" height="2">
+		<row><color ink="white"> Une erreur interne s'est</color></row>
+		<row><color ink="white"> produite. Reessayez.</color></row>
+	</div>
+
+	<div name="hint" left="1" top="18" width="38" height="2">
+		<row><color ink="cyan"> RETOUR : page precedente</color></row>
+		<row><color ink="cyan"> SOMMAIRE : accueil</color></row>
+	</div>
+
+</minitel>
