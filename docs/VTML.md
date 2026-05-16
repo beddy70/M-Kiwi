@@ -1,6 +1,6 @@
 # VTML - Videotex Terminal Markup Language
 
-VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages Minitel. Il permet de structurer le contenu et de générer automatiquement les codes Vidéotex.
+VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages Minitel. Il permet de structurer le contenu et de générer automatiquement les codes Vidéotex. — Version client M-Kiwi : 0.7.7
 
 ## Table des matières
 
@@ -57,6 +57,11 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
     - [Création dynamique d'éléments](#création-dynamique-déléments)
     - [Requêtes HTTP](#requêtes-http)
     - [Classes Java accessibles](#classes-java-accessibles)
+- **URLs Spéciales M-Kiwi**
+  - [`mkiwi:goto`](#mkiwigoto) — Navigation vers un serveur VTML distant
+  - [`mkiwi:config`](#mkiwiconfig) — Configuration du serveur local
+  - [`mkiwi:server_directory`](#mkiwiserver_directory) — Annuaire des serveurs VTML
+  - [`mkiwi:sysinfo`](#mkiwisysinfo) — Informations système locales
 - [Exemple complet](#exemple-complet)
 - [Dimensions écran Minitel](#dimensions-écran-minitel)
 - [Fichiers](#fichiers)
@@ -1390,6 +1395,88 @@ Zone dédiée à l'affichage des informations de focus (menu/input actif). Ce ta
 1. Menu → Input 1 → Input 2 → ... → Input N → Menu → ...
 
 **Important** : Utiliser la syntaxe auto-fermante `<status ... />` (pas `<status></status>`).
+
+---
+
+## URLs Spéciales M-Kiwi
+
+Le client M-Kiwi intercepte les URLs commençant par `mkiwi:` avant tout accès réseau. Ces URLs déclenchent des fonctions internes du client et peuvent être utilisées dans les attributs `link` des tags `<key>` et `<item>`.
+
+```xml
+<key name="guide" link="mkiwi:goto"/>
+<item link="mkiwi:sysinfo">Infos système</item>
+```
+
+---
+
+### `mkiwi:goto`
+
+Affiche l'écran de saisie d'URL permettant de naviguer vers n'importe quel serveur VTML distant.
+
+L'utilisateur saisit une adresse et valide avec la touche **ENVOI**. Le client résout l'URL selon les règles suivantes :
+
+| Saisie | URL résolue |
+| -------- | ------------- |
+| `somanybits.tv` | `https://somanybits.tv:443/index.vtml` |
+| `http://exemple.fr` | `http://exemple.fr:80/index.vtml` |
+| `https://exemple.fr/news` | `https://exemple.fr:443/news/index.vtml` |
+| `https://exemple.fr/page.vtml` | `https://exemple.fr:443/page.vtml` |
+| `exemple.fr/dossier/` | `https://exemple.fr:443/dossier/index.vtml` |
+
+**Règles de résolution :**
+
+- Pas de schéma → `https://` ajouté automatiquement
+- Pas de port → 443 pour `https://`, 80 pour `http://`
+- Chemin vide ou racine `/` → `index.vtml` ajouté
+- Chemin se terminant par `/` → `index.vtml` ajouté
+- Dernier segment sans extension → `/index.vtml` ajouté
+
+```xml
+<key name="guide" link="mkiwi:goto"/>
+```
+
+---
+
+### `mkiwi:config`
+
+Affiche l'écran de configuration du serveur local : adresse de l'hôte, port et protocole utilisés par défaut pour la navigation.
+
+```xml
+<key name="telephone" link="mkiwi:config"/>
+```
+
+---
+
+### `mkiwi:server_directory`
+
+Affiche l'annuaire des serveurs VTML connus, permettant de choisir un serveur dans une liste prédéfinie.
+
+```xml
+<item link="mkiwi:server_directory">Annuaire</item>
+```
+
+---
+
+### `mkiwi:sysinfo`
+
+Affiche les informations système de la machine locale exécutant le client M-Kiwi :
+
+| Information | Source |
+| ------------- | -------- |
+| Espace disque (utilisé / disponible) | `df -h /` |
+| Version du système d'exploitation | `uname -sr` |
+| Adresse IP locale | `ip route get 8.8.8.8` |
+| Passerelle (gateway) | `ip route get 8.8.8.8` |
+| Serveur DNS | `/etc/resolv.conf` |
+| Mémoire utilisée / totale | `free -m` |
+
+Les valeurs sont tronquées à 40 colonnes pour s'adapter à l'écran Minitel.
+
+```xml
+<item link="mkiwi:sysinfo">Infos systeme</item>
+```
+
+La touche **RETOUR** depuis cet écran revient à la page précédente.
 
 ---
 
