@@ -60,6 +60,14 @@ public class MinitelPageReader {
             url = scheme + "://" + domain + ":" + Integer.toString(port) + "/" + url;
         }
 
+        // Pas de fichier après l'hôte → index.vtml par défaut
+        try {
+            String path = new java.net.URI(url).getPath();
+            if (path == null || path.isEmpty() || path.equals("/")) {
+                url = url.endsWith("/") ? url + "index.vtml" : url + "/index.vtml";
+            }
+        } catch (java.net.URISyntaxException ignored) { }
+
         Document doc;
         try {
             doc = Jsoup.connect(url)
