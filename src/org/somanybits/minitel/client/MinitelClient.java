@@ -110,6 +110,12 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private java.util.concurrent.ScheduledExecutorService refreshScheduler;
     private volatile java.util.concurrent.ScheduledFuture<?> refreshFuture;
 
+    // Mode saisie serveur (affiché quand le serveur par défaut est inaccessible)
+    private boolean serverSelectionMode = false;
+    private StringBuilder serverUrlBuffer = new StringBuilder();
+    private static final int SERVER_INPUT_ROW = 11;
+    private static final int SERVER_INPUT_MAX = 33;
+
     public static void main(String[] args) throws Exception {
 
         logmgr = Kernel.getInstance().getLogManager();
@@ -252,11 +258,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
         //currentpage = mtr.get("");
         pmgr.navigate("");
-t.setEcho(false);
-        mc.writeBytes(pmgr.getCurrentPage().getData());
-
-        // Initialiser le système de focus pour la première page
-        updateCurrentForm(pmgr.getCurrentPage());
+        t.setEcho(false);
+        Page firstPage = pmgr.getCurrentPage();
+        if (firstPage != null && firstPage.isErrorPage()) {
+            showServerSelectionScreen("Serveur " + server + ":" + port + " introuvable.");
+        } else {
+            mc.writeBytes(firstPage.getData());
+            updateCurrentForm(firstPage);
+        }
 
         // Initialiser le joystick USB si disponible
         initJoystick();
@@ -297,6 +306,11 @@ t.setEcho(false);
     public void keyPressed(KeyPressedEvent event) {
 
         try {
+            if (serverSelectionMode) {
+                handleServerSelectionKey(event);
+                return;
+            }
+
             String keyvalue = null;
 
             //System.out.println("event keypressed=" + event.getKeyCode() + " type=" + event.getType());
@@ -1170,6 +1184,131 @@ t.setEcho(false);
                 System.out.println("Menu: test joystick");
             }
         };
+    }
+
+    // ========== MODE SAISIE SERVEUR ==========
+
+    private void showServerSelectionScreen(String statusMsg) throws IOException {
+        serverSelectionMode = true;
+        serverUrlBuffer = new StringBuilder();
+
+        t.clear();
+
+        t.setCursor(8, 3);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("M-Kiwi  Client VTML");
+
+        t.setCursor(2, 6);
+        t.setTextColor(Teletel.COLOR_YELLOW);
+        String msg = (statusMsg != null && !statusMsg.isEmpty()) ? statusMsg
+                     : "Serveur local introuvable.";
+        t.writeString(msg.length() > 36 ? msg.substring(0, 36) : msg);
+
+        t.setCursor(2, 8);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("Entrez l'adresse du serveur :");
+
+        t.setCursor(2, 13);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("Format: http://adresse:port");
+
+        t.setCursor(2, 15);
+        t.setTextColor(Teletel.COLOR_GREEN);
+        t.writeString("Touche ENVOI pour valider.");
+
+        drawUrlInputLine();
+    }
+
+    private void drawUrlInputLine() throws IOException {
+        t.setCursor(0, SERVER_INPUT_ROW);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.setBGColor(Teletel.COLOR_BLUE);
+
+        String buf = serverUrlBuffer.toString();
+        StringBuilder line = new StringBuilder(" > ");
+        line.append(buf);
+        int pad = SERVER_INPUT_MAX - buf.length();
+        for (int i = 0; i < pad; i++) line.append(' ');
+        t.writeString(line.toString());
+
+        t.setBGColor(Teletel.COLOR_BLACK);
+    }
+
+    private void tryConnectToServer() throws IOException {
+        String rawUrl = serverUrlBuffer.toString().trim();
+        if (rawUrl.isEmpty()) {
+            showServerSelectionScreen("URL vide, veuillez reessayer.");
+            return;
+        }
+        if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
+            rawUrl = "http://" + rawUrl;
+        }
+
+        String host;
+        int port;
+        try {
+            java.net.URL parsedUrl = new java.net.URL(rawUrl);
+            host = parsedUrl.getHost();
+            port = parsedUrl.getPort();
+            if (port == -1) port = 80;
+            if (host == null || host.isEmpty()) throw new Exception("Host vide");
+        } catch (Exception e) {
+            showServerSelectionScreen("Adresse invalide : " + serverUrlBuffer);
+            return;
+        }
+
+        t.setCursor(0, SERVER_INPUT_ROW + 2);
+        t.setTextColor(Teletel.COLOR_YELLOW);
+        t.writeString(" Connexion a " + host + ":" + port + "...");
+
+        PageManager pmgr = Kernel.getInstance().getPageManager();
+        pmgr.setServer(host, port);
+        pmgr.navigate("");
+        Page page = pmgr.getCurrentPage();
+
+        if (page != null && !page.isErrorPage()) {
+            serverSelectionMode = false;
+            t.clear();
+            mc.writeBytes(page.getData());
+            updateCurrentForm(page);
+        } else {
+            showServerSelectionScreen("Serveur " + host + ":" + port + " introuvable.");
+        }
+    }
+
+    private void handleServerSelectionKey(KeyPressedEvent event) throws IOException {
+        switch (event.getType()) {
+            case KeyPressedEvent.TYPE_KEY_CHAR_EVENT:
+                char car = (char) event.getKeyCode();
+                if (car == 0x08 || car == 0x7F) {
+                    if (serverUrlBuffer.length() > 0) {
+                        serverUrlBuffer.deleteCharAt(serverUrlBuffer.length() - 1);
+                        drawUrlInputLine();
+                    }
+                } else if (car >= 0x20 && car < 0x7F
+                           && serverUrlBuffer.length() < SERVER_INPUT_MAX) {
+                    serverUrlBuffer.append(car);
+                    drawUrlInputLine();
+                }
+                break;
+            case KeyPressedEvent.TYPE_KEY_MENU_EVENT:
+                switch (event.getKeyCode()) {
+                    case KeyPressedEvent.KEY_ENVOI:
+                        tryConnectToServer();
+                        break;
+                    case KeyPressedEvent.KEY_CORRECTION:
+                        if (serverUrlBuffer.length() > 0) {
+                            serverUrlBuffer.deleteCharAt(serverUrlBuffer.length() - 1);
+                            drawUrlInputLine();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
     }
 
 }

@@ -202,6 +202,15 @@ public class PageManager {
     }
 
     /**
+     * Change le serveur cible et efface l'historique.
+     */
+    public void setServer(String domain, int port) {
+        this.domain = domain;
+        this.port = port;
+        clearHistory();
+    }
+
+    /**
      * Navigue vers un lien de la page courante (via touche menu)
      * @param key La touche pressée
      * @return La nouvelle page ou null si le lien n'existe pas

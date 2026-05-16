@@ -35,6 +35,7 @@ public class Page {
     private int refreshSeconds = 0;
     private String timerFunction = null;
     private int timerInterval = 0;
+    private boolean errorPage = false;
 
     private ByteArrayOutputStream buf = new ByteArrayOutputStream(1024);
 
@@ -63,6 +64,9 @@ public class Page {
     public int    getTimerInterval() { return timerInterval; }
     public boolean hasTimer() { return timerFunction != null && timerInterval > 0; }
     public void setTimer(String fn, int intervalMs) { this.timerFunction = fn; this.timerInterval = intervalMs; }
+
+    public boolean isErrorPage() { return errorPage; }
+    public void setErrorPage(boolean errorPage) { this.errorPage = errorPage; }
 
     /**
      * Réinitialise les données de la page (pour reload)

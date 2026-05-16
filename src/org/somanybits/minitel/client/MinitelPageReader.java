@@ -62,7 +62,7 @@ public class MinitelPageReader {
         } catch (IOException ex) {
             System.err.println("Error reading page: " + ex.getMessage());
             Page p = new Page(Page.MODE_40_COL);
-            p.addData(("Error:" + ex.getMessage()).getBytes());
+            p.setErrorPage(true);
             return p;
         }
 
