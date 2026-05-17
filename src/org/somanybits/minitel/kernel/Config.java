@@ -116,6 +116,13 @@ public class Config {
         /** URL du serveur d'annuaire VTML (ex: http://localhost:8000) */
         public String server_directory = "http://localhost:8000";
 
+        /** Interface réseau principale : "auto", "eth", "wifi" */
+        public String net_primary_interface = "auto";
+        /** SSID du réseau WiFi configuré */
+        public String net_wifi_ssid = "";
+        /** Mot de passe WiFi (stocké en clair) */
+        public String net_wifi_password = "";
+
         /** Périphérique joystick Linux pour joueur 0 (ex: /dev/input/js0) */
         public String joystick_device_0 = "/dev/input/js0";
         /** Périphérique joystick Linux pour joueur 1 (ex: /dev/input/js1) */

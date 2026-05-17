@@ -61,6 +61,7 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
   - [`mkiwi:goto`](#mkiwigoto) — Navigation vers un serveur VTML distant
   - [`mkiwi:config`](#mkiwiconfig) — Configuration du serveur local
   - [`mkiwi:server_directory`](#mkiwiserver_directory) — Annuaire des serveurs VTML
+  - [`mkiwi:netconfig`](#mkiwinetconfig) — Configuration réseau (Ethernet / WiFi)
   - [`mkiwi:sysinfo`](#mkiwisysinfo) — Informations système locales
 - [Exemple complet](#exemple-complet)
 - [Dimensions écran Minitel](#dimensions-écran-minitel)
@@ -1453,6 +1454,48 @@ Affiche l'annuaire des serveurs VTML connus, permettant de choisir un serveur da
 
 ```xml
 <item link="mkiwi:server_directory">Annuaire</item>
+```
+
+---
+
+### `mkiwi:netconfig`
+
+Affiche l'écran de configuration réseau de la machine locale exécutant le client M-Kiwi. Permet de choisir l'interface principale (Ethernet ou WiFi) et de configurer la connexion WiFi.
+
+#### Étape 1 — Choix de l'interface
+
+| Touche | Action |
+| -------- | -------- |
+| `1` | Sélectionner Ethernet comme interface principale |
+| `2` | Aller à la configuration WiFi |
+| RETOUR | Annuler et revenir à la page précédente |
+
+#### Étape 2 — Liste des réseaux WiFi
+
+Les réseaux disponibles sont listés avec leur puissance de signal (de `*` à `****`).
+
+| Touche | Action |
+| -------- | -------- |
+| `1`–`9` | Sélectionner un réseau |
+| `*` | Lancer un nouveau scan (peut prendre 10–15 s) |
+| RETOUR | Revenir au choix de l'interface |
+
+#### Étape 3 — Mot de passe
+
+Le mot de passe est masqué à la saisie. Laisser vide pour les réseaux ouverts.
+
+| Touche | Action |
+| -------- | -------- |
+| ENVOI | Connecter via `nmcli` et sauvegarder dans `config.json` |
+| RETOUR | Revenir à la liste des réseaux |
+| CORRECTION | Effacer le dernier caractère |
+
+La configuration sauvegardée (`net_primary_interface`, `net_wifi_ssid`, `net_wifi_password`) est conservée dans `config.json` côté client.
+
+> **Prérequis** : le Pi doit utiliser NetworkManager (Pi OS Bookworm). Si `nmcli dev wifi connect` échoue, vérifier que l'utilisateur a les droits via `polkit` ou ajouter une règle sudoers.
+
+```xml
+<item link="mkiwi:netconfig">Config reseau</item>
 ```
 
 ---

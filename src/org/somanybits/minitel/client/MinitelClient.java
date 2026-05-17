@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.9";
+    private static final String VERSION = "0.7.10";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -112,12 +112,13 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private volatile java.util.concurrent.ScheduledFuture<?> refreshFuture;
 
     // Mode saisie URL (GOTO = changer de serveur, CONFIG = modifier le serveur par défaut)
-    private enum InputMode { NONE, GOTO, CONFIG, SERVER_DIRECTORY, SYSINFO }
+    private enum InputMode { NONE, GOTO, CONFIG, SERVER_DIRECTORY, SYSINFO, NETCONFIG }
     private InputMode inputMode = InputMode.NONE;
     private StringBuilder urlInputBuffer  = new StringBuilder();
     private StringBuilder urlInputBuffer2 = new StringBuilder();
     private int configActiveField = 0; // 0 = serveur local, 1 = annuaire
     private ServerDirectoryScreen directoryScreen = null;
+    private NetworkConfigScreen netConfigScreen = null;
     private Page gotoReturnPage = null; // Page à afficher si RETOUR depuis mkiwi:goto
     private static final int SERVER_INPUT_ROW  = 11;
     private static final int CONFIG_FIELD1_ROW = 7;
@@ -325,6 +326,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             if (inputMode != InputMode.NONE) {
                 if (inputMode == InputMode.SERVER_DIRECTORY) {
                     handleDirectoryKey(event);
+                } else if (inputMode == InputMode.NETCONFIG) {
+                    handleNetConfigKey(event);
                 } else {
                     handleInputModeKey(event);
                 }
@@ -1322,6 +1325,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             case "mkiwi:sysinfo":
                 showSysInfoScreen();
                 break;
+            case "mkiwi:netconfig":
+                openNetConfig();
+                break;
             default:
                 System.err.println("URL mkiwi inconnue: " + url);
         }
@@ -1688,6 +1694,140 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private static String siTrunc(String s, int max) {
         if (s == null || s.isBlank()) return "N/A";
         return s.length() > max ? s.substring(0, max) : s;
+    }
+
+    // ========== mkiwi:netconfig ==========
+
+    private void openNetConfig() throws IOException {
+        stopGameLoop();
+        stopPageTimer();
+        cancelRefresh();
+        try { Kernel.getInstance().reloadConfig(); } catch (IOException ignored) {}
+        org.somanybits.minitel.kernel.Config cfg = Kernel.getInstance().getConfig();
+        netConfigScreen = new NetworkConfigScreen(t,
+                cfg.client.net_primary_interface,
+                cfg.client.net_wifi_ssid);
+        inputMode = InputMode.NETCONFIG;
+        netConfigScreen.show();
+    }
+
+    private void handleNetConfigKey(KeyPressedEvent event) throws IOException {
+        if (netConfigScreen == null) {
+            inputMode = InputMode.NONE;
+            return;
+        }
+        NetworkConfigScreen.ActionResult result = netConfigScreen.handleKey(event);
+        switch (result) {
+            case CANCEL: {
+                inputMode = InputMode.NONE;
+                netConfigScreen = null;
+                Page current = Kernel.getInstance().getPageManager().getCurrentPage();
+                if (current != null) {
+                    t.clear();
+                    mc.writeBytes(current.getData());
+                    updateCurrentForm(current);
+                }
+                break;
+            }
+            case APPLY_ETH: {
+                inputMode = InputMode.NONE;
+                netConfigScreen = null;
+                applyNetConfigEth();
+                break;
+            }
+            case APPLY_WIFI: {
+                String ssid = netConfigScreen.getPendingSsid();
+                String pass = netConfigScreen.getPendingPassword();
+                inputMode = InputMode.NONE;
+                netConfigScreen = null;
+                applyNetConfigWifi(ssid, pass);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    private void applyNetConfigEth() throws IOException {
+        try {
+            org.somanybits.minitel.kernel.Config cfg = Kernel.getInstance().getConfig();
+            cfg.client.net_primary_interface = "eth";
+            Kernel.getInstance().saveConfig();
+            System.out.println("🌐 Interface principale sauvegardée: ETHERNET");
+        } catch (IOException e) {
+            System.err.println("applyNetConfigEth: " + e.getMessage());
+        }
+        Page current = Kernel.getInstance().getPageManager().getCurrentPage();
+        if (current != null) {
+            t.clear();
+            mc.writeBytes(current.getData());
+            updateCurrentForm(current);
+        }
+    }
+
+    private void applyNetConfigWifi(String ssid, String pass) throws IOException {
+        try {
+            org.somanybits.minitel.kernel.Config cfg = Kernel.getInstance().getConfig();
+            cfg.client.net_primary_interface = "wifi";
+            cfg.client.net_wifi_ssid         = ssid;
+            cfg.client.net_wifi_password     = pass;
+            Kernel.getInstance().saveConfig();
+        } catch (IOException e) {
+            System.err.println("applyNetConfigWifi save: " + e.getMessage());
+        }
+
+        // Écran de connexion
+        t.clear();
+        t.setCursor(0, 1);
+        t.setBGColor(Teletel.COLOR_BLUE);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("         CONFIG WIFI  M-Kiwi           ");
+        t.setBGColor(Teletel.COLOR_BLACK);
+
+        t.setCursor(2, 5);
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString("Connexion en cours...");
+        t.setCursor(2, 6);
+        t.setTextColor(Teletel.COLOR_CYAN);
+        t.writeString("SSID : ");
+        t.setTextColor(Teletel.COLOR_WHITE);
+        t.writeString(ssid.length() > 31 ? ssid.substring(0, 31) : ssid);
+        t.setCursor(2, 8);
+        t.setTextColor(Teletel.COLOR_YELLOW);
+        t.writeString("Veuillez patienter (20s max)...");
+
+        boolean success = false;
+        try {
+            String[] cmd = (pass == null || pass.isEmpty())
+                    ? new String[]{"nmcli", "dev", "wifi", "connect", ssid}
+                    : new String[]{"nmcli", "dev", "wifi", "connect", ssid, "password", pass};
+            Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+            success = p.waitFor(20, java.util.concurrent.TimeUnit.SECONDS) && p.exitValue() == 0;
+            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            System.out.println("🌐 nmcli: " + out);
+        } catch (Exception e) {
+            System.err.println("applyNetConfigWifi nmcli: " + e.getMessage());
+        }
+
+        t.setCursor(2, 10);
+        if (success) {
+            t.setTextColor(Teletel.COLOR_GREEN);
+            t.writeString("Connecte avec succes !");
+        } else {
+            t.setTextColor(Teletel.COLOR_RED);
+            t.writeString("Echec de connexion.");
+            t.setCursor(2, 11);
+            t.setTextColor(Teletel.COLOR_YELLOW);
+            t.writeString("Verifiez SSID et mot de passe.");
+        }
+        try { Thread.sleep(2500); } catch (InterruptedException ignored) {}
+
+        Page current = Kernel.getInstance().getPageManager().getCurrentPage();
+        if (current != null) {
+            t.clear();
+            mc.writeBytes(current.getData());
+            updateCurrentForm(current);
+        }
     }
 
     private void handleInputModeKey(KeyPressedEvent event) throws IOException {
