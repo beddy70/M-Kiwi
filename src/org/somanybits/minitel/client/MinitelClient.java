@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.10";
+    private static final String VERSION = "0.7.11";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -1198,6 +1198,27 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     Runtime.getRuntime().exec(new String[]{"sudo", "dhclient"});
                 } catch (java.io.IOException e) {
                     System.err.println("DHCP: " + e.getMessage());
+                }
+            }
+
+            @Override
+            public void onNetConfig() {
+                try {
+                    openNetConfig();
+                } catch (IOException e) {
+                    System.err.println("onNetConfig: " + e.getMessage());
+                }
+            }
+
+            @Override
+            public void onSetEthernet() {
+                try {
+                    org.somanybits.minitel.kernel.Config cfg = Kernel.getInstance().getConfig();
+                    cfg.client.net_primary_interface = "eth";
+                    Kernel.getInstance().saveConfig();
+                    System.out.println("🌐 Interface principale sauvegardée: ETHERNET");
+                } catch (IOException e) {
+                    System.err.println("onSetEthernet: " + e.getMessage());
                 }
             }
 

@@ -25,6 +25,8 @@ public class OLEDMenu {
         String getNetworkInfo();
         String getNetworkMac();
         void onRenewDhcp();
+        void onNetConfig();
+        void onSetEthernet();
         String getCurrentUrl();
         String getSizeHistory();
         void onRestartClient();
@@ -739,9 +741,16 @@ public class OLEDMenu {
 
     private MenuItem[] buildNetworkMenu() {
         return new MenuItem[]{
-            new MenuItem("Back",  (Runnable) this::goBack),
-            new MenuItem("Info",  (Runnable) this::enterNetworkInfo),
-            new MenuItem("Renew", () -> {
+            new MenuItem("Back",        (Runnable) this::goBack),
+            new MenuItem("Info",        (Runnable) this::enterNetworkInfo),
+            new MenuItem("WiFi Config", () -> {
+                if (actions != null) actions.onNetConfig();
+            }),
+            new MenuItem("Set Ethernet", () -> {
+                if (actions != null) actions.onSetEthernet();
+                showOverlay("Interface:", "Ethernet", "saved OK");
+            }),
+            new MenuItem("Renew DHCP",  () -> {
                 showOverlay("DHCP renewing", "Please wait...");
                 if (actions != null) actions.onRenewDhcp();
             }),
