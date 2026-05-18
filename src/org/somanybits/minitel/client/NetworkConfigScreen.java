@@ -180,8 +180,8 @@ public class NetworkConfigScreen {
         // Evite l'ambiguïté du séparateur ':' dans les SSIDs (format terse)
         // --rescan auto : NM rescanne si le cache est périmé (évite résultat partiel)
         String[] cmd = rescan
-            ? new String[]{"nmcli", "-t", "-m", "multiline", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "yes"}
-            : new String[]{"nmcli", "-t", "-m", "multiline", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "auto"};
+            ? new String[]{"sudo", "nmcli", "-t", "-m", "multiline", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "yes"}
+            : new String[]{"sudo", "nmcli", "-t", "-m", "multiline", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "auto"};
 
         networks.clear();
         try {
