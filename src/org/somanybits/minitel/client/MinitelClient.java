@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.19";
+    private static final String VERSION = "0.7.20";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -1835,6 +1835,14 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.setCursor(2, 8);
         t.setTextColor(Teletel.COLOR_YELLOW);
         t.writeString("Veuillez patienter (30s max)...");
+
+        // Supprimer le profil sauvegardé pour ce SSID : évite que NM réutilise
+        // un profil obsolète (mauvais mdp, ancien réseau) lors du connect
+        try {
+            new ProcessBuilder("sudo", "nmcli", "connection", "delete", ssid)
+                    .redirectErrorStream(true).start()
+                    .waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (Exception ignored) {}
 
         // Rescan avant connect : NM doit connaître le type de sécurité de l'AP
         // sinon il échoue avec "key-mgmt: la propriété est manquante"
