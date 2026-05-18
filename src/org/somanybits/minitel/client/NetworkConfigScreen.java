@@ -183,16 +183,18 @@ public class NetworkConfigScreen {
         networks.clear();
         try {
             Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
-            p.waitFor(rescan ? 12 : 5, java.util.concurrent.TimeUnit.SECONDS);
+            boolean finished = p.waitFor(rescan ? 12 : 5, java.util.concurrent.TimeUnit.SECONDS);
             String output = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            System.err.println("[WiFi] finished=" + finished + " exitCode=" + (finished ? p.exitValue() : -1));
+            System.err.println("[WiFi] raw output (" + output.length() + " chars):\n" + output);
             for (String line : output.split("\n")) {
                 line = line.trim();
                 if (line.isEmpty()) continue;
                 int sep = line.lastIndexOf(':');
-                if (sep < 0) continue;
+                if (sep < 0) { System.err.println("[WiFi] skip (no colon): " + line); continue; }
                 String ssid      = line.substring(0, sep).replace("\\:", ":");
                 String signalStr = line.substring(sep + 1);
-                if (ssid.isEmpty() || ssid.equals("--")) continue;
+                if (ssid.isEmpty() || ssid.equals("--")) { System.err.println("[WiFi] skip (empty/--): " + line); continue; }
                 try {
                     int signal = Integer.parseInt(signalStr);
                     boolean dup = false;
@@ -205,9 +207,15 @@ public class NetworkConfigScreen {
                     }
                     if (!dup && networks.size() < MAX_NETWORKS) {
                         networks.add(new WifiNetwork(ssid, signal));
+                        System.err.println("[WiFi] added: " + ssid + " signal=" + signal);
+                    } else if (dup) {
+                        System.err.println("[WiFi] dup: " + ssid);
                     }
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException e) {
+                    System.err.println("[WiFi] skip (parseInt failed on '" + signalStr + "'): " + line);
+                }
             }
+            System.err.println("[WiFi] total networks: " + networks.size());
             networks.sort((a, b) -> b.signal - a.signal);
         } catch (Exception e) {
             System.err.println("WiFi scan: " + e.getMessage());
