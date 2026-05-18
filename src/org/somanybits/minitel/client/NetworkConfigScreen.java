@@ -177,8 +177,8 @@ public class NetworkConfigScreen {
         } catch (IOException ignored) {}
 
         String[] cmd = rescan
-            ? new String[]{"nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "yes"}
-            : new String[]{"nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi", "list"};
+            ? new String[]{"sudo", "nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "yes"}
+            : new String[]{"sudo", "nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi", "list"};
 
         networks.clear();
         try {

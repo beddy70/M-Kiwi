@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.11";
+    private static final String VERSION = "0.7.12";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -1820,8 +1820,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         boolean success = false;
         try {
             String[] cmd = (pass == null || pass.isEmpty())
-                    ? new String[]{"nmcli", "dev", "wifi", "connect", ssid}
-                    : new String[]{"nmcli", "dev", "wifi", "connect", ssid, "password", pass};
+                    ? new String[]{"sudo", "nmcli", "dev", "wifi", "connect", ssid}
+                    : new String[]{"sudo", "nmcli", "dev", "wifi", "connect", ssid, "password", pass};
             Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
             success = p.waitFor(20, java.util.concurrent.TimeUnit.SECONDS) && p.exitValue() == 0;
             String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
