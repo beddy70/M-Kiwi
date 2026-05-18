@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.12";
+    private static final String VERSION = "0.7.18";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -1815,7 +1815,16 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.writeString(ssid.length() > 31 ? ssid.substring(0, 31) : ssid);
         t.setCursor(2, 8);
         t.setTextColor(Teletel.COLOR_YELLOW);
-        t.writeString("Veuillez patienter (20s max)...");
+        t.writeString("Veuillez patienter (30s max)...");
+
+        // Rescan avant connect : NM doit connaître le type de sécurité de l'AP
+        // sinon il échoue avec "key-mgmt: la propriété est manquante"
+        try {
+            new ProcessBuilder("sudo", "nmcli", "dev", "wifi", "rescan")
+                    .redirectErrorStream(true).start()
+                    .waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+            Thread.sleep(1500);
+        } catch (Exception ignored) {}
 
         boolean success = false;
         try {
