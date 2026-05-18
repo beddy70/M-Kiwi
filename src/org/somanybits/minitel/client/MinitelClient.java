@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.20";
+    private static final String VERSION = "0.7.21";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -257,6 +257,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         // Initialiser le menu OLED + GPIO
         oledMenu = new OLEDMenu(VERSION, createMenuActions());
         oledMenu.init();
+
+        detectAndUpdateNetworkInterface();
 
         refreshScheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
             Thread th = new Thread(r, "page-refresh");
@@ -1737,6 +1739,43 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     }
 
     // ========== mkiwi:netconfig ==========
+
+    private void detectAndUpdateNetworkInterface() {
+        try {
+            // Interface utilisée pour la route par défaut (eth0, wlan0, ...)
+            String dev = runSysCmd("bash", "-c",
+                    "ip -4 route | awk '/^default/{print $5; exit}'").trim();
+            if (dev.isEmpty()) return;
+
+            String newPrimary;
+            String newSsid = "";
+            if (dev.startsWith("wlan")) {
+                newPrimary = "wifi";
+                // SSID de la connexion active sur cette interface
+                newSsid = runSysCmd("bash", "-c",
+                        "nmcli -t -f NAME,DEVICE connection show --active 2>/dev/null"
+                        + " | grep ':" + dev + "$' | head -1 | cut -d: -f1").trim();
+            } else if (dev.startsWith("eth") || dev.startsWith("en")) {
+                newPrimary = "eth";
+            } else {
+                return;
+            }
+
+            org.somanybits.minitel.kernel.Config cfg = Kernel.getInstance().getConfig();
+            boolean changed = !newPrimary.equals(cfg.client.net_primary_interface)
+                    || (!newSsid.isEmpty() && !newSsid.equals(cfg.client.net_wifi_ssid));
+            if (changed) {
+                cfg.client.net_primary_interface = newPrimary;
+                if (!newSsid.isEmpty()) cfg.client.net_wifi_ssid = newSsid;
+                Kernel.getInstance().saveConfig();
+            }
+            System.out.println("🌐 Interface active: " + dev
+                    + ("wifi".equals(newPrimary) && !newSsid.isEmpty()
+                       ? " SSID: " + newSsid : ""));
+        } catch (Exception e) {
+            System.err.println("detectNetworkInterface: " + e.getMessage());
+        }
+    }
 
     private void openNetConfig() throws IOException {
         stopGameLoop();
