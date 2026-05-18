@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.22";
+    private static final String VERSION = "0.7.23";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -1844,6 +1844,16 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         }
     }
 
+    private static void nmcliDeleteSilent(String ssid) {
+        try {
+            new ProcessBuilder("sudo", "nmcli", "connection", "delete", ssid)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start()
+                    .waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (Exception ignored) {}
+    }
+
     private void applyNetConfigWifi(String ssid, String pass) throws IOException {
         try {
             org.somanybits.minitel.kernel.Config cfg = Kernel.getInstance().getConfig();
@@ -1878,18 +1888,10 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         // Supprimer le profil du réseau WiFi actuellement connecté (si différent)
         String currentWifiSsid = Kernel.getInstance().getConfig().client.net_wifi_ssid;
         if (currentWifiSsid != null && !currentWifiSsid.isEmpty() && !currentWifiSsid.equals(ssid)) {
-            try {
-                new ProcessBuilder("sudo", "nmcli", "connection", "delete", currentWifiSsid)
-                        .redirectErrorStream(true).start()
-                        .waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
-            } catch (Exception ignored) {}
+            nmcliDeleteSilent(currentWifiSsid);
         }
         // Supprimer le profil sauvegardé pour le SSID cible (clean slate)
-        try {
-            new ProcessBuilder("sudo", "nmcli", "connection", "delete", ssid)
-                    .redirectErrorStream(true).start()
-                    .waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (Exception ignored) {}
+        nmcliDeleteSilent(ssid);
 
         // Rescan avant connect : NM doit connaître le type de sécurité de l'AP
         // sinon il échoue avec "key-mgmt: la propriété est manquante"
