@@ -173,46 +173,56 @@ public class NetworkConfigScreen {
         try {
             t.setCursor(2, 7);
             t.setTextColor(Teletel.COLOR_YELLOW);
-            t.writeString(rescan ? "Scan en cours...          " : "Chargement...             ");
+            t.writeString("Scan en cours...          ");
         } catch (IOException ignored) {}
 
+        // Mode multiline : chaque champ sur sa propre ligne "CHAMP:valeur"
+        // Evite l'ambiguïté du séparateur ':' dans les SSIDs (format terse)
+        // --rescan auto : NM rescanne si le cache est périmé (évite résultat partiel)
         String[] cmd = rescan
-            ? new String[]{"nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "yes"}
-            : new String[]{"nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi", "list"};
+            ? new String[]{"nmcli", "-t", "-m", "multiline", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "yes"}
+            : new String[]{"nmcli", "-t", "-m", "multiline", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "auto"};
 
         networks.clear();
         try {
             Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
-            boolean finished = p.waitFor(rescan ? 12 : 5, java.util.concurrent.TimeUnit.SECONDS);
+            boolean finished = p.waitFor(rescan ? 15 : 10, java.util.concurrent.TimeUnit.SECONDS);
             String output = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             System.err.println("[WiFi] finished=" + finished + " exitCode=" + (finished ? p.exitValue() : -1));
             System.err.println("[WiFi] raw output (" + output.length() + " chars):\n" + output);
+
+            // Parsing multiline : SSID et SIGNAL sur lignes séparées
+            String parsedSsid = null;
             for (String line : output.split("\n")) {
                 line = line.trim();
-                if (line.isEmpty()) continue;
-                int sep = line.lastIndexOf(':');
-                if (sep < 0) { System.err.println("[WiFi] skip (no colon): " + line); continue; }
-                String ssid      = line.substring(0, sep).replace("\\:", ":");
-                String signalStr = line.substring(sep + 1);
-                if (ssid.isEmpty() || ssid.equals("--")) { System.err.println("[WiFi] skip (empty/--): " + line); continue; }
-                try {
-                    int signal = Integer.parseInt(signalStr);
-                    boolean dup = false;
-                    for (WifiNetwork existing : networks) {
-                        if (existing.ssid.equals(ssid)) {
-                            if (signal > existing.signal) existing.signal = signal;
-                            dup = true;
-                            break;
+                if (line.startsWith("SSID:")) {
+                    parsedSsid = line.substring(5).trim();
+                } else if (line.startsWith("SIGNAL:") && parsedSsid != null) {
+                    String signalStr = line.substring(7).trim();
+                    try {
+                        int signal = Integer.parseInt(signalStr);
+                        if (!parsedSsid.isEmpty() && !parsedSsid.equals("--")) {
+                            boolean dup = false;
+                            for (WifiNetwork existing : networks) {
+                                if (existing.ssid.equals(parsedSsid)) {
+                                    if (signal > existing.signal) existing.signal = signal;
+                                    dup = true;
+                                    break;
+                                }
+                            }
+                            if (!dup && networks.size() < MAX_NETWORKS) {
+                                networks.add(new WifiNetwork(parsedSsid, signal));
+                                System.err.println("[WiFi] added: " + parsedSsid + " signal=" + signal);
+                            } else if (dup) {
+                                System.err.println("[WiFi] dup: " + parsedSsid);
+                            }
+                        } else {
+                            System.err.println("[WiFi] skip (empty/--): ssid='" + parsedSsid + "'");
                         }
+                    } catch (NumberFormatException e) {
+                        System.err.println("[WiFi] skip (parseInt failed): " + line);
                     }
-                    if (!dup && networks.size() < MAX_NETWORKS) {
-                        networks.add(new WifiNetwork(ssid, signal));
-                        System.err.println("[WiFi] added: " + ssid + " signal=" + signal);
-                    } else if (dup) {
-                        System.err.println("[WiFi] dup: " + ssid);
-                    }
-                } catch (NumberFormatException e) {
-                    System.err.println("[WiFi] skip (parseInt failed on '" + signalStr + "'): " + line);
+                    parsedSsid = null;
                 }
             }
             System.err.println("[WiFi] total networks: " + networks.size());
