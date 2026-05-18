@@ -253,6 +253,7 @@ public class NetworkConfigScreen {
                 case KeyPressedEvent.KEY_ENVOI:
                     pendingSsid     = selectedNetwork.ssid;
                     pendingPassword = passwordBuf.toString();
+                    System.err.println("[WiFi] connect: ssid='" + pendingSsid + "' password='" + pendingPassword + "'");
                     return ActionResult.APPLY_WIFI;
                 case KeyPressedEvent.KEY_RETOUR:
                     step = Step.WIFI_LIST;
