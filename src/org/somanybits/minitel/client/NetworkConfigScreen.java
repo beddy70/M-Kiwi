@@ -163,8 +163,8 @@ public class NetworkConfigScreen {
             WifiNetwork nw = networks.get(i);
             t.setCursor(0, 5 + i);
             t.setTextColor(Teletel.COLOR_CYAN);
-            t.writeString(" " + (i + 1) + " ");
-            t.setTextColor(currentSsid.equals(nw.ssid) ? Teletel.COLOR_GREEN : Teletel.COLOR_WHITE);
+            t.writeString(" " + (i + 1) + (nw.inUse ? "*" : " "));
+            t.setTextColor(nw.inUse ? Teletel.COLOR_GREEN : Teletel.COLOR_WHITE);
             t.writeString(padRight(trunc(nw.ssid, 30), 30) + " " + nw.signalBars());
         }
     }
@@ -176,12 +176,10 @@ public class NetworkConfigScreen {
             t.writeString("Scan en cours...          ");
         } catch (IOException ignored) {}
 
-        // Mode multiline : chaque champ sur sa propre ligne "CHAMP:valeur"
-        // Evite l'ambiguïté du séparateur ':' dans les SSIDs (format terse)
-        // --rescan auto : NM rescanne si le cache est périmé (évite résultat partiel)
+        // IN-USE,SSID,SIGNAL en multiline pour détecter le réseau connecté
         String[] cmd = rescan
-            ? new String[]{"sudo", "nmcli", "-t", "-m", "multiline", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "yes"}
-            : new String[]{"sudo", "nmcli", "-t", "-m", "multiline", "-f", "SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "auto"};
+            ? new String[]{"sudo", "nmcli", "-t", "-m", "multiline", "-f", "IN-USE,SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "yes"}
+            : new String[]{"sudo", "nmcli", "-t", "-m", "multiline", "-f", "IN-USE,SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "auto"};
 
         networks.clear();
         try {
@@ -191,11 +189,14 @@ public class NetworkConfigScreen {
             System.err.println("[WiFi] finished=" + finished + " exitCode=" + (finished ? p.exitValue() : -1));
             System.err.println("[WiFi] raw output (" + output.length() + " chars):\n" + output);
 
-            // Parsing multiline : SSID et SIGNAL sur lignes séparées
-            String parsedSsid = null;
+            boolean parsedInUse = false;
+            String  parsedSsid  = null;
             for (String line : output.split("\n")) {
                 line = line.trim();
-                if (line.startsWith("SSID:")) {
+                if (line.startsWith("IN-USE:")) {
+                    parsedInUse = "*".equals(line.substring(7).trim());
+                    parsedSsid  = null;
+                } else if (line.startsWith("SSID:")) {
                     parsedSsid = line.substring(5).trim();
                 } else if (line.startsWith("SIGNAL:") && parsedSsid != null) {
                     String signalStr = line.substring(7).trim();
@@ -206,13 +207,14 @@ public class NetworkConfigScreen {
                             for (WifiNetwork existing : networks) {
                                 if (existing.ssid.equals(parsedSsid)) {
                                     if (signal > existing.signal) existing.signal = signal;
+                                    if (parsedInUse) existing.inUse = true;
                                     dup = true;
                                     break;
                                 }
                             }
                             if (!dup && networks.size() < MAX_NETWORKS) {
-                                networks.add(new WifiNetwork(parsedSsid, signal));
-                                System.err.println("[WiFi] added: " + parsedSsid + " signal=" + signal);
+                                networks.add(new WifiNetwork(parsedSsid, signal, parsedInUse));
+                                System.err.println("[WiFi] added: " + parsedSsid + " signal=" + signal + (parsedInUse ? " [ACTIF]" : ""));
                             } else if (dup) {
                                 System.err.println("[WiFi] dup: " + parsedSsid);
                             }
@@ -222,7 +224,8 @@ public class NetworkConfigScreen {
                     } catch (NumberFormatException e) {
                         System.err.println("[WiFi] skip (parseInt failed): " + line);
                     }
-                    parsedSsid = null;
+                    parsedSsid  = null;
+                    parsedInUse = false;
                 }
             }
             System.err.println("[WiFi] total networks: " + networks.size());
@@ -359,12 +362,14 @@ public class NetworkConfigScreen {
     // ── WifiNetwork ───────────────────────────────────────────────────────────
 
     private static class WifiNetwork {
-        String ssid;
-        int    signal;
+        String  ssid;
+        int     signal;
+        boolean inUse;
 
-        WifiNetwork(String ssid, int signal) {
+        WifiNetwork(String ssid, int signal, boolean inUse) {
             this.ssid   = ssid;
             this.signal = signal;
+            this.inUse  = inUse;
         }
 
         String signalBars() {

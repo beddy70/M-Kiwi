@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.18";
+    private static final String VERSION = "0.7.19";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -1666,23 +1666,42 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.setCursor(2, 11);
         t.setTextColor(Teletel.COLOR_CYAN);
         t.writeString("Reseau");
-        // IP + passerelle en une seule commande
-        String route = runSysCmd("bash", "-c",
-            "ip route get 8.8.8.8 2>/dev/null | awk 'NR==1{for(i=1;i<=NF;i++){if($i==\"src\")ip=$(i+1);if($i==\"via\")gw=$(i+1)}print ip\"|\"gw}'");
-        String ip = "", gw = "";
-        if (route.contains("|")) {
-            ip = route.split("\\|")[0].trim();
-            gw = route.split("\\|").length > 1 ? route.split("\\|")[1].trim() : "";
+        org.somanybits.minitel.kernel.Config cfgNet = Kernel.getInstance().getConfig();
+        String primaryIface = cfgNet.client.net_primary_interface;
+        String ifaceName    = "wifi".equals(primaryIface) ? "wlan0"
+                            : "eth".equals(primaryIface)  ? "eth0"
+                            : null;
+        String ifaceLabel;
+        if ("wifi".equals(primaryIface)) {
+            String ssidLabel = cfgNet.client.net_wifi_ssid;
+            ifaceLabel = "wlan0" + (ssidLabel != null && !ssidLabel.isEmpty()
+                         ? " (" + ssidLabel + ")" : "");
+        } else if ("eth".equals(primaryIface)) {
+            ifaceLabel = "eth0";
+        } else {
+            ifaceLabel = "auto";
         }
-        if (ip.isEmpty()) ip = runSysCmd("bash", "-c", "hostname -I | awk '{print $1}'");
+        String ip = ifaceName != null
+            ? runSysCmd("bash", "-c",
+                "ip -4 addr show " + ifaceName + " 2>/dev/null"
+                + " | awk '/inet /{gsub(/\\/.*/, \"\", $2); print $2}'")
+            : runSysCmd("bash", "-c",
+                "ip route get 8.8.8.8 2>/dev/null"
+                + " | awk 'NR==1{for(i=1;i<=NF;i++) if($i==\"src\") print $(i+1)}'");
+        if (ip == null || ip.isEmpty())
+            ip = runSysCmd("bash", "-c", "hostname -I | awk '{print $1}'");
+        String gw = runSysCmd("bash", "-c",
+            "ip -4 route | awk '/^default/{print $3; exit}'");
         String dns = runSysCmd("bash", "-c",
             "grep nameserver /etc/resolv.conf | awk '{print $2}' | head -1");
         t.setCursor(4, 12);
         t.setTextColor(Teletel.COLOR_WHITE);
-        t.writeString(siTrunc("IP: " + ip, 36));
+        t.writeString(siTrunc("Interface: " + ifaceLabel, 36));
         t.setCursor(4, 13);
-        t.writeString(siTrunc("Passerelle: " + gw, 36));
+        t.writeString(siTrunc("IP: " + ip, 36));
         t.setCursor(4, 14);
+        t.writeString(siTrunc("Passerelle: " + gw, 36));
+        t.setCursor(4, 15);
         t.writeString(siTrunc("DNS: " + dns, 36));
 
         // ── Memoire ────────────────────────────────────────────────────────
