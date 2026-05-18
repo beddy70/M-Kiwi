@@ -64,7 +64,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.21";
+    private static final String VERSION = "0.7.22";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -1875,8 +1875,16 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         t.setTextColor(Teletel.COLOR_YELLOW);
         t.writeString("Veuillez patienter (30s max)...");
 
-        // Supprimer le profil sauvegardé pour ce SSID : évite que NM réutilise
-        // un profil obsolète (mauvais mdp, ancien réseau) lors du connect
+        // Supprimer le profil du réseau WiFi actuellement connecté (si différent)
+        String currentWifiSsid = Kernel.getInstance().getConfig().client.net_wifi_ssid;
+        if (currentWifiSsid != null && !currentWifiSsid.isEmpty() && !currentWifiSsid.equals(ssid)) {
+            try {
+                new ProcessBuilder("sudo", "nmcli", "connection", "delete", currentWifiSsid)
+                        .redirectErrorStream(true).start()
+                        .waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (Exception ignored) {}
+        }
+        // Supprimer le profil sauvegardé pour le SSID cible (clean slate)
         try {
             new ProcessBuilder("sudo", "nmcli", "connection", "delete", ssid)
                     .redirectErrorStream(true).start()
