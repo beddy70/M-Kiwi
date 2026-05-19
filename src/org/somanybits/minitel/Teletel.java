@@ -12,22 +12,23 @@ import java.io.IOException;
  * Cette classe fournit des méthodes pour manipuler l'affichage du Minitel :
  * positionnement du curseur, couleurs, modes graphiques, etc.
  * </p>
- * 
+ *
  * <h2>Constantes d'écran</h2>
  * <ul>
- *   <li>{@link #PAGE_WIDTH} - Largeur de l'écran : 40 caractères</li>
- *   <li>{@link #PAGE_HEIGHT} - Hauteur de l'écran : 24 lignes</li>
+ * <li>{@link #PAGE_WIDTH} - Largeur de l'écran : 40 caractères</li>
+ * <li>{@link #PAGE_HEIGHT} - Hauteur de l'écran : 24 lignes</li>
  * </ul>
- * 
+ *
  * <h2>Couleurs disponibles</h2>
- * <p>8 couleurs : noir, rouge, vert, jaune, bleu, magenta, cyan, blanc</p>
- * 
+ * <p>
+ * 8 couleurs : noir, rouge, vert, jaune, bleu, magenta, cyan, blanc</p>
+ *
  * <h2>Modes d'affichage</h2>
  * <ul>
- *   <li>{@link #MODE_TEXT} - Mode texte normal</li>
- *   <li>{@link #MODE_SEMI_GRAPH} - Mode semi-graphique (mosaïque)</li>
+ * <li>{@link #MODE_TEXT} - Mode texte normal</li>
+ * <li>{@link #MODE_SEMI_GRAPH} - Mode semi-graphique (mosaïque)</li>
  * </ul>
- * 
+ *
  * @author Eddy Briere
  * @version 0.3
  * @see MinitelConnection
@@ -35,9 +36,13 @@ import java.io.IOException;
  */
 public class Teletel {
 
-    /** Largeur de l'écran Minitel en caractères */
+    /**
+     * Largeur de l'écran Minitel en caractères
+     */
     public static final int PAGE_WIDTH = 40;
-    /** Hauteur de l'écran Minitel en lignes */
+    /**
+     * Hauteur de l'écran Minitel en lignes
+     */
     public static final int PAGE_HEIGHT = 24;
 
     static public final int COLOR_BLACK = 0x00;
@@ -55,6 +60,7 @@ public class Teletel {
     static public final byte MODE_VIDEOTEXT = 0x00;
     static public final byte MODE_MIXTE = 0x01;
     static public final byte MODE_STANDARD = 0x02;
+    static public final byte MODE_TELEINFORMATIQUE =0x03;
     private int screenmode = MODE_VIDEOTEXT;
 
     private final MinitelConnection mterm;
@@ -123,10 +129,11 @@ public class Teletel {
     }
 
     /**
-     * Positionne le curseur aux coordonnées spécifiées.
-     * Par défaut, la ligne 0 est protégée et le curseur sera placé en ligne 1.
-     * Utilisez {@link GetTeletelCode#enableLineZero(boolean)} pour autoriser l'écriture en ligne 0.
-     * 
+     * Positionne le curseur aux coordonnées spécifiées. Par défaut, la ligne 0
+     * est protégée et le curseur sera placé en ligne 1. Utilisez
+     * {@link GetTeletelCode#enableLineZero(boolean)} pour autoriser l'écriture
+     * en ligne 0.
+     *
      * @param x Position horizontale (0-39)
      * @param y Position verticale (0-24, mais 0 est protégée par défaut)
      */
@@ -137,12 +144,12 @@ public class Teletel {
         if (y < 0) {
             y = 0;
         }
-        
+
         // Protection ligne 0 : utiliser la config globale de GetTeletelCode
         if (!GetTeletelCode.isLineZeroEnabled() && y == 0) {
             y = 1;
         }
-        
+
         mterm.writeByte((byte) (0x1f));
         mterm.writeByte((byte) (y + 0x40));
         mterm.writeByte((byte) (x + 0x40 + 1));
@@ -161,8 +168,6 @@ public class Teletel {
         mterm.writeByteP(x);   // Pc : Voir section Private ci-dessous
         mterm.writeByte((byte) (0x48));
     }
-
-  
 
     public void clearLineZero() throws IOException {
         this.setCursor(0, 0);
@@ -218,6 +223,7 @@ public class Teletel {
     public void setScreenMode(int screenmode) throws IOException {
         this.screenmode = screenmode;
         switch (screenmode) {
+            //1B 5B 3F 7B
             case MODE_MIXTE:
                 mterm.writeByte((byte) (0x1B));
                 mterm.writeByte((byte) (0x3A));
@@ -230,13 +236,60 @@ public class Teletel {
                 mterm.writeByte((byte) (0x31));
                 mterm.writeByte((byte) (0x7D));
                 break;
+            case MODE_TELEINFORMATIQUE:
+                mterm.writeByte((byte) 0x1B);
+                mterm.writeByte((byte) 0x3A);
+                mterm.writeByte((byte) 0x32);
+                mterm.writeByte((byte) 0x7E);
+                break;
             case MODE_VIDEOTEXT:
             default:
                 mterm.writeByte((byte) (0x1B));
                 mterm.writeByte((byte) (0x3A));
-                mterm.writeByte((byte) (0x32));
-                mterm.writeByte((byte) (0x7E));
+                mterm.writeByte((byte) (0x3F));
+                mterm.writeByte((byte) (0x7B));
+                
 
+
+                // Clear screen
+                mterm.writeByte((byte) 0x0C);
+
+                // Curseur en haut à gauche : SEP + ligne + colonne
+                mterm.writeByte((byte) 0x1F);
+                mterm.writeByte((byte) 0x40);
+                mterm.writeByte((byte) 0x41);
+
+                // Reset attributs ANSI/SGR, utile surtout après mode téléinformatique
+                mterm.writeByte((byte) 0x1B);
+                mterm.writeByte((byte) 0x5B);
+                mterm.writeByte((byte) 0x30);
+                mterm.writeByte((byte) 0x6D);
+
+            /*    if (currentMode == MODE_TELEINFORMATIQUE && targetMode == MODE_VIDEOTEXT) {
+    // Téléinformatique -> Vidéotex
+    mterm.writeByte((byte) 0x1B);
+    mterm.writeByte((byte) 0x5B);
+    mterm.writeByte((byte) 0x3F);
+    mterm.writeByte((byte) 0x7B);
+} else if (targetMode == MODE_MIXTE) {
+    // Vidéotex -> Mixte
+    mterm.writeByte((byte) 0x1B);
+    mterm.writeByte((byte) 0x3A);
+    mterm.writeByte((byte) 0x32);
+    mterm.writeByte((byte) 0x7D);
+} else if (targetMode == MODE_TELEINFORMATIQUE) {
+    // Télétel -> Téléinformatique
+    mterm.writeByte((byte) 0x1B);
+    mterm.writeByte((byte) 0x3A);
+    mterm.writeByte((byte) 0x31);
+    mterm.writeByte((byte) 0x7D);
+} else {
+    // Mixte -> Vidéotex
+    mterm.writeByte((byte) 0x1B);
+    mterm.writeByte((byte) 0x3A);
+    mterm.writeByte((byte) 0x32);
+    mterm.writeByte((byte) 0x7E);
+}*/
         }
     }
 }

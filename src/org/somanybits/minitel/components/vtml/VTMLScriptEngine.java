@@ -71,7 +71,9 @@ public class VTMLScriptEngine {
             "java.io.BufferedReader",
             "java.io.InputStreamReader",
             // Factory pour création dynamique d'éléments
-            "org.somanybits.minitel.components.vtml.VTMLFactory"
+            "org.somanybits.minitel.components.vtml.VTMLFactory",
+            // Composant graphique (dessin différentiel)
+            "org.somanybits.minitel.components.vtml.VTMLGraphicComponent"
     );
 
     private VTMLScriptEngine() {
@@ -181,11 +183,16 @@ public class VTMLScriptEngine {
                     + "// Variable globale pour la page courante\n"
                     + "var _currentPage = null;\n"
                     + "\n"
+                    + "// Registre des composants graphiques (clé = id, valeur = VTMLGraphicComponent)\n"
+                    + "var _gfxRegistry = {};\n"
+                    + "function _registerGraphic(id, g) { _gfxRegistry[id] = g; }\n"
+                    + "\n"
                     + "// Récupérer un composant par ID\n"
                     + "function getElementById(id) {\n"
-                    + "  if (_currentPage) {\n"
-                    + "    return _currentPage.getComponentById(id);\n"
-                    + "  }\n"
+                    + "  // Vérifier d'abord le registre graphique (fiable)\n"
+                    + "  if (_gfxRegistry[id] != null) return _gfxRegistry[id];\n"
+                    + "  // Sinon, chercher dans la page\n"
+                    + "  if (_currentPage) return _currentPage.getComponentById(id);\n"
                     + "  return null;\n"
                     + "}\n"
                     + "\n"
@@ -269,7 +276,7 @@ public class VTMLScriptEngine {
     public void resetPageContext() {
         try {
             // Supprimer domReady et autres fonctions de page
-            execute("domReady = undefined; output = null; _currentLayers = null; _currentPage = null;");
+            execute("domReady = undefined; output = null; _currentLayers = null; _currentPage = null; _gfxRegistry = {};");
             System.out.println("🔄 Contexte de page réinitialisé");
         } catch (Exception e) {
             System.err.println("Erreur reset contexte: " + e.getMessage());

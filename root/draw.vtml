@@ -1,0 +1,79 @@
+<minitel title="Sinusoïde animée">
+
+  <!-- Zone de dessin 15×10 caractères (30×30 pixels) -->
+  <graphic id="canvas" left="1" top="1" width="15" height="10"/>
+
+  <!-- Légende -->
+  <div left="1" top="12">
+    <color ink="cyan"><row>Sinusoïde animée</row></color>
+  </div>
+
+  <!-- Timer : 100 ms = 10 FPS -->
+  <timer event="tick" interval="100"/>
+
+  <script>
+    var t = 0;
+    var phase = 0;
+
+    /* Amplitude : oscille entre ~0.3 et ~12.7 px, période ~8 s */
+    function getAmp() {
+      return 13 * (0.5 + 0.48 * Math.sin(t * 0.08));
+    }
+
+    /* Fréquence spatiale : oscille entre 0.08 et 0.22 rad/px, période ~13 s */
+    function getFreq() {
+      return 0.15 + 0.07 * Math.sin(t * 0.05);
+    }
+
+    /* Trace (ou efface) la vague aux valeurs courantes de t et phase */
+    function traceWave(pen) {
+      var c = getElementById("canvas");
+      var cy = 15;
+      var amp  = getAmp();
+      var freq = getFreq();
+      c.setPen(pen);
+      for (var x = 1; x < 29; x++) {
+        var y = Math.round(cy + amp * Math.sin(freq * x + phase));
+        if (y > 0 && y < 29) c.setPixel(x, y);
+      }
+    }
+
+    /* Couleur de la vague selon l'amplitude courante */
+    function waveColor() {
+      var amp = getAmp();
+      if (amp > 9) return 2;   /* vert  - grande amplitude  */
+      if (amp > 5) return 3;   /* jaune - amplitude moyenne */
+      return 6;                 /* cyan  - presque plate     */
+    }
+
+    function domReady() {
+      var c = getElementById("canvas");
+      /* Cadre blanc */
+      c.setColor(7);
+      c.drawRect(0, 0, 29, 29);
+      /* Premier tracé */
+      c.setColor(waveColor());
+      traceWave(true);
+    }
+
+    function tick() {
+      var c = getElementById("canvas");
+
+      /* 1. Effacer la vague courante */
+      traceWave(false);
+
+      /* 2. Avancer le temps */
+      phase += 0.12;
+      if (phase > 62.83) phase -= 62.83;
+      t++;
+
+      /* 3. Tracer la nouvelle vague */
+      c.setColor(waveColor());
+      traceWave(true);
+
+      /* 4. Envoyer uniquement les cellules modifiées */
+      c.update();
+    }
+  </script>
+
+</minitel>

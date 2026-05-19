@@ -15,6 +15,7 @@ import org.somanybits.minitel.components.MComponent;
 import org.somanybits.minitel.components.ModelMComponent;
 import org.somanybits.minitel.components.vtml.VTMLChardefComponent;
 import org.somanybits.minitel.components.vtml.VTMLFormComponent;
+import org.somanybits.minitel.components.vtml.VTMLGraphicComponent;
 import org.somanybits.minitel.components.vtml.VTMLLayersComponent;
 import org.somanybits.minitel.components.vtml.VTMLStatusComponent;
 
@@ -261,8 +262,24 @@ public class Page {
         return layers != null;
     }
 
+    // ========== ZONE GRAPHICS (DESSIN) ==========
+
+    private List<VTMLGraphicComponent> graphics = new ArrayList<>();
+
+    public void addGraphic(VTMLGraphicComponent graphic) {
+        graphics.add(graphic);
+    }
+
+    public List<VTMLGraphicComponent> getGraphics() {
+        return graphics;
+    }
+
+    public boolean hasGraphics() {
+        return !graphics.isEmpty();
+    }
+
     // ========== LISTE DES COMPOSANTS ==========
-    
+
     private List<ModelMComponent> components = new ArrayList<>();
     
     /**

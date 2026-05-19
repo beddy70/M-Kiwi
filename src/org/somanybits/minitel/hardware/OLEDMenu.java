@@ -34,6 +34,8 @@ public class OLEDMenu {
         void onRestartServer();
         String getJoystickInfo();
         void onTestJoystick();
+        void onTerminalExit();
+        void onSetMinitelMode(int mode);
     }
 
     // ── Nœud de menu ─────────────────────────────────────────────────────────
@@ -89,6 +91,12 @@ public class OLEDMenu {
     private volatile boolean inBrightnessMenu = false;
     private volatile int     brightnessLevel  = 3;
 
+    // Sélecteur de mode Minitel (4 modes)
+    private static final String[] MINITEL_MODE_NAMES  = {"Videotext", "Mixte", "Standard", "Teleinform"};
+    private static final int[]    MINITEL_MODE_VALUES = {0x00, 0x01, 0x02, 0x03};
+    private volatile boolean inModeSelect   = false;
+    private volatile int     selectedModeIdx = 0;
+
     // Écran About (5 s puis retour auto)
     private volatile boolean inAbout     = false;
     private Thread           aboutThread = null;
@@ -102,6 +110,7 @@ public class OLEDMenu {
     private final String[]   joyLabel   = {"", ""};  // dernière touche Joy0, Joy1
 
     // Réinitialisation par combo BTN1+BTN2 maintenu 3 s
+    private volatile boolean terminalModeActive = false;
     private volatile boolean resetPending = false;
     private Thread           resetThread  = null;
 
@@ -163,6 +172,10 @@ public class OLEDMenu {
         if (display != null) { display.close(); display = null; }
     }
 
+    public void setTerminalModeActive(boolean active) {
+        terminalModeActive = active;
+    }
+
     // ── Boutons ───────────────────────────────────────────────────────────────
 
     private void handleButtonPressed(int index) {
@@ -174,6 +187,10 @@ public class OLEDMenu {
             return;
         }
 
+        if (terminalModeActive) {
+            if (index == 0 && actions != null) actions.onTerminalExit();
+            return;
+        }
         if (inButtonTest) {
             if (index == 0) exitButtonTest();
             else scheduleRender();
@@ -191,6 +208,12 @@ public class OLEDMenu {
             if (index == 0) exitBrightnessMenu();
             else if (index == 1) adjustBrightness(+1);
             else if (index == 2) adjustBrightness(-1);
+            return;
+        }
+        if (inModeSelect) {
+            if (index == 0) exitModeSelect();
+            else if (index == 1) adjustMinitelMode(-1);
+            else if (index == 2) adjustMinitelMode(+1);
             return;
         }
         if (inNetworkInfo) {
@@ -311,6 +334,26 @@ public class OLEDMenu {
 
     private synchronized void exitBrightnessMenu() {
         inBrightnessMenu = false;
+        scheduleRender();
+    }
+
+    private synchronized void enterModeSelect() {
+        inModeSelect = true;
+        scheduleRender();
+    }
+
+    private synchronized void exitModeSelect() {
+        inModeSelect = false;
+        scheduleRender();
+    }
+
+    private void adjustMinitelMode(int delta) {
+        final int newIdx;
+        synchronized (this) {
+            selectedModeIdx = Math.floorMod(selectedModeIdx + delta, MINITEL_MODE_NAMES.length);
+            newIdx = selectedModeIdx;
+        }
+        if (actions != null) actions.onSetMinitelMode(MINITEL_MODE_VALUES[newIdx]);
         scheduleRender();
     }
 
@@ -620,6 +663,22 @@ public class OLEDMenu {
             return;
         }
 
+        // Écran sélection mode Minitel
+        if (inModeSelect) {
+            final int modeIdx;
+            synchronized (this) { modeIdx = selectedModeIdx; }
+            display.drawText8x8(fit("Minitel Mode"), 0, 0);
+            display.drawText8x8("----------------", 0, 1);
+            display.drawText8x8(fit("OK to Exit"), 0, 2);
+            display.drawText8x8(fit("UP- / DOWN+"), 0, 3);
+            display.drawText8x8(fit("Mode:"), 0, 4);
+            display.drawText8x8(fit(MINITEL_MODE_NAMES[modeIdx]), 0, 5);
+            display.drawText8x8("                ", 0, 6);
+            display.drawText8x8("                ", 0, 7);
+            display.flush();
+            return;
+        }
+
         // Écran About
         if (aboutScreen) {
             display.drawText8x8("                ", 0, 0);
@@ -706,11 +765,12 @@ public class OLEDMenu {
 
     private MenuItem[] buildSystemMenu() {
         return new MenuItem[]{
-            new MenuItem("Back",       (Runnable) this::goBack),
-            new MenuItem("Buttons",    buildButtonsMenu()),
-            new MenuItem("LEDs",       buildLedsMenu()),
-            new MenuItem("Brightness", (Runnable) this::enterBrightnessMenu),
-            new MenuItem("Reboot",     buildRebootMenu()),
+            new MenuItem("Back",         (Runnable) this::goBack),
+            new MenuItem("Buttons",      buildButtonsMenu()),
+            new MenuItem("LEDs",         buildLedsMenu()),
+            new MenuItem("Brightness",   (Runnable) this::enterBrightnessMenu),
+            new MenuItem("Minitel Mode", (Runnable) this::enterModeSelect),
+            new MenuItem("Reboot",       buildRebootMenu()),
         };
     }
 

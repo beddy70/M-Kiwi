@@ -304,7 +304,8 @@ public class MinitelPageReader {
                 || component instanceof VTMLColorspriteComponent
                 || component instanceof VTMLChardefComponent
                 || component instanceof VTMLCharComponent
-                || component instanceof VTMLRowComponent;  // row peut contenir des putchar
+                || component instanceof VTMLRowComponent   // row peut contenir des putchar
+                || component instanceof VTMLGraphicComponent;
     }
 
     /**
@@ -385,7 +386,8 @@ public class MinitelPageReader {
                 || "colorsprite".equals(tagname)
                 || "chardef".equals(tagname)
                 || "char".equals(tagname)
-                || "row".equals(tagname);  // row peut contenir des putchar
+                || "row".equals(tagname)   // row peut contenir des putchar
+                || "graphic".equals(tagname);
     }
 
     /**
@@ -847,12 +849,136 @@ public class MinitelPageReader {
                 return null;
             }
 
+            // ========== TAGS GRAPHIC (DESSIN) ==========
+
+            case "graphic" -> {
+                String id = attrs.get("id");
+                int left   = parseInt(attrs.get("left"),   0);
+                int top    = parseInt(attrs.get("top"),    0);
+                int width  = parseInt(attrs.get("width"),  20);
+                int height = parseInt(attrs.get("height"), 10);
+                VTMLGraphicComponent graphic = new VTMLGraphicComponent(left, top, width, height);
+                if (id != null && !id.isEmpty()) {
+                    graphic.setId(id);
+                }
+                page.addGraphic(graphic);
+                System.out.println("🎨 Graphic: id=" + id + ", pos=(" + left + "," + top + "), size=" + width + "x" + height + " chars");
+                return graphic;
+            }
+
+            case "setcolor" -> {
+                int value = parseInt(attrs.get("value"), 7);
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) g.setColor(value);
+                return null;
+            }
+
+            case "setbgcolor" -> {
+                int value = parseInt(attrs.get("value"), 0);
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) g.setBgColor(value);
+                return null;
+            }
+
+            case "setpixel" -> {
+                int x = parseInt(attrs.get("x"), 0);
+                int y = parseInt(attrs.get("y"), 0);
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) g.setPixel(x, y);
+                return null;
+            }
+
+            case "drawline" -> {
+                int x1 = parseInt(attrs.get("x1"), 0);
+                int y1 = parseInt(attrs.get("y1"), 0);
+                int x2 = parseInt(attrs.get("x2"), 0);
+                int y2 = parseInt(attrs.get("y2"), 0);
+                int color = parseInt(attrs.get("color"), -1);
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) {
+                    if (color >= 0) g.setColor(color);
+                    g.drawLine(x1, y1, x2, y2);
+                }
+                return null;
+            }
+
+            case "drawrect" -> {
+                int x = parseInt(attrs.get("x"), 0);
+                int y = parseInt(attrs.get("y"), 0);
+                int w = parseInt(attrs.get("w"), 10);
+                int h = parseInt(attrs.get("h"), 10);
+                int color = parseInt(attrs.get("color"), -1);
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) {
+                    if (color >= 0) g.setColor(color);
+                    g.drawRect(x, y, w, h);
+                }
+                return null;
+            }
+
+            case "fillrect" -> {
+                int x = parseInt(attrs.get("x"), 0);
+                int y = parseInt(attrs.get("y"), 0);
+                int w = parseInt(attrs.get("w"), 10);
+                int h = parseInt(attrs.get("h"), 10);
+                int color = parseInt(attrs.get("color"), -1);
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) {
+                    if (color >= 0) g.setColor(color);
+                    g.fillRect(x, y, w, h);
+                }
+                return null;
+            }
+
+            case "drawcircle" -> {
+                int x = parseInt(attrs.get("x"), 0);
+                int y = parseInt(attrs.get("y"), 0);
+                int r = parseInt(attrs.get("r"), 5);
+                int color = parseInt(attrs.get("color"), -1);
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) {
+                    if (color >= 0) g.setColor(color);
+                    g.drawCircle(x, y, r);
+                }
+                return null;
+            }
+
+            case "fillcircle" -> {
+                int x = parseInt(attrs.get("x"), 0);
+                int y = parseInt(attrs.get("y"), 0);
+                int r = parseInt(attrs.get("r"), 5);
+                int color = parseInt(attrs.get("color"), -1);
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) {
+                    if (color >= 0) g.setColor(color);
+                    g.fillCircle(x, y, r);
+                }
+                return null;
+            }
+
+            case "gclear" -> {
+                VTMLGraphicComponent g = findParentGraphic();
+                if (g != null) g.clear();
+                return null;
+            }
+
             default -> {
                 // Tag non reconnu
                 System.out.println("⚠️ Tag VTML non reconnu: " + tagname);
                 return null;
             }
         }
+    }
+
+    /** Remonte l'arbre des parents pour trouver le VTMLGraphicComponent le plus proche */
+    private VTMLGraphicComponent findParentGraphic() {
+        MComponent parent = currentComponent;
+        while (parent != null) {
+            if (parent instanceof VTMLGraphicComponent g) return g;
+            parent = (parent instanceof ModelMComponent m) ? m.getParent() : null;
+        }
+        System.err.println("⚠️ Tag de dessin orphelin (pas de parent <graphic>)");
+        return null;
     }
 
     /**
@@ -867,6 +993,20 @@ public class MinitelPageReader {
 
         // 2. Définir la page courante pour getElementById/getElementByName
         VTMLScriptEngine.getInstance().setCurrentPage(page);
+
+        // 2b. Enregistrer les composants graphiques directement dans le scope JS
+        for (VTMLGraphicComponent g : page.getGraphics()) {
+            String gid = g.getId();
+            if (gid != null && !gid.isEmpty()) {
+                VTMLScriptEngine.getInstance().setVariable("__gfx_" + gid, g);
+                try {
+                    VTMLScriptEngine.getInstance().execute(
+                            "_registerGraphic('" + gid.replace("'", "\\'") + "', __gfx_" + gid + ")");
+                } catch (Exception e) {
+                    System.err.println("⚠️ Erreur enregistrement graphic '" + gid + "': " + e.getMessage());
+                }
+            }
+        }
 
         // 3. Trouver le layers et le passer au JavaScript
         VTMLLayersComponent layers = findLayers(component);

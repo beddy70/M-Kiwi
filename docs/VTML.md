@@ -23,6 +23,12 @@ VTML est un langage de balisage inspiré de HTML, conçu pour créer des pages M
   - [`<img>`](#img) — Image semi-graphique
     - [Modes de rendu](#modes-de-rendu-attribut-style)
   - [`<qrcode>`](#qrcode) — QR code (URL, WiFi, vCard)
+- **Tags Graphiques**
+  - [`<graphic>`](#graphic) — Zone de dessin semi-graphique avec mise à jour différentielle
+    - [Sous-tags de dessin](#sous-tags-de-dessin)
+    - [Mise à jour différentielle](#mise-à-jour-différentielle)
+    - [API JavaScript graphique](#api-javascript-graphique)
+    - [Exemple animé](#exemple-animé)
 - **Tags Formulaires**
   - [`<form>`](#form) — Formulaire (méthode GET)
   - [`<input>`](#input) — Champ de saisie texte
@@ -330,6 +336,248 @@ Génère un QR code affichable sur Minitel.
 - `org:'...'` - Organisation
 - `title:'...'` - Titre/Fonction
 - `url:'...'` - Site web
+
+---
+
+## Tags Graphiques
+
+Le système graphique permet de créer une **zone de dessin vectorielle** sur l'écran Minitel, avec gestion des primitives (lignes, rectangles, cercles, pixels) et **mise à jour différentielle** : seuls les blocs semi-graphiques modifiés sont retransmis au terminal.
+
+> 📐 **Référence des algorithmes graphiques** : [GraphTel.md](GraphTel.md)
+
+### `<graphic>`
+
+Définit une zone de dessin semi-graphique positionnée à l'écran.
+
+| Attribut | Type   | Défaut | Description                                  |
+|----------|--------|--------|----------------------------------------------|
+| `id`     | string | -      | Identifiant pour `getElementById()` (requis) |
+| `left`   | int    | 0      | Position X en **caractères** (0-39)          |
+| `top`    | int    | 0      | Position Y en **caractères** (0-24)          |
+| `width`  | int    | 20     | Largeur en **caractères** (1 char = 2 pixels)|
+| `height` | int    | 10     | Hauteur en **caractères** (1 char = 3 pixels)|
+
+Les dimensions sont en **caractères Minitel**. En interne, GraphTel travaille en pixels : `widthPx = width × 2`, `heightPx = height × 3`.
+
+```xml
+<!-- Zone 38×22 caractères = 76×66 pixels semi-graphiques -->
+<graphic id="canvas" left="1" top="1" width="38" height="22">
+  <!-- commandes de dessin initiales -->
+  <setcolor value="7"/>
+  <drawrect x="0" y="0" w="75" h="65"/>
+</graphic>
+```
+
+---
+
+### Sous-tags de dessin
+
+Ces tags s'utilisent exclusivement à l'intérieur de `<graphic>`. Ils sont exécutés dans l'ordre pour le **rendu initial** de la zone.
+
+#### `<setcolor>`
+
+| Attribut | Type | Défaut | Description           |
+|----------|------|--------|-----------------------|
+| `value`  | int  | 7      | Couleur d'encre (0-7) |
+
+#### `<setbgcolor>`
+
+| Attribut | Type | Défaut | Description           |
+|----------|------|--------|-----------------------|
+| `value`  | int  | 0      | Couleur de fond (0-7) |
+
+#### `<setpixel>`
+
+| Attribut | Type | Défaut | Description         |
+|----------|------|--------|---------------------|
+| `x`      | int  | 0      | Colonne en pixels   |
+| `y`      | int  | 0      | Ligne en pixels     |
+
+#### `<drawline>`
+
+| Attribut | Type | Défaut | Description                        |
+|----------|------|--------|------------------------------------|
+| `x1`     | int  | 0      | X départ (pixels)                  |
+| `y1`     | int  | 0      | Y départ (pixels)                  |
+| `x2`     | int  | 0      | X arrivée (pixels)                 |
+| `y2`     | int  | 0      | Y arrivée (pixels)                 |
+| `color`  | int  | -      | Couleur d'encre (optionnel, 0-7)   |
+
+#### `<drawrect>`
+
+| Attribut | Type | Défaut | Description                          |
+|----------|------|--------|--------------------------------------|
+| `x`      | int  | 0      | X coin supérieur gauche (pixels)     |
+| `y`      | int  | 0      | Y coin supérieur gauche (pixels)     |
+| `w`      | int  | 10     | Largeur en pixels                    |
+| `h`      | int  | 10     | Hauteur en pixels                    |
+| `color`  | int  | -      | Couleur d'encre (optionnel, 0-7)     |
+
+#### `<fillrect>`
+
+Mêmes attributs que `<drawrect>` — dessine un rectangle plein.
+
+#### `<drawcircle>`
+
+| Attribut | Type | Défaut | Description                       |
+|----------|------|--------|-----------------------------------|
+| `x`      | int  | 0      | X du centre (pixels)              |
+| `y`      | int  | 0      | Y du centre (pixels)              |
+| `r`      | int  | 5      | Rayon en pixels                   |
+| `color`  | int  | -      | Couleur d'encre (optionnel, 0-7)  |
+
+#### `<fillcircle>`
+
+Mêmes attributs que `<drawcircle>` — dessine un cercle plein.
+
+#### `<gclear>`
+
+Efface toute la zone (tous les pixels à fond noir). Pas d'attributs.
+
+**Exemple de dessin initial :**
+
+```xml
+<graphic id="logo" left="5" top="3" width="30" height="18">
+  <setbgcolor value="0"/>
+  <setcolor value="3"/>
+  <drawrect x="0" y="0" w="59" h="53"/>
+  <drawline x1="0" y1="0" x2="59" y2="53" color="2"/>
+  <drawline x1="59" y1="0" x2="0" y2="53" color="2"/>
+  <fillcircle x="30" y="27" r="10" color="5"/>
+</graphic>
+```
+
+---
+
+### Mise à jour différentielle
+
+Chaque appel de dessin (via sous-tag ou JS) marque les **cellules semi-graphiques** touchées comme *dirty*. Seules ces cellules sont retransmises au Minitel lors du cycle d'actualisation.
+
+```text
+Écran Minitel (40×25 chars)
+┌──┬──┬──┬──┐
+│  │  │██│  │  ← seulement les blocs ██ sont envoyés (dirty)
+│  │██│  │  │
+└──┴──┴──┴──┘
+  1 char = 2×3 pixels
+```
+
+**Cycle de vie :**
+
+1. **Chargement initial** → `getBytes()` → rendu complet, flags dirty effacés
+2. **Timer JS** → JS dessine → seuls les blocs touchés sont dirty
+3. **getDifferentialBytes()** → transmet les blocs dirty → flags effacés
+4. → retour à l'étape 2
+
+**Forcer un full repaint :**
+
+```javascript
+var c = getElementById("canvas");
+c.repaintAll();  // marque tous les blocs dirty
+// le prochain cycle retransmet la zone entière
+```
+
+---
+
+### API JavaScript graphique
+
+Accessible depuis `getElementById()` après déclaration du tag `<graphic id="...">`.
+
+#### Méthodes de dessin
+
+| Méthode                    | Description                                               |
+|----------------------------|-----------------------------------------------------------|
+| `setColor(color)`          | Définit la couleur d'encre (0-7)                          |
+| `setBgColor(color)`        | Définit la couleur de fond (0-7)                          |
+| `setPen(bool)`             | Active/désactive le dessin (true=dessine, false=efface)   |
+| `setPixel(x, y)`           | Place un pixel                                            |
+| `drawLine(x1, y1, x2, y2)` | Trace une ligne (algorithme de Bresenham)                 |
+| `drawRect(x, y, w, h)`     | Contour d'un rectangle                                    |
+| `fillRect(x, y, w, h)`     | Rectangle plein                                           |
+| `drawCircle(x, y, r)`      | Contour d'un cercle (algorithme d'Andres)                 |
+| `fillCircle(x, y, r)`      | Cercle plein                                              |
+| `clear()`                  | Efface toute la zone                                      |
+
+#### Méthodes de rendu
+
+| Méthode              | Description                                                    |
+|----------------------|----------------------------------------------------------------|
+| `repaintAll()`       | Force un full repaint au prochain cycle (marque tout dirty)    |
+| `hasDirtyPixels()`   | Retourne `true` si des blocs ont changé depuis le dernier rendu|
+
+#### Palette de couleurs
+
+| Valeur | Couleur  |
+|--------|----------|
+| 0      | Noir     |
+| 1      | Rouge    |
+| 2      | Vert     |
+| 3      | Jaune    |
+| 4      | Bleu     |
+| 5      | Magenta  |
+| 6      | Cyan     |
+| 7      | Blanc    |
+
+---
+
+### Exemple animé
+
+Zone graphique avec animation JS via `<timer>` :
+
+```xml
+<minitel title="Démo graphique">
+
+  <!-- Zone de dessin 38×22 caractères (76×66 pixels) -->
+  <graphic id="canvas" left="1" top="1" width="38" height="22">
+    <setcolor value="7"/>
+    <drawrect x="0" y="0" w="75" h="65"/>
+  </graphic>
+
+  <!-- Légende -->
+  <div left="1" top="24">
+    <color ink="cyan"><row>Demo graphique VTML</row></color>
+  </div>
+
+  <!-- Timer : 100 ms = ~10 FPS -->
+  <timer event="tick" interval="100"/>
+
+  <script>
+    var t = 0;
+    var cx = 38;
+    var cy = 33;
+
+    function domReady() {
+      var c = getElementById("canvas");
+      c.setColor(4);
+      c.fillCircle(cx, cy, 15);
+    }
+
+    function tick() {
+      var c = getElementById("canvas");
+      t = (t + 3) % 360;
+      var rad = t * Math.PI / 180;
+
+      // Efface l'ancien pixel de bord avec la couleur de fond
+      c.setPen(false);
+      c.drawCircle(cx, cy, 25);
+      c.setPen(true);
+
+      // Dessine le nouveau point
+      c.setColor(3);
+      var px = Math.round(cx + 25 * Math.cos(rad));
+      var py = Math.round(cy + 25 * Math.sin(rad));
+      c.setPixel(px, py);
+    }
+  </script>
+
+</minitel>
+```
+
+**Points clés :**
+
+- `<timer>` au niveau page (hors `<layers>`) déclenche `getDifferentialBytes()` automatiquement après chaque appel JS
+- Les coordonnées sont toujours en **pixels**, pas en caractères
+- `setPen(false)` + dessin = effacement, `setPen(true)` = dessin (défaut)
 
 ---
 

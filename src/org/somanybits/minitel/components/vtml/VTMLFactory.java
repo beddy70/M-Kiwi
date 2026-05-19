@@ -44,6 +44,7 @@ public class VTMLFactory {
             case "color" -> new VTMLColorComponent();
             case "blink" -> new VTMLBlinkComponent();
             case "label" -> new VTMLLabelComponent();
+            case "graphic" -> new VTMLGraphicComponent(0, 0, 20, 10);
             default -> {
                 System.err.println("⚠️ createElement: type d'élément inconnu: " + tagName);
                 yield null;

@@ -78,22 +78,25 @@ public class GraphTel implements PageMinitel {
 
     /** État du stylo (true = dessine, false = efface) */
     private boolean pen = true;
-    
+
     /** Buffer des pixels (true = allumé, false = éteint) */
     private boolean screenGFX[];
 
     /** Buffer des couleurs par pixel (0-7) */
     private byte screenColor[];
-    
+
+    /** Flags de cellules modifiées depuis le dernier rendu différentiel (1 flag par bloc 2×3) */
+    private boolean[] dirty;
+
     /** Largeur en pixels */
     private int widthScreen;
-    
+
     /** Hauteur en pixels */
     private int heightScreen;
-    
+
     /** Couleur d'encre courante (foreground) */
     private byte ink = GetTeletelCode.COLOR_WHITE;
-    
+
     /** Couleur de fond courante (background) */
     private byte bgcolor = GetTeletelCode.COLOR_BLACK;
 
@@ -144,6 +147,7 @@ public class GraphTel implements PageMinitel {
 
         screenGFX = new boolean[widthScreen * heightScreen];
         screenColor = new byte[widthScreen * heightScreen];
+        dirty = new boolean[(widthScreen / 2) * (heightScreen / 3)];
 
         intColor();
     }
@@ -331,10 +335,9 @@ public class GraphTel implements PageMinitel {
     public void setPixel(int x, int y) {
         if ((x < widthScreen && x >= 0) && (y < heightScreen && y >= 0)) {
             screenGFX[widthScreen * y + x] = pen;
-            screenColor[widthScreen * y + x] = (byte) (bgcolor << 8 | ink);
-
+            screenColor[widthScreen * y + x] = pen ? ink : bgcolor;
+            dirty[(y / 3) * (widthScreen / 2) + (x / 2)] = true;
         }
-
     }
 
     /**
@@ -453,10 +456,11 @@ public class GraphTel implements PageMinitel {
      */
     @Override
     public void clear() {
-
         for (int i = 0; i < screenGFX.length; i++) {
             screenGFX[i] = false;
+            screenColor[i] = bgcolor;
         }
+        java.util.Arrays.fill(dirty, true);
     }
 
     /**
@@ -664,6 +668,7 @@ public class GraphTel implements PageMinitel {
         for (int i = 0; i < screenGFX.length; i++) {
             screenGFX[i] = !screenGFX[i];
         }
+        java.util.Arrays.fill(dirty, true);
     }
 
     /**
@@ -736,8 +741,160 @@ public class GraphTel implements PageMinitel {
         System.out.println("✅ Bitmap écrit avec succès");
     }
 
+    // ========== DIRTY TRACKING ==========
+
+    /** Efface tous les flags dirty (appelé après un rendu complet) */
+    public void clearDirty() {
+        java.util.Arrays.fill(dirty, false);
+    }
+
+    /** Marque toutes les cellules dirty pour forcer un prochain full repaint */
+    public void markAllDirty() {
+        java.util.Arrays.fill(dirty, true);
+    }
+
+    /** @return true si au moins une cellule est dirty */
+    public boolean hasDirty() {
+        for (boolean d : dirty) {
+            if (d) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Génère les codes Vidéotex uniquement pour les cellules modifiées depuis
+     * le dernier appel. Efface les flags dirty après l'émission.
+     *
+     * @param posx Position X de départ en caractères
+     * @param posy Position Y de départ en caractères
+     * @return Bytes Vidéotex (vide si rien n'a changé)
+     */
+    public byte[] getDifferentialBytes(int posx, int posy) throws IOException {
+        byte[] data = convertToSemiGraph();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        int wpage = widthScreen / 2;
+        int hpage = heightScreen / 3;
+        int maxWidth  = Math.min(posx + wpage,  Teletel.PAGE_WIDTH);
+        int maxHeight = Math.min(posy + hpage, Teletel.PAGE_HEIGHT);
+
+        int lastCharX = -1, lastCharY = -1;
+        byte lastFgColor = -1, lastBgColor = -1;
+        boolean inSemiGraph = false;
+
+        for (int j = posy; j < maxHeight; j++) {
+            int localY = j - posy;
+            for (int i = posx; i < maxWidth; i++) {
+                int localX = i - posx;
+                int cellIdx = localY * wpage + localX;
+
+                if (!dirty[cellIdx]) continue;
+
+                // Repositionnement si non-adjacent
+                if (lastCharY != j || lastCharX != i - 1) {
+                    if (inSemiGraph) {
+                        out.write(GetTeletelCode.setMode(Teletel.MODE_TEXT));
+                        inSemiGraph = false;
+                    }
+                    out.write(GetTeletelCode.setCursor(i, j));
+                    lastFgColor = -1;
+                    lastBgColor = -1;
+                }
+
+                byte[] colors = getBlockColors(localX, localY);
+                byte fgColor = colors[0];
+                byte bgColor = colors[1];
+
+                // Changement de couleur de fond (nécessite sortie du mode semi-graph)
+                if (bgColor != lastBgColor) {
+                    if (inSemiGraph) {
+                        out.write(GetTeletelCode.setMode(Teletel.MODE_TEXT));
+                        inSemiGraph = false;
+                    }
+                    out.write(GetTeletelCode.setBGColor(bgColor));
+                    out.write(' ');
+                    out.write(GetTeletelCode.setCursor(i, j));
+                    lastBgColor = bgColor;
+                    lastFgColor = -1;
+                }
+
+                if (!inSemiGraph) {
+                    out.write(GetTeletelCode.setMode(Teletel.MODE_SEMI_GRAPH));
+                    inSemiGraph = true;
+                }
+
+                if (fgColor != lastFgColor) {
+                    out.write(GetTeletelCode.setTextColor(fgColor));
+                    lastFgColor = fgColor;
+                }
+
+                out.write(data[cellIdx]);
+                dirty[cellIdx] = false;
+
+                lastCharX = i;
+                lastCharY = j;
+            }
+        }
+
+        if (inSemiGraph) {
+            out.write(GetTeletelCode.setMode(Teletel.MODE_TEXT));
+        }
+
+        return out.toByteArray();
+    }
+
+    // ========== NOUVELLES PRIMITIVES DE DESSIN ==========
+
+    /**
+     * Dessine le contour d'un rectangle (pixels)
+     * @param x Coin supérieur gauche X
+     * @param y Coin supérieur gauche Y
+     * @param w Largeur en pixels
+     * @param h Hauteur en pixels
+     */
+    public void drawRect(int x, int y, int w, int h) {
+        for (int i = x; i <= x + w; i++) {
+            setPixel(i, y);
+            setPixel(i, y + h);
+        }
+        for (int j = y + 1; j < y + h; j++) {
+            setPixel(x, j);
+            setPixel(x + w, j);
+        }
+    }
+
+    /**
+     * Dessine un rectangle plein (pixels)
+     * @param x Coin supérieur gauche X
+     * @param y Coin supérieur gauche Y
+     * @param w Largeur en pixels
+     * @param h Hauteur en pixels
+     */
+    public void fillRect(int x, int y, int w, int h) {
+        for (int j = y; j <= y + h; j++) {
+            for (int i = x; i <= x + w; i++) {
+                setPixel(i, j);
+            }
+        }
+    }
+
+    /**
+     * Dessine un cercle plein (pixels)
+     * @param cx Centre X
+     * @param cy Centre Y
+     * @param r  Rayon en pixels
+     */
+    public void fillCircle(int cx, int cy, int r) {
+        for (int dy = -r; dy <= r; dy++) {
+            int halfWidth = (int) Math.sqrt((double) r * r - (double) dy * dy);
+            for (int dx = -halfWidth; dx <= halfWidth; dx++) {
+                setPixel(cx + dx, cy + dy);
+            }
+        }
+    }
+
     // ========== GETTERS ==========
-    
+
     /** @return Largeur du buffer en pixels */
     public int getWidthScreen() {
         return widthScreen;

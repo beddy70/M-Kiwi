@@ -15,6 +15,7 @@ import org.somanybits.minitel.GetTeletelCode;
 import org.somanybits.minitel.MinitelConnection;
 import org.somanybits.minitel.Teletel;
 import org.somanybits.minitel.components.vtml.VTMLFormComponent;
+import org.somanybits.minitel.components.vtml.VTMLGraphicComponent;
 import org.somanybits.minitel.components.vtml.VTMLInputComponent;
 import org.somanybits.minitel.components.vtml.VTMLKeypadComponent;
 import org.somanybits.minitel.components.vtml.VTMLLayersComponent;
@@ -64,7 +65,7 @@ import org.somanybits.minitel.kernel.Kernel;
 public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
 
     public final static String URL_NEWS = "https://lestranquilles.fr/nos-actualites/";
-    private static final String VERSION = "0.7.23";
+    private static final String VERSION = "0.7.38";
     private static LogManager logmgr;
 
 //    private Thread rxThread;
@@ -78,6 +79,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private VTMLFormComponent currentForm = null;
     private VTMLStatusComponent currentStatus = null;
     private VTMLLayersComponent currentLayers = null;
+    private java.util.List<VTMLGraphicComponent> currentGraphics = new java.util.ArrayList<>();
     private boolean formHasFocus = false;  // true = focus sur form/inputs, false = focus sur menu
     private boolean layersHasFocus = false; // true = focus sur layers (mode jeu)
 
@@ -112,14 +114,19 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     private volatile java.util.concurrent.ScheduledFuture<?> refreshFuture;
 
     // Mode saisie URL (GOTO = changer de serveur, CONFIG = modifier le serveur par défaut)
-    private enum InputMode { NONE, GOTO, CONFIG, SERVER_DIRECTORY, SYSINFO, NETCONFIG }
+    private enum InputMode { NONE, GOTO, CONFIG, SERVER_DIRECTORY, SYSINFO, NETCONFIG, TERMINAL }
     private InputMode inputMode = InputMode.NONE;
     private StringBuilder urlInputBuffer  = new StringBuilder();
     private StringBuilder urlInputBuffer2 = new StringBuilder();
     private int configActiveField = 0; // 0 = serveur local, 1 = annuaire
     private ServerDirectoryScreen directoryScreen = null;
     private NetworkConfigScreen netConfigScreen = null;
-    private Page gotoReturnPage = null; // Page à afficher si RETOUR depuis mkiwi:goto
+    private Page gotoReturnPage = null;
+    // Terminal 80 cols
+    private Process             terminalProcess     = null;
+    private Thread              terminalReaderThread = null;
+    private volatile boolean    terminalRunning     = false;
+    private java.io.OutputStream terminalStdin      = null;
     private static final int SERVER_INPUT_ROW  = 11;
     private static final int CONFIG_FIELD1_ROW = 7;
     private static final int CONFIG_FIELD2_ROW = 11;
@@ -330,6 +337,8 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                     handleDirectoryKey(event);
                 } else if (inputMode == InputMode.NETCONFIG) {
                     handleNetConfigKey(event);
+                } else if (inputMode == InputMode.TERMINAL) {
+                    handleTerminalKey(event);
                 } else {
                     handleInputModeKey(event);
                 }
@@ -588,6 +597,7 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
         currentForm = page.getForm();
         currentStatus = page.getStatus();
         currentLayers = page.getLayers();
+        currentGraphics = page.hasGraphics() ? page.getGraphics() : new java.util.ArrayList<>();
 
         // Si la page a un layers, activer le mode jeu
         if (currentLayers != null) {
@@ -780,6 +790,15 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 try {
                     synchronized (scriptLock) {
                         VTMLScriptEngine.getInstance().execute(timerFunc + "()");
+                        // Envoi des bytes accumulés par update() dans les scripts
+                        for (VTMLGraphicComponent g : currentGraphics) {
+                            byte[] pending = g.consumePendingBytes();
+                            if (pending.length > 0) {
+                                synchronized (mc) {
+                                    mc.writeBytes(pending);
+                                }
+                            }
+                        }
                     }
                     Thread.sleep(interval);
                 } catch (InterruptedException e) {
@@ -1291,6 +1310,21 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
             public void onTestJoystick() {
                 System.out.println("Menu: test joystick");
             }
+
+            @Override
+            public void onTerminalExit() {
+                try { closeTerminal(); } catch (IOException e) {
+                    System.err.println("onTerminalExit: " + e.getMessage());
+                }
+            }
+
+            @Override
+            public void onSetMinitelMode(int mode) {
+                try { t.setScreenMode(mode); t.clear();} catch (IOException e) {
+                    
+                    System.err.println("onSetMinitelMode: " + e.getMessage());
+                }
+            }
         };
     }
 
@@ -1347,6 +1381,9 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
                 break;
             case "mkiwi:sysinfo":
                 showSysInfoScreen();
+                break;
+            case "mkiwi:terminal":
+                openTerminalScreen();
                 break;
             case "mkiwi:netconfig":
                 openNetConfig();
@@ -1739,6 +1776,125 @@ public class MinitelClient implements KeyPressedListener, CodeSequenceListener {
     }
 
     // ========== mkiwi:netconfig ==========
+
+    // ========== mkiwi:terminal ==========
+
+    private void openTerminalScreen() throws IOException {
+        stopGameLoop();
+        stopPageTimer();
+        cancelRefresh();
+
+        // Attendre la fin de l'éventuel reader thread précédent avant de relancer
+        if (terminalReaderThread != null && terminalReaderThread.isAlive()) {
+            try { terminalReaderThread.join(3000); } catch (InterruptedException ignored) {}
+        }
+
+        t.setScreenMode(Teletel.MODE_STANDARD); // 80 colonnes
+        t.clear();
+
+        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "--norc", "--noprofile", "-i");
+        pb.environment().put("TERM", "dumb");
+        pb.environment().put("PS1", "$ ");
+        pb.environment().put("COLUMNS", "80");
+        pb.environment().put("LINES", "24");
+        pb.redirectErrorStream(true);
+        terminalProcess = pb.start();
+        terminalStdin   = terminalProcess.getOutputStream();
+        terminalRunning = true;
+        inputMode       = InputMode.TERMINAL;
+        if (oledMenu != null) oledMenu.setTerminalModeActive(true);
+
+        // Thread lecteur : stdout bash → Minitel (sync sur mc)
+        terminalReaderThread = new Thread(() -> {
+            try {
+                byte[] buf = new byte[256];
+                int n;
+                while (terminalRunning
+                        && (n = terminalProcess.getInputStream().read(buf)) != -1) {
+                    synchronized (mc) { mc.writeBytes(crlfExpand(buf, n)); }
+                }
+            } catch (IOException ignored) {}
+            // bash s'est terminé → retour mode 40 cols
+            if (terminalRunning) {
+                terminalRunning = false;
+                try { closeTerminal(); } catch (Exception ignored) {}
+            }
+        }, "terminal-reader");
+        terminalReaderThread.setDaemon(true);
+        terminalReaderThread.start();
+    }
+
+    private void handleTerminalKey(KeyPressedEvent event) throws IOException {
+        if (!terminalRunning) { closeTerminal(); return; }
+        try {
+            if (event.getType() == KeyPressedEvent.TYPE_KEY_CHAR_EVENT) {
+                int code = event.getKeyCode();
+                terminalStdin.write(code);
+                terminalStdin.flush();
+                // Pas d'écho manuel : bash -i (readline) renvoie les chars sur stdout
+
+            } else if (event.getType() == KeyPressedEvent.TYPE_KEY_MENU_EVENT) {
+                switch (event.getKeyCode()) {
+                    case KeyPressedEvent.KEY_ENVOI:
+                        terminalStdin.write('\n');
+                        terminalStdin.flush();
+                        // pas d'écho \r\n : bash readline envoie le newline sur stdout
+                        break;
+                    case KeyPressedEvent.KEY_CORRECTION:
+                        terminalStdin.write(0x7f);
+                        terminalStdin.flush();
+                        // readline gère le backspace visuel côté stdout
+                        break;
+                    case KeyPressedEvent.KEY_RETOUR:
+                        // ESC dans le terminal
+                        terminalStdin.write(0x1b);
+                        terminalStdin.flush();
+                        break;
+                    case KeyPressedEvent.KEY_SOMMAIRE:
+                        closeTerminal();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        } catch (IOException e) {
+            closeTerminal();
+        }
+    }
+
+    private static byte[] crlfExpand(byte[] src, int len) {
+        int extra = 0;
+        for (int i = 0; i < len; i++)
+            if (src[i] == 0x0A && (i == 0 || src[i - 1] != 0x0D)) extra++;
+        if (extra == 0) return java.util.Arrays.copyOf(src, len);
+        byte[] out = new byte[len + extra];
+        int j = 0;
+        for (int i = 0; i < len; i++) {
+            if (src[i] == 0x0A && (i == 0 || src[i - 1] != 0x0D)) out[j++] = 0x0D;
+            out[j++] = src[i];
+        }
+        return out;
+    }
+
+    private void closeTerminal() throws IOException {
+        // Guard : un seul appel effectif même si reader thread et main thread arrivent ensemble
+        synchronized (this) {
+            if (!terminalRunning && terminalProcess == null) return;
+            terminalRunning = false;
+            if (oledMenu != null) oledMenu.setTerminalModeActive(false);
+            if (terminalProcess != null) {
+                terminalProcess.destroyForcibly();
+                terminalProcess = null;
+            }
+            terminalStdin = null;
+            inputMode = InputMode.NONE;
+        }
+        // Écriture série hors du bloc synchronized (peut prendre du temps)
+        t.setScreenMode(Teletel.MODE_VIDEOTEXT);
+        t.clear();
+        Page p = Kernel.getInstance().getPageManager().getCurrentPage();
+        if (p != null) mc.writeBytes(p.getData());
+    }
 
     private void detectAndUpdateNetworkInterface() {
         try {
