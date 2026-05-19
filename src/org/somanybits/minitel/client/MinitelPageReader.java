@@ -14,6 +14,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
+import org.jsoup.parser.Parser;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 import org.somanybits.log.LogManager;
@@ -88,6 +89,7 @@ public class MinitelPageReader {
                     .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36)")
                     .ignoreContentType(true)
                     .timeout(15_000)
+                    .parser(Parser.xmlParser())
                     .get();
         } catch (org.jsoup.HttpStatusException hse) {
             int code = hse.getStatusCode();
@@ -120,7 +122,7 @@ public class MinitelPageReader {
     public Page getFromFile(java.io.File file) throws IOException {
         Document doc;
         try {
-            doc = Jsoup.parse(file, "UTF-8");
+            doc = Jsoup.parse(file, "UTF-8", "", Parser.xmlParser());
         } catch (IOException ex) {
             System.err.println("Erreur lecture fichier VTML: " + ex.getMessage());
             Page p = new Page(Page.MODE_40_COL);
